@@ -1,0 +1,22 @@
+{
+	"GPU":{
+		"GPUMC":"",
+		"BaseURI":"",
+		"GPUResetURI":"",
+		"GracefulRestart":"",
+		"GPUCheckURI":"",
+		"GPULargeFWMessage":"",
+		"GPUPushUriTargetsSuccessMessage":"",
+		"HttpPushUriTargets":"",
+		"specific_targets":""
+	},
+	"BMC":{
+		"BaseURI":"",
+		"SystemURI":"",
+		"BMCFWInventory":"",
+		"SystemResetURI":"",
+		"GracefulRestart":"",
+		"ForceRestart":""
+	}
+}
+

@@ -1,0 +1,9 @@
+{
+    "Time": <"timestamp">,
+    "Level": <"info">,
+    "Msg": <"commands">,
+    "additional_detail": {
+        "test_name": <"test_name">,
+        "test_id": <0>
+    }
+}

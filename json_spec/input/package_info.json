@@ -1,0 +1,57 @@
+{
+  "PackageHeaderInformation": {
+    "PackageHeaderIdentifier": "",
+    "PackageHeaderFormatVersion": "1",
+    "PackageReleaseDateTime": "",
+    "PackageVersionString": ""
+  },
+  "GPU_FW_IMAGE": {
+    "Path": "workspace",
+    "Package": "",
+    "Version": "",
+    "JSON": "",
+    "Vendor": ""
+  },
+  "GPU_FW_IMAGE_OLD": {
+    "Path": "workspace",
+    "Package": "",
+    "Version": "",
+    "JSON": "",
+    "Vendor": ""
+  },
+  "GPU_FW_IMAGE_BACKUP": {
+    "Path": "workspace",
+    "Package": "",
+    "Version": "",
+    "JSON": "",
+    "Vendor": ""
+  },
+  "GPU_FW_IMAGE_LARGE": {
+    "Path": "workspace",
+    "Package": "",
+    "Version": "",
+    "JSON": "",
+    "Vendor": ""
+  },
+  "GPU_FW_IMAGE_INVALID_SIGNED": {
+    "Path": "workspace",
+    "Package": "",
+    "Version": "",
+    "JSON": "",
+    "Vendor": ""
+  },
+  "GPU_FW_IMAGE_UNSIGNED": {
+    "Path": "workspace",
+    "Package": "",
+    "Version": "",
+    "JSON": "",
+    "Vendor": ""
+  },
+  "GPU_FW_IMAGE_CORRUPT": {
+    "Path": "workspace",
+    "Package": "",
+    "Version": "",
+    "JSON": "",
+    "Vendor": ""
+  }
+}

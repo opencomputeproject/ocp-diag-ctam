@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "Need to add one",
+  "title": "dut_info",
+  "description": "TODO: link to md doc",
+  "properties": {
+    "ConnectionTo": {
+      "description": "Acceptable values are UtilityManager, Node*MC, Gpu*MC",
+      "type": "string",
+      "value": ""
+    },
+    "ConnectionIPAddress": {
+      "description": "IP Address of Service Entry point to be used",
+      "type": "string",
+      "value": ""
+    },
+    "SshTunnel": {
+      "description": "Indicates if the user wants to communicate through SSH tunnel",
+      "type": "bool",
+      "value": ""
+    },
+    "DefaultPrefix": {
+      "description": "Default preix for connecting to redfish",
+      "type": "string",
+      "value": ""
+    },
+    "BMCUserName": {
+      "description": "Username for service entry login",
+      "type": "string",
+      "value": ""
+    },
+    "PowerOffCommand": {
+      "description": "Command to use to turn off the system",
+      "type": "string",
+      "value": ""
+    },
+    "PowerOnCommand": {
+      "description": "Command to use to turn off the system",
+      "type": "string",
+      "value": ""
+    },
+    "BMCIPAddress": {
+      "description": "IP Address of Service Entry point to be used",
+      "type": "string",
+      "value": ""
+    },
+    "AMCIPAddress": {
+      "description": "IP Address of AMC (i.e. HMC) to be used",
+      "type": "string",
+      "value": ""
+    },
+    "RMBMCIPAddress": {
+      "description": "IP Address of Service Entry point to be used",
+      "type": "string",
+      "value": ""
+    },
+    "RMIPAddress": {
+      "description": "IP Address of Service Entry point to be used",
+      "type": "string",
+      "value": ""
+    },
+    "BMCNodeNumber": {
+      "description": "Needed only for Host Controller based setups",
+      "type": "string",
+      "value": ""
+    },
+    "PowerOffWaitTime": {
+      "description": "Off delay needed during FW Activation",
+      "type": "int",
+      "value": 60
+    },
+    "PowerOnWaitTime": {
+      "description": "Wait time during FW Activation post reset cycle",
+      "type": "int",
+      "value": 300
+    },
+    "DebugMode": {
+      "description": "",
+      "type": "bool",
+      "value": true
+    },
+    "Acc Type": {
+      "description": "Options are GPU_BB & Discrete_GFX for now",
+      "type": "string",
+      "value": "GPU_BB"
+    }
+  },
+  "required": [
+    "ConnectionTo",
+    "Acc Type",
+    "PowerOffCommand",
+    "PowerOnCommand",
+    "DebugMode",
+    "PowerOffWaitTime",
+    "PowerOnWaitTime"
+  ]
+}

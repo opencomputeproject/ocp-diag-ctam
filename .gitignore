@@ -1,0 +1,7 @@
+﻿
+*.pyc
+/workspace/TestRuns/*
+/workspace/*
+docs/build/*
+/.vs
+/bin

@@ -1,0 +1,33 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "editor.detectIndentation": false,
+        "editor.indentSize": "tabSize",
+        "editor.formatOnSave": true,
+        "[python]": {
+            "editor.defaultFormatter": "ms-python.black-formatter"
+        },
+        "python.formatting.provider": "none",
+        "python.formatting.blackArgs": [
+            "--line-length",
+            "120"
+        ],
+        "autoDocstring.startOnNewLine": true,
+        "autoDocstring.docstringFormat": "sphinx",
+        "python.linting.mypyEnabled": true,
+        "mypy.targets": [],
+        "cSpell.words": [
+            "comptool",
+            "ctam",
+            "mypy",
+            "ocptv",
+            "rtype",
+            "testgroup",
+            "testrun"
+        ]
+    }
+}

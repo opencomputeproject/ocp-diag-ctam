@@ -1,0 +1,1093 @@
+{
+  "@odata.context":,
+  "@odata.etag":,
+  "@odata.id":,
+  "@odata.type":,
+  "Actions": {
+    "#ComputerSystem.Reset": {
+      "@Redfish.ActionInfo": {
+        "@odata.id":,
+        "@odata.type":,
+        "Description":,
+        "Id":,
+        "Name":,
+        "Parameters": [
+          {
+            "AllowableValues": [
+            ],
+            "DataType":,
+            "Name":,
+            "Required": true
+          }
+        ]
+      },
+      "@Redfish.OperationApplyTimeSupport": {
+        "@odata.type":,
+        "MaintenanceWindowDurationInSeconds":,
+        "MaintenanceWindowResource": {
+          "@odata.id":
+        },
+        "SupportedValues": [
+        ]
+      },
+      "target":
+    }
+  },
+  "AssetTag":,
+  "Bios": {
+    "@odata.id":,
+    "@odata.type":,
+    "Description":,
+    "Id":,
+    "Name":,
+    "Oem": {
+      "Microsoft": {
+        "AdvancedPowerManagement": {
+          "TurboMode":
+        },
+        "AdvancedPowerManagementConfig": {
+          "C1E":,
+          "CPUC6report":,
+          "PackageCState":
+        },
+        "ConfigId":,
+        "ConfigName":,
+        "IIOConfig": {
+          "VTd":
+        },
+        "NetworkStack": {
+          "Ipv6PXESupport":
+        },
+        "PCHConfig": {
+          "SATADeviceType":
+        },
+        "PCISubsystemSetting": {
+          "SRIOVSupport":
+        },
+        "ProcessorConfig": {
+          "HyperThreading":,
+          "VMX":
+        },
+        "SecureBoot": {
+          "AttemptSecureBoot":,
+          "DefKeyProvision":
+        }
+      }
+    }
+  },
+  "BiosVersion":,
+  "Boot": {
+    "BootNext": null,
+    "BootOrder": [
+    ],
+    "BootOrderPropertySelection":,
+    "BootSourceOverrideMode":,
+    "BootSourceOverrideMode@Redfish.AllowableValues": [
+    ],
+    "HttpBootUri": null
+  },
+  "Description":,
+  "EthernetInterfaces": {
+    "@odata.id":,
+    "@odata.type":,
+    "Description":,
+    "Members": [
+      {
+        "@odata.id":
+      }
+    ],
+    "Members@odata.count": 1,
+    "Name":
+  },
+  "HostName":,
+  "HostingRoles": [
+  ],
+  "Id":,
+  "IndicatorLED":,
+  "IndicatorLED@Redfish.AllowableValues": [
+  ],
+  "Links": {
+    "Chassis": [
+      {
+        "@odata.id":,
+        "@odata.type":,
+        "Actions": {
+          "#Chassis.Reset": {
+            "@Redfish.ActionInfo":,
+            "@Redfish.OperationApplyTimeSupport": {
+              "@odata.type":,
+              "MaintenanceWindowDurationInSeconds":,
+              "MaintenanceWindowResource": {
+                "@odata.id":
+              },
+              "SupportedValues": [
+              ]
+            },
+            "target":
+          }
+        },
+        "AssetTag":,
+        "ChassisType":,
+        "Description":,
+        "Id":,
+        "IndicatorLED":,
+        "IndicatorLED@Redfish.AllowableValues": [
+        ],
+        "Links": {
+          "ComputerSystems": [
+            {
+              "@odata.id":
+            }
+          ],
+          "ComputerSystems@odata.count": 1,
+          "ManagedBy": [
+            {
+              "@odata.id":
+            }
+          ],
+          "ManagedBy@odata.count": 1
+        },
+        "Manufacturer":,
+        "Model":,
+        "Name":,
+        "Oem": {
+          "Microsoft": {
+            "@odata.type":,
+            "FRU": {
+              "@odata.id":
+            }
+          }
+        },
+        "PCIeDevices": {
+          "@odata.id":
+        },
+        "PartNumber":,
+        "Power": {
+          "@odata.id":
+        },
+        "PowerState":,
+        "SKU":,
+        "Sensors": {
+          "@odata.id":
+        },
+        "SerialNumber":,
+        "Status": {
+          "Health":,
+          "HealthRollup":,
+          "State":
+        }
+      }
+    ],
+    "Chassis@odata.count": 1,
+    "ManagedBy": [
+      {
+        "@odata.id":,
+        "@odata.type":,
+        "Actions": {
+          "#Manager.Reset": {
+            "@Redfish.ActionInfo":,
+            "@Redfish.OperationApplyTimeSupport": {
+              "@odata.type":,
+              "MaintenanceWindowDurationInSeconds":,
+              "MaintenanceWindowResource": {
+                "@odata.id":
+              },
+              "SupportedValues": [
+              ]
+            },
+            "target":
+          },
+          "Oem": {
+            "#OcsBmc.v1_0_0#Manager.MasterPhaseWriteRead": {
+              "@Redfish.ActionInfo":,
+              "target":
+            },
+            "#OcsBmc.v1_0_0#Manager.MasterWriteRead": {
+              "@Redfish.ActionInfo":,
+              "target":
+            }
+          }
+        },
+        "CommandShell": {
+          "ConnectTypesSupported": [
+            "SSH",
+            "IPMI"
+          ],
+          "MaxConcurrentSessions": 10,
+          "ServiceEnabled": true
+        },
+        "DateTime":,
+        "DateTimeLocalOffset":,
+        "Description":,
+        "EthernetInterfaces": {
+          "@odata.id":
+        },
+        "Id":,
+        "Links": {
+          "ManagerForChassis": {
+            "@odata.id":
+          },
+          "ManagerInChassis": {
+            "@odata.id":
+          }
+        },
+        "LogServices": {
+          "@odata.id":
+        },
+        "ManagerType":,
+        "Model":,
+        "Name":,
+        "NetworkProtocol": {
+          "@odata.id":
+        },
+        "Oem": {
+          "Microsoft": {
+            "@odata.type":,
+            "TimeSinceLastBoot":
+          }
+        },
+        "PowerState":,
+        "SerialConsole": {
+          "ConnectTypesSupported": [
+            "IPMI"
+          ],
+          "MaxConcurrentSessions": 1,
+          "ServiceEnabled": true
+        },
+        "SerialInterfaces": {
+          "@odata.id":
+        },
+        "Status": {
+          "Health":,
+          "State":
+        }
+      }
+    ],
+    "ManagedBy@odata.count": 1
+  },
+  "Manufacturer":,
+  "Memory": {
+    "@odata.id":,
+    "@odata.type":,
+    "Description":,
+    "Members": [
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      }
+    ],
+    "Members@odata.count": 16,
+    "Name":
+  },
+  "MemorySummary": {
+    "MemoryMirroring": null,
+    "Status": {
+      "Health":,
+      "HealthRollup":,
+      "State":
+    },
+    "TotalSystemMemoryGiB": 2048,
+    "TotalSystemPersistentMemoryGiB": null
+  },
+  "Model":,
+  "Name":,
+  "NetworkInterfaces": {
+    "@odata.id":,
+    "@odata.type":,
+    "Description":,
+    "Members": [],
+    "Members@odata.count": 0,
+    "Name":
+  },
+  "Oem": {
+    "AMI": {
+      "@odata.type":,
+      "ManagerBootConfiguration": {
+        "ManagerBootMode@Redfish.AllowableValues": [
+          "SoftReset",
+          "ResetTimeout"
+        ]
+      }
+    }
+  },
+  "PCIeDevices": [
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "Id":,
+      "Name":,
+      "PCIeFunctions": {
+        "@odata.id":
+      },
+      "Status": {
+        "Health":,
+        "State":
+      }
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "Id":,
+      "Name":,
+      "PCIeFunctions": {
+        "@odata.id":
+      },
+      "Status": {
+        "Health":,
+        "State":
+      }
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "Id":,
+      "Name":,
+      "PCIeFunctions": {
+        "@odata.id":
+      },
+      "Status": {
+        "Health":,
+        "State":
+      }
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "Id":,
+      "Name":,
+      "PCIeFunctions": {
+        "@odata.id":
+      },
+      "Status": {
+        "Health":,
+        "State":
+      }
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "Id":,
+      "Name":,
+      "PCIeFunctions": {
+        "@odata.id":
+      },
+      "Status": {
+        "Health":,
+        "State":
+      }
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "Id":,
+      "Name":,
+      "PCIeFunctions": {
+        "@odata.id":
+      },
+      "Status": {
+        "Health":,
+        "State":
+      }
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "Id":,
+      "Name":,
+      "PCIeFunctions": {
+        "@odata.id":
+      },
+      "Status": {
+        "Health":,
+        "State":
+      }
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "Id":,
+      "Name":,
+      "PCIeFunctions": {
+        "@odata.id":
+      },
+      "Status": {
+        "Health":,
+        "State":
+      }
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "Id":,
+      "Name":,
+      "PCIeFunctions": {
+        "@odata.id":
+      },
+      "Status": {
+        "Health":,
+        "State":
+      }
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "Id":,
+      "Name":,
+      "PCIeFunctions": {
+        "@odata.id":
+      },
+      "Status": {
+        "Health":,
+        "State":
+      }
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "Id":,
+      "Name":,
+      "PCIeFunctions": {
+        "@odata.id":
+      },
+      "Status": {
+        "Health":,
+        "State":
+      }
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "Id":,
+      "Name":,
+      "PCIeFunctions": {
+        "@odata.id":
+      },
+      "Status": {
+        "Health":,
+        "State":
+      }
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "Id":,
+      "Name":,
+      "PCIeFunctions": {
+        "@odata.id":
+      },
+      "Status": {
+        "Health":,
+        "State":
+      }
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "Id":,
+      "Name":,
+      "PCIeFunctions": {
+        "@odata.id":
+      },
+      "Status": {
+        "Health":,
+        "State":
+      }
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "Id":,
+      "Name":,
+      "PCIeFunctions": {
+        "@odata.id":
+      },
+      "Status": {
+        "Health":,
+        "State":
+      }
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "Id":,
+      "Name":,
+      "PCIeFunctions": {
+        "@odata.id":
+      },
+      "Status": {
+        "Health":,
+        "State":
+      }
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "AssetTag":,
+      "Description":,
+      "FirmwareVersion":,
+      "Id":,
+      "Manufacturer":,
+      "Model":,
+      "Name":,
+      "PCIeFunctions": {
+        "@odata.id":
+      },
+      "PartNumber":,
+      "SKU":,
+      "SerialNumber":,
+      "Status": {
+        "Health":,
+        "State":
+      }
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "Id":,
+      "Name":,
+      "PCIeFunctions": {
+        "@odata.id":
+      },
+      "Status": {
+        "Health":,
+        "State":
+      }
+    }
+  ],
+  "PCIeDevices@odata.count": 18,
+  "PCIeFunctions": [
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "DeviceClass":,
+      "DeviceId":,
+      "FunctionId": 1,
+      "Id":,
+      "Links": {
+        "PCIeDevice": {
+          "@odata.id":
+        }
+      },
+      "Name":,
+      "Status": {
+        "Health":,
+        "State":
+      },
+      "SubsystemId":,
+      "SubsystemVendorId":,
+      "VendorId":
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "DeviceClass":,
+      "DeviceId":,
+      "FunctionId": 1,
+      "Id":,
+      "Links": {
+        "PCIeDevice": {
+          "@odata.id":
+        }
+      },
+      "Name":,
+      "Status": {
+        "Health":,
+        "State":
+      },
+      "SubsystemId":,
+      "SubsystemVendorId":,
+      "VendorId":
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "DeviceClass":,
+      "DeviceId":,
+      "FunctionId": 1,
+      "Id":,
+      "Links": {
+        "PCIeDevice": {
+          "@odata.id":
+        }
+      },
+      "Name":,
+      "Status": {
+        "Health":,
+        "State":
+      },
+      "SubsystemId":,
+      "SubsystemVendorId":,
+      "VendorId":
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "DeviceClass":,
+      "DeviceId":,
+      "FunctionId": 1,
+      "Id":,
+      "Links": {
+        "PCIeDevice": {
+          "@odata.id":
+        }
+      },
+      "Name":,
+      "Status": {
+        "Health":,
+        "State":
+      },
+      "SubsystemId":,
+      "SubsystemVendorId":,
+      "VendorId":
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "DeviceClass":,
+      "DeviceId":,
+      "FunctionId": 1,
+      "Id":,
+      "Links": {
+        "PCIeDevice": {
+          "@odata.id":
+        }
+      },
+      "Name":,
+      "Status": {
+        "Health":,
+        "State":
+      },
+      "SubsystemId":,
+      "SubsystemVendorId":,
+      "VendorId":
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "DeviceClass":,
+      "DeviceId":,
+      "FunctionId": 1,
+      "Id":,
+      "Links": {
+        "PCIeDevice": {
+          "@odata.id":
+        }
+      },
+      "Name":,
+      "Status": {
+        "Health":,
+        "State":
+      },
+      "SubsystemId":,
+      "SubsystemVendorId":,
+      "VendorId":
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "DeviceClass":,
+      "DeviceId":,
+      "FunctionId": 1,
+      "Id":,
+      "Links": {
+        "PCIeDevice": {
+          "@odata.id":
+        }
+      },
+      "Name":,
+      "Status": {
+        "Health":,
+        "State":
+      },
+      "SubsystemId":,
+      "SubsystemVendorId":,
+      "VendorId":
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "DeviceClass":,
+      "DeviceId":,
+      "FunctionId": 1,
+      "Id":,
+      "Links": {
+        "PCIeDevice": {
+          "@odata.id":
+        }
+      },
+      "Name":,
+      "Status": {
+        "Health":,
+        "State":
+      },
+      "SubsystemId":,
+      "SubsystemVendorId":,
+      "VendorId":
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "DeviceClass":,
+      "DeviceId":,
+      "FunctionId": 1,
+      "Id":,
+      "Links": {
+        "PCIeDevice": {
+          "@odata.id":
+        }
+      },
+      "Name":,
+      "Status": {
+        "Health":,
+        "State":
+      },
+      "SubsystemId":,
+      "SubsystemVendorId":,
+      "VendorId":
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "DeviceClass":,
+      "DeviceId":,
+      "FunctionId": 1,
+      "Id":,
+      "Links": {
+        "PCIeDevice": {
+          "@odata.id":
+        }
+      },
+      "Name":,
+      "Status": {
+        "Health":,
+        "State":
+      },
+      "SubsystemId":,
+      "SubsystemVendorId":,
+      "VendorId":
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "DeviceClass":,
+      "DeviceId":,
+      "FunctionId": 1,
+      "Id":,
+      "Links": {
+        "PCIeDevice": {
+          "@odata.id":
+        }
+      },
+      "Name":,
+      "Status": {
+        "Health":,
+        "State":
+      },
+      "SubsystemId":,
+      "SubsystemVendorId":,
+      "VendorId":
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "DeviceClass":,
+      "DeviceId":,
+      "FunctionId": 1,
+      "Id":,
+      "Links": {
+        "PCIeDevice": {
+          "@odata.id":
+        }
+      },
+      "Name":,
+      "Status": {
+        "Health":,
+        "State":
+      },
+      "SubsystemId":,
+      "SubsystemVendorId":,
+      "VendorId":
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "DeviceClass":,
+      "DeviceId":,
+      "FunctionId": 1,
+      "Id":,
+      "Links": {
+        "PCIeDevice": {
+          "@odata.id":
+        }
+      },
+      "Name":,
+      "Status": {
+        "Health":,
+        "State":
+      },
+      "SubsystemId":,
+      "SubsystemVendorId":,
+      "VendorId":
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "DeviceClass":,
+      "DeviceId":,
+      "FunctionId": 1,
+      "Id":,
+      "Links": {
+        "PCIeDevice": {
+          "@odata.id":
+        }
+      },
+      "Name":,
+      "Status": {
+        "Health":,
+        "State":
+      },
+      "SubsystemId":,
+      "SubsystemVendorId":,
+      "VendorId":
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "DeviceClass":,
+      "DeviceId":,
+      "FunctionId": 1,
+      "Id":,
+      "Links": {
+        "PCIeDevice": {
+          "@odata.id":
+        }
+      },
+      "Name":,
+      "Status": {
+        "Health":,
+        "State":
+      },
+      "SubsystemId":,
+      "SubsystemVendorId":,
+      "VendorId":
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "DeviceClass":,
+      "DeviceId":,
+      "FunctionId": 1,
+      "Id":,
+      "Links": {
+        "PCIeDevice": {
+          "@odata.id":
+        }
+      },
+      "Name":,
+      "Status": {
+        "Health":,
+        "State":
+      },
+      "SubsystemId":,
+      "SubsystemVendorId":,
+      "VendorId":
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "DeviceClass":,
+      "DeviceId":,
+      "FunctionId": 1,
+      "Id":,
+      "Links": {
+        "PCIeDevice": {
+          "@odata.id":
+        }
+      },
+      "Name":,
+      "Status": {
+        "Health":,
+        "State":
+      },
+      "SubsystemId":,
+      "SubsystemVendorId":,
+      "VendorId":
+    },
+    {
+      "@odata.id":,
+      "@odata.type":,
+      "Description":,
+      "DeviceClass":,
+      "DeviceId":,
+      "FunctionId": 1,
+      "Id":,
+      "Links": {
+        "PCIeDevice": {
+          "@odata.id":
+        }
+      },
+      "Name":,
+      "Status": {
+        "Health":,
+        "State":
+      },
+      "SubsystemId":,
+      "SubsystemVendorId":,
+      "VendorId":
+    }
+  ],
+  "PCIeFunctions@odata.count": 18,
+  "PartNumber":,
+  "PowerRestorePolicy":,
+  "PowerState":,
+  "ProcessorSummary": {
+    "Count": 2,
+    "Model":,
+    "Status": {
+      "Health":,
+      "HealthRollup":,
+      "State":
+    }
+  },
+  "Processors": {
+    "@odata.id":,
+    "@odata.type":,
+    "Description":,
+    "Members": [
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      }
+    ],
+    "Members@odata.count": 2,
+    "Name":
+  },
+  "SKU":,
+  "SecureBoot": {
+    "@odata.id":,
+    "@odata.type":,
+    "Actions": {
+      "#SecureBoot.ResetKeys": {
+        "@Redfish.ActionInfo":,
+        "target":
+      }
+    },
+    "Description":,
+    "Id":,
+    "Name":,
+    "SecureBootDatabases": {
+      "@odata.id":
+    },
+    "SecureBootEnable": null
+  },
+  "SerialNumber":,
+  "Status": {
+    "Health":,
+    "HealthRollup":,
+    "State":
+  },
+  "Storage": {
+    "@odata.id":,
+    "@odata.type":,
+    "Description":,
+    "Members": [
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      },
+      {
+        "@odata.id":
+      }
+    ],
+    "Members@odata.count": 4,
+    "Name":
+  },
+  "SubModel": null,
+  "SystemType":,
+  "UUID":
+}
