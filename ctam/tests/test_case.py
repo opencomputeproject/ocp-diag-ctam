@@ -58,6 +58,7 @@ class TestCase(ABC):
         """
         required_attrs = [
             "test_id",
+            "test_name",
             "score_weight",
             "tags",
             # "exclude_tags",

@@ -170,13 +170,15 @@ class TestRunner:
             return True
             
 
-    def _start(self, testrun_name):
+    def _start(self, testrun_name="initialization"):
         """
         Helper function called at the start of every OCP test run
 
         :param testrun_name: name for the testrun
         :type testrun_name: str
         """
+        #system is up or not
+        # If up then establish the connection and the discovery 
         self.comp_tool_dut = CompToolDut(
             id="actDut",
             config=self.dut_config,
@@ -184,8 +186,9 @@ class TestRunner:
             redfish_uri_config=self.redfish_uri_config,
             net_rc=self.net_rc,
             debugMode=self.debug_mode,
-        )
 
+        )
+        self.system_details, status_code = self.comp_tool_dut.GetSystemDetails()
         # writer has to be configured prior to TestRun init
         if self.output_dir:
             self.output_dir = os.path.join(
@@ -204,8 +207,11 @@ class TestRunner:
         )
         tv.config(writer=self.writer)
 
-        self.active_run = tv.TestRun(name="act", version="1.0")
-
+        self.active_run = tv.TestRun(name="CTAM Test Runner", version="1.0")
+        if status_code:
+            self.active_run.add_log(LogSeverity.INFO, "{}".format(self.system_details))
+        else:
+            self.active_run.add_log(LogSeverity.FATAL, "{}".format(self.system_details))
         TestCase.SetUpAssociations(self.active_run, self.comp_tool_dut)
         TestGroup.SetUpAssociations(self.active_run, self.comp_tool_dut)
         FunctionalIfc.SetUpAssociations(self.active_run, self.comp_tool_dut)
@@ -355,7 +361,9 @@ class TestRunner:
             # attempt group cleanup even if test exception raised
             group_instance.teardown()
             self._end(group_status, group_result)
-
+    def get_system_details(self):
+        self._start()
+        pass
 
 class LoggingWriter(Writer):
     """
@@ -392,7 +400,7 @@ class LoggingWriter(Writer):
 
         # Create a file handler that logs messages to a file
         dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        file_name_tmp = "/{}_{}.log".format(testrun_name, dt)
+        file_name_tmp = "/{}_{}.json".format(testrun_name, dt)
         self.file_handler = logging.FileHandler(output_dir + file_name_tmp)
         self.file_handler.setLevel(logging.INFO)
         self.file_handler.setFormatter(JsonFormatter())
@@ -430,12 +438,5 @@ class JsonFormatter(logging.Formatter):
         :returns:                           JSON object with indent 4
         :rtype                              JSON Dict
         """
-        extra = getattr(record, "__dict__", {})
         msg = json.loads(getattr(record, "msg", None))
-        json_record = {
-            "Time": datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
-            "Level": getattr(record, "levelname", None),
-            "Msg": msg,
-            "additional_detail": extra.get("additional_detail", ""),
-        }
-        return json.dumps(json_record, indent=4)
+        return json.dumps(msg, indent=4)

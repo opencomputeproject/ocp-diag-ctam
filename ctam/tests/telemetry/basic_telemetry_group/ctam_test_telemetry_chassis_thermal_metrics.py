@@ -10,8 +10,8 @@ LICENSE file in the root directory of this source tree.
 
 :Description:	Basic telemetry test case to discover & print the list of all Classis thermal Metrics.
 
-:Usage 1:		python ctam.py -T T9
-:Usage 2:		python ctam.py -T "CTAM Test Telemetry Chassis Thermal Metrics"
+:Usage 1:		python ctam.py -w ..\workspace -t T9
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Chassis Thermal Metrics"
 
 """
 from typing import Optional, List
@@ -29,7 +29,8 @@ from tests.telemetry.basic_telemetry_group.basic_telemetry_group import (
 
 class CTAMTestTelemetryChassisThermalMetrics(TestCase):
     
-    test_id: List[str] = ["T9"]
+    test_name: str = "CTAM Test Telemetry Chassis Thermal Metrics"
+    test_id: str = "T9"
     score_weight: int = 10
     tags: List[str] = []
 
@@ -61,8 +62,9 @@ class CTAMTestTelemetryChassisThermalMetrics(TestCase):
         step1 = self.test_run().add_step((f"{self.__class__.__name__} run(), step1"))  # type: ignore
         with step1.scope():
             if self.group.telemetry_ifc.ctam_gpu_chassis_thermal_metrics():
-                step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Passed")
+                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Passed")
             else:
+                step1.add_log(LogSeverity.FATAL, f"{self.test_id} : Failed")
                 result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()

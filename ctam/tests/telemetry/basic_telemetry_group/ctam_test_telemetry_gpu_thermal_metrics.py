@@ -10,8 +10,8 @@ LICENSE file in the root directory of this source tree.
 
 :Description:	Basic telemetry test case to discover & print the list of all GPU thermal metrics.
 
-:Usage 1:		python ctam.py -T T9
-:Usage 2:		python ctam.py -T "CTAM Test Telemetry GPU Thermal Metrics"
+:Usage 1:		python ctam.py -w ..\workspace -t T10
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry GPU Thermal Metrics"
 
 """
 from typing import Optional, List
@@ -29,7 +29,8 @@ from tests.telemetry.basic_telemetry_group.basic_telemetry_group import (
 
 class CTAMTestTelemetryGPUThermalMetrics(TestCase):
     
-    test_id: List[str] = ["T10"]
+    test_name: str = "CTAM Test Telemetry GPU Thermal Metrics"
+    test_id: str = "T10"
     score_weight: int = 10
     tags: List[str] = []
 
@@ -63,7 +64,7 @@ class CTAMTestTelemetryGPUThermalMetrics(TestCase):
             if self.group.telemetry_ifc.ctam_gpu_thermal_metrics():
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Passed")
             else:
-                step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Failed")
+                step1.add_log(LogSeverity.FATAL, f"{self.test_id} : Failed")
                 result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()

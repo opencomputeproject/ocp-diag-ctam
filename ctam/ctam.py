@@ -95,8 +95,19 @@ if __name__ == "__main__":
         package_info_json = os.path.join(args.workspace, "package_info.json")
         redfish_uri_config = os.path.join(args.workspace, "redfish_uri_config.json")
         net_rc = os.path.join(args.workspace, ".netrc")
+        if args.Discovery:
+            runner = TestRunner(
+                test_hierarchy=test_hierarchy,
+                test_runner_json_file=test_runner_json,
+                dut_info_json_file=dut_info_json,
+                package_info_json_file=package_info_json,
+                redfish_uri_config_file=redfish_uri_config,
+                net_rc=net_rc,
+            )
+            runner.get_system_details()
+            sys.exit(1)
 
-        if args.testcase:
+        elif args.testcase:
             runner = TestRunner(
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,

@@ -20,7 +20,9 @@ class ManualOverrideTestGroup(TestGroup):
     """
 
     include_tags: List[str] = []
+    test_name: str = []
     exclude_tags: List[str] = []
+    test_name: str = []
 
     def __init__(self):
         """

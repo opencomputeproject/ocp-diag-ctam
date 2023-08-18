@@ -2,6 +2,10 @@
 	"GPU":{
 		"GPUMC":"",
 		"BaseURI":"",
+		"ChassisGPUs":"",
+		"ChassisIDs":"",
+		"BaseboardIDs":"",
+		"SystemGPUs":"",
 		"GPUResetURI":"",
 		"GracefulRestart":"",
 		"GPUCheckURI":"",

@@ -7,13 +7,19 @@ LICENSE file in the root directory of this source tree.
 
 """
 import os
-from ocptv.output import Dut
-from ocptv.output import Metadata
+import sys
 import typing as ty
-from interfaces.uri_builder import UriBuilder
 import redfish
 import netrc
 import subprocess
+import platform
+
+from prettytable import PrettyTable
+from ocptv.output import Metadata
+from ocptv.output import Dut
+
+from interfaces.uri_builder import UriBuilder
+
 
 class CompToolDut(Dut):
     """
@@ -82,6 +88,9 @@ class CompToolDut(Dut):
 
         # TODO investigate storing FW update files via add_software_info() in super
         connection_url = ("http://" if self.SshTunnel else "https://") + self.connection_ip_address + "/"
+        if not self.check_ping_status(self.connection_ip_address): # FIXME: Use logging method
+            print("[FATAL] Unable to ping the ip address. Please check the IP is valid or not.")
+            sys.exit(1)
         self.redfish_ifc = redfish.redfish_client(
             connection_url,
             username=self.__user_name,
@@ -153,4 +162,66 @@ class CompToolDut(Dut):
     def clean_up(self):
         if self.BindedPort:
             self.kill_ssh_tunnel()
+
+    def check_ping_status(self, ip_address):
+        p = '-n' if platform.system().lower()=='windows' else '-c'
+        response = os.system(f'ping {p} 1 ' + ip_address)
+        if response == 0:
+            return True
+        else:
+            return False
+        
+    
+    def GetSystemDetails(self, print_details=0): # FIXME: Use logging method and fix the uri
+        """
+        :Description:        Gets the System information from BMC.
+
+        :returns:	         System Details & BMC Frimware Version
+        :rtype:              None
+        """
+        try:
+            MyName = __name__ + "." + self.GetSystemDetails.__qualname__
+            able_to_get_system_details = True
+            t = PrettyTable(["Component", "Value"])
+            system_detail_uri = self.uri_builder.format_uri(redfish_str="{BaseURI}{SystemURI}",
+                                                                component_type="BMC")
+            bmc_fw_inv_uri = self.uri_builder.format_uri(redfish_str="{BaseURI}{BMCFWInventory}/",
+                                                                component_type="BMC")
+            system_details = self.redfish_ifc.get(system_detail_uri).dict
+            bmc_fw_inv = self.redfish_ifc.get(bmc_fw_inv_uri).dict
+            if system_details and ("error" not in system_details):
+                t.add_row(["Model", system_details["Model"]])
+                t.add_row(["Manufacturer", system_details["Manufacturer"]])
+                t.add_row(["HostName", system_details["HostName"]])
+                t.add_row(["System UUID", system_details["UUID"]])
+                t.add_row(["Bios Version", system_details["BiosVersion"]])
+                t.add_row(["PartNumber", system_details["PartNumber"]])
+                t.add_row(["SerialNumber", system_details["SerialNumber"]])
+                t.add_row(["Processor Model", system_details["ProcessorSummary"]["Model"]])
+                t.add_row(
+                    [
+                        "Processor Health",
+                        system_details["ProcessorSummary"]["Status"]["Health"],
+                    ]
+                )
+                t.add_row(
+                    [
+                        "Processor State",
+                        system_details["ProcessorSummary"]["Status"]["State"],
+                    ]
+                )
+            else:
+                able_to_get_system_details = False
+            if "error" not in bmc_fw_inv:
+                t.add_row(["BMC Version", bmc_fw_inv["Version"]])
+            else:
+                able_to_get_system_details = False
+            if able_to_get_system_details and print_details:
+                print(t)
+            #    self.logger.info(t)
+            return [system_details, bmc_fw_inv], able_to_get_system_details
+        except Exception as e:
+            print("[FATAL] Exception occurred during system discovery. Please see below exception...")
+            print(str(e))
+            return ["[FATAL] Exception occurred during system discovery. Please see below exception...",str(e)], False
         

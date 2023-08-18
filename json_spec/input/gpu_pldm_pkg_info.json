@@ -52,14 +52,14 @@
       "Components": [
         {
           "ComponentIdentifier":,
-          "Version":,
+          "ComponentVersionString":,
           "FWImage":,
           "FWImageSHA256":,
           "FWImageSize": 182912
         },
         {
           "ComponentIdentifier":,
-          "Version":,
+          "ComponentVersionString":,
           "FWImage":,
           "FWImageSHA256":,
           "FWImageSize": 67105792,
@@ -113,14 +113,14 @@
       "Components": [
         {
           "ComponentIdentifier":,
-          "Version":,
+          "ComponentVersionString":,
           "FWImage":,
           "FWImageSHA256":,
           "FWImageSize": 182912
         },
         {
           "ComponentIdentifier":,
-          "Version":,
+          "ComponentVersionString":,
           "FWImage":,
           "FWImageSHA256":,
           "FWImageSize": 32117760,
@@ -174,7 +174,7 @@
       "Components": [
         {
           "ComponentIdentifier":,
-          "Version":,
+          "ComponentVersionString":,
           "FWImage":,
           "FWImageSHA256":,
           "FWImageSize": 182912,
@@ -191,7 +191,7 @@
         },
         {
           "ComponentIdentifier":,
-          "Version":,
+          "ComponentVersionString":,
           "FWImage":,
           "FWImageSHA256":,
           "FWImageSize": 975872,
@@ -255,7 +255,7 @@
       "Components": [
         {
           "ComponentIdentifier":,
-          "Version":,
+          "ComponentVersionString":,
           "FWImage":,
           "FWImageSHA256":,
           "FWImageSize": 182912,
@@ -272,7 +272,7 @@
         },
         {
           "ComponentIdentifier":,
-          "Version":,
+          "ComponentVersionString":,
           "FWImage":,
           "FWImageSHA256":,
           "FWImageSize": 975872,
@@ -336,7 +336,7 @@
       "Components": [
         {
           "ComponentIdentifier":,
-          "Version":,
+          "ComponentVersionString":,
           "FWImage":,
           "FWImageSHA256":,
           "FWImageSize": 182912,
@@ -353,7 +353,7 @@
         },
         {
           "ComponentIdentifier":,
-          "Version":,
+          "ComponentVersionString":,
           "FWImage":,
           "FWImageSHA256":,
           "FWImageSize": 4461824,
@@ -387,7 +387,7 @@
       "Components": [
         {
           "ComponentIdentifier":,
-          "Version":,
+          "ComponentVersionString":,
           "FWImage":,
           "FWImageSHA256":,
           "FWImageSize": 262144,

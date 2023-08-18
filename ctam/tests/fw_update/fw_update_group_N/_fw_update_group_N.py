@@ -7,10 +7,10 @@ LICENSE file in the root directory of this source tree.
 """
 from typing import Optional, List
 from tests.test_group import TestGroup
-from interfaces.health_check_ifc import HealthCheckIfc
+from interfaces.fw_update_ifc import FWUpdateIfc
 
 
-class BasicHealthCheckTestGroup(TestGroup):
+class FWUpdateTestGroupN(TestGroup):
     """
     Checks basic status of the dut
 
@@ -29,12 +29,12 @@ class BasicHealthCheckTestGroup(TestGroup):
         """
         super().__init__()
 
-    def configure_interfaces(self, hc_ifc: HealthCheckIfc):
+    def configure_interfaces(self, fw_ifc: FWUpdateIfc):
         """
         See description for __init__() above. The framework uses lazy initialization.  This interfaces for this
         function are only instantiated if there are any test cases in this group that will be executed.
         """
-        self.health_check_ifc = hc_ifc
+        self.fw_update_ifc = fw_ifc
 
     def setup(self):
         """

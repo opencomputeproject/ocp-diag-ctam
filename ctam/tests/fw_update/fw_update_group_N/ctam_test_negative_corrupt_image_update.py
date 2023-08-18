@@ -1,19 +1,21 @@
 """
 Copyright (c) Microsoft Corporation
-This source code is licensed under the MIT license found in the 
+This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Telemetry Baseboard GPU Processor Metrics
-:Test ID:		T11
-:Group Name:	telemetry
+:Test Name:		CTAM Test Negative Corrupt Image Update
+:Test ID:		F23
+:Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Basic telemetry test case to discover & print the list of Baseboard GPU Processor Metrics
+:Description:	This test case is a Negative test. It would search for GPU_FW_IMAGE_CORRUPT referenced by package_info.json and attempt
+                firmware update using the corrupted image.
 
-:Usage 1:		python ctam.py -w ..\workspace -t T11
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Baseboard GPU Processor Metrics"
+:Usage 1:		python ctam.py -w ..\workspace -t F23
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Corrupt Image Update"
 
 """
+
 from typing import Optional, List
 from tests.test_case import TestCase
 from ocptv.output import (
@@ -23,18 +25,25 @@ from ocptv.output import (
     TestResult,
     TestStatus,
 )
-from tests.telemetry.basic_telemetry_group.basic_telemetry_group import (
-    BasicTelemetryTestGroup
+from tests.fw_update.fw_update_group_N._fw_update_group_N import (
+    FWUpdateTestGroupN,
 )
-import json
-class CTAMTestTelemetryBaseboardGPUProcessorMetrics(TestCase):
-    
-    test_name: str = "CTAM Test Telemetry Baseboard GPU Processor Metrics"
-    test_id: str = "T11"
+
+
+class CTAMTestNegativeCorruptImageUpdate(TestCase):
+    """
+    Verify values of Software Inventory Collection are present
+
+    :param TestCase: super class for all test cases
+    :type TestCase:
+    """
+
+    test_name: str = "CTAM Test Negative Corrupt Image Update"
+    test_id: str = "F23"
     score_weight: int = 10
     tags: List[str] = []
 
-    def __init__(self, group: BasicTelemetryTestGroup):
+    def __init__(self, group: FWUpdateTestGroupN):
         """
         _summary_
         """
@@ -58,14 +67,19 @@ class CTAMTestTelemetryBaseboardGPUProcessorMetrics(TestCase):
         actual test verification
         """
         result = True
-        step1 = self.test_run().add_step((f"{self.__class__.__name__} run(), step1"))  # type: ignore
+        step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if self.group.telemetry_ifc.ctam_baseboard_gpu_processor_metrics():
-                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Passed")
+            if self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="corrupt"):
+                step1.add_log(
+                    LogSeverity.INFO,
+                    f"{self.test_id} : FW Update Staged Initiation Failed as Expected",
+                )
             else:
-                step1.add_log(LogSeverity.FATAL, f"{self.test_id} : Failed")
+                step1.add_log(
+                    LogSeverity.ERROR,
+                    f"{self.test_id} : FW Update Staging Initiated - Unexpected",
+                )
                 result = False
-
         # ensure setting of self.result and self.score prior to calling super().run()
         self.result = TestResult.PASS if result else TestResult.FAIL
         if self.result == TestResult.PASS:

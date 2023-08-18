@@ -10,8 +10,8 @@ LICENSE file in the root directory of this source tree.
 
 :Description:	Basic telemetry test case to discover & print the list of all MRDs
 
-:Usage 1:		python ctam.py -T T8
-:Usage 2:		python ctam.py -T "CTAM Test Telemetry Chassis Environment Metric"
+:Usage 1:		python ctam.py -w ..\workspace -t T8
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Chassis Environment Metric"
 
 """
 from typing import Optional, List
@@ -29,7 +29,8 @@ from tests.telemetry.basic_telemetry_group.basic_telemetry_group import (
 
 class CTAMTestTelemetryMRDListRead(TestCase):
     
-    test_id: List[str] = ["T8"]
+    test_name: str = "CTAM Test Telemetry Chassis Environment Metrics"
+    test_id: str = "T8"
     score_weight: int = 10
     tags: List[str] = []
 
@@ -61,7 +62,7 @@ class CTAMTestTelemetryMRDListRead(TestCase):
         step1 = self.test_run().add_step((f"{self.__class__.__name__} run(), step1"))  # type: ignore
         with step1.scope():
             if self.group.telemetry_ifc.ctam_get_chassis_environment_metrics() == {}:
-                step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Test Failed")
+                step1.add_log(LogSeverity.FATAL, f"{self.test_id} : Test Failed")
                 result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()

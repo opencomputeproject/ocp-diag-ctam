@@ -17,11 +17,6 @@ This tool provides acceptance testing for Accelerator Management in cloud data c
 5. To list all test cases 
       cd ctam
       python ctam.py -l
-
-To run a test/suite, you will need to create a workspace with the relevant support files. 
-Refer json_spec for the needed input files for format. Feel free to reach out to the contributors for help here. 
- 
-
 6. To run a specific test case 
       cd ctam
       python ctam.py -w ..\example_workspace -t <test case id>

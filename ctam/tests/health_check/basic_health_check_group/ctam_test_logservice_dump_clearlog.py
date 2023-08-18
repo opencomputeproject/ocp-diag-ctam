@@ -3,18 +3,18 @@ Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the 
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Telemetry Baseboard GPU Processor Metrics
-:Test ID:		T11
-:Group Name:	telemetry
+:Test Name:		CTAM Test LogService Dump Clear
+:Test ID:		H96
+:Group Name:	health_check
 :Score Weight:	10
 
-:Description:	Basic telemetry test case to discover & print the list of Baseboard GPU Processor Metrics
-
-:Usage 1:		python ctam.py -w ..\workspace -t T11
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Baseboard GPU Processor Metrics"
+:Description:	Basic test case to clear all entries of all instances of LogService Dumps
+				
+:Usage 1:		python ctam.py -w ..\workspace -t H96
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test LogService Dump Clear"
 
 """
-from typing import Optional, List
+from typing import List
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -23,18 +23,23 @@ from ocptv.output import (
     TestResult,
     TestStatus,
 )
-from tests.telemetry.basic_telemetry_group.basic_telemetry_group import (
-    BasicTelemetryTestGroup
-)
-import json
-class CTAMTestTelemetryBaseboardGPUProcessorMetrics(TestCase):
-    
-    test_name: str = "CTAM Test Telemetry Baseboard GPU Processor Metrics"
-    test_id: str = "T11"
-    score_weight: int = 10
+from tests.health_check.basic_health_check_group.basic_health_check_test_group import BasicHealthCheckTestGroup
+
+class CTAMTestLogserviceDumpClearlog(TestCase):
+
+    """
+        :param gpu_bb acc:		Accelerator Object
+        :param Logger logger:	Logger Object
+
+        :returns:				Test result [Pass/Fail], Test score
+        """
+
+    test_name: str = "CTAM Test LogService Dump Clear"
+    test_id: str = 'H96'
+    score_weight:int = 10
     tags: List[str] = []
 
-    def __init__(self, group: BasicTelemetryTestGroup):
+    def __init__(self, group: BasicHealthCheckTestGroup):
         """
         _summary_
         """
@@ -45,27 +50,27 @@ class CTAMTestTelemetryBaseboardGPUProcessorMetrics(TestCase):
         """
         set environment state for this test only
         """
-        # call super first
         super().setup()
-
-        # add custom setup here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  setup()...")
         with step1.scope():
             pass
-
+        
     def run(self) -> TestResult:
         """
         actual test verification
         """
         result = True
-        step1 = self.test_run().add_step((f"{self.__class__.__name__} run(), step1"))  # type: ignore
-        with step1.scope():
-            if self.group.telemetry_ifc.ctam_baseboard_gpu_processor_metrics():
-                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Passed")
-            else:
-                step1.add_log(LogSeverity.FATAL, f"{self.test_id} : Failed")
-                result = False
 
+        step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  
+        with step1.scope():
+            if result:= self.group.health_check_ifc.ctam_clear_log_dump(): 
+                msg = f"{self.test_id} : Test Failed"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)  
+            else:
+                msg = f"{self.test_id} : Test Failed"
+                self.test_run().add_log(LogSeverity.DEBUG, msg) 
+                result = False
+        
         # ensure setting of self.result and self.score prior to calling super().run()
         self.result = TestResult.PASS if result else TestResult.FAIL
         if self.result == TestResult.PASS:
