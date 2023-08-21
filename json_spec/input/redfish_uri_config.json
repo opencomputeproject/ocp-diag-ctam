@@ -6,6 +6,8 @@
 		"ChassisIDs":"",
 		"BaseboardIDs":"",
 		"SystemGPUs":"",
+		"SensorIDs":"",
+		"AssemblyInfo":"",
 		"GPUResetURI":"",
 		"GracefulRestart":"",
 		"GPUCheckURI":"",
