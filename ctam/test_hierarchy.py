@@ -252,7 +252,9 @@ class TestHierarchy:
         for group_name, group_info in self.test_groups.items():
             for testcase in group_info["test_cases"]:
                 # Check if the param matches the testcase name or the test_id
-                if testcase["testcase_name"] == param or param in testcase[
+                if testcase[
+                    "attributes"
+                ].get("test_name") == param or param == testcase[
                     "attributes"
                 ].get("test_id"):
                     return group_info, testcase
