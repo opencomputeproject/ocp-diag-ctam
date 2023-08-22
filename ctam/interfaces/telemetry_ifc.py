@@ -172,7 +172,6 @@ class TelemetryIfc(FunctionalIfc):
         """
         MyName = __name__ + "." + self.ctam_gpu_thermal_metrics.__qualname__
         gpu_instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisGPUs}", component_type="GPU"))
-        print(gpu_instances)
         result = True
         for gpu_id in gpu_instances:
             uri = "/Chassis/" + gpu_id + "/ThermalSubsystem/ThermalMetrics"
@@ -232,8 +231,8 @@ class TelemetryIfc(FunctionalIfc):
         result = True
         for uri in chassis_instances:
             uri = "/Chassis/" + uri + "/Assembly"
-            gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
-            response = self.dut().redfish_ifc.get(gpu_uri)
+            chassis_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
+            response = self.dut().redfish_ifc.get(chassis_uri)
             JSONData = response.dict
             status = response.status
             if status == 200 or status == 201:
@@ -253,8 +252,8 @@ class TelemetryIfc(FunctionalIfc):
         result = True
         for uri in chassis_instances:
             uri = "/Chassis/" + uri
-            gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
-            response = self.dut().redfish_ifc.get(gpu_uri)
+            chassis_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
+            response = self.dut().redfish_ifc.get(chassis_uri)
             JSONData = response.dict
             status = response.status
             if status == 200 or status == 201:
@@ -274,8 +273,8 @@ class TelemetryIfc(FunctionalIfc):
         result = True
         for uri in chassis_instances:
             uri = "/Chassis/" + uri + "/PowerSubsystem"
-            gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
-            response = self.dut().redfish_ifc.get(gpu_uri)
+            chassis_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
+            response = self.dut().redfish_ifc.get(chassis_uri)
             JSONData = response.dict
             status = response.status
             if status == 200 or status == 201:
@@ -295,8 +294,8 @@ class TelemetryIfc(FunctionalIfc):
         result = True
         for uri in chassis_instances:
             uri = "/Chassis/" + uri + "/Sensors"
-            gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
-            response = self.dut().redfish_ifc.get(gpu_uri)
+            sensor_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
+            response = self.dut().redfish_ifc.get(sensor_uri)
             JSONData = response.dict
             status = response.status
             if status == 200 or status == 201:
@@ -318,8 +317,8 @@ class TelemetryIfc(FunctionalIfc):
         for uri in chassis_instances:
             for ids in sensor_ids:
                 URI = "/Chassis/" + uri + "/Sensors/" + ids
-                gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
-                response = self.dut().redfish_ifc.get(gpu_uri)
+                sensor_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
+                response = self.dut().redfish_ifc.get(sensor_uri)
                 JSONData = response.dict
                 print(JSONData)
                 status = response.status
@@ -341,8 +340,8 @@ class TelemetryIfc(FunctionalIfc):
         result = True
         for uri in chassis_instances:
             uri = "/Chassis/" + uri + "/ThermalSubsystem"
-            gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
-            response = self.dut().redfish_ifc.get(gpu_uri)
+            chassis_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
+            response = self.dut().redfish_ifc.get(chassis_uri)
             JSONData = response.dict
             status = response.status
             if status == 200 or status == 201:
@@ -350,4 +349,73 @@ class TelemetryIfc(FunctionalIfc):
             else:
                 self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(uri, JSONData))
                 result = False
+        return result
+    
+    def ctam_systems_baseboard_ids(self, path=""):
+        """
+        :Description:				Read back the data of /redfish/v1/Systems/{BaseboardId}
+
+        """
+        MyName = __name__ + "." + self.ctam_systems_baseboard_ids.__qualname__
+        systems_instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{BaseboardIDs}", component_type="GPU"))
+        result = True
+        for uri in systems_instances:
+            uri = "/Systems/" + uri + "/" + path
+            baseboard_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
+            response = self.dut().redfish_ifc.get(baseboard_uri)
+            JSONData = response.dict
+            status = response.status
+            if status == 200 or status == 201:
+                self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(uri, JSONData))
+            else:
+                self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(uri, JSONData))
+                result = False
+        return result
+    
+    def ctam_systems_gpu_ids(self, path=""):
+        """
+        :Description:				Read back the data of /redfish/v1/Systems/{BaseboardId}/Processors/{GpuId}
+
+        """
+        MyName = __name__ + "." + self.ctam_systems_gpu_ids.__qualname__
+        systems_instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{BaseboardIDs}", component_type="GPU"))
+        gpu_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemGPUs}", component_type="GPU"))
+        result = True
+        for uri in systems_instances:
+            for id in gpu_id:
+                URI = "/Systems/" + uri + "/Processors/" + id + "/" + path
+                gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
+                response = self.dut().redfish_ifc.get(gpu_uri)
+                JSONData = response.dict
+                status = response.status
+                if status == 200 or status == 201:
+                    self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(URI, JSONData))
+                else:
+                    self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(URI, JSONData))
+                    result = False
+        return result
+    
+    def ctam_system_gpu_port_ids(self, path=""): # Need improvement
+        """
+        :Description:				Read back the data of /redfish/v1/Systems/{BaseboardId}/Processors/{GpuId}/Ports/{PortId}
+
+        """
+        MyName = __name__ + "." + self.ctam_system_gpu_port_ids.__qualname__
+        systems_instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{BaseboardIDs}", component_type="GPU"))
+        gpu_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemGPUs}", component_type="GPU"))
+        port_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemPortsIDs}", component_type="GPU"))
+        result = True
+        for uri in systems_instances:
+            for id in gpu_id:
+                for port in port_id:
+                    URI = "/Systems/" + uri + "/Processors/" + id + "/Ports/" + port + path
+                    gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
+                    response = self.dut().redfish_ifc.get(gpu_uri)
+                    JSONData = response.dict
+                    status = response.status
+                    if status == 200 or status == 201:
+                        self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(URI, JSONData))
+                    else:
+                        self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(URI, JSONData))
+                        result = False
         return result
