@@ -51,7 +51,7 @@ class TelemetryIfc(FunctionalIfc):
 
         :returns:				None
         """
-        response = self.dut().redfish_ifc.get("{}{}".format(self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU"), URI))
+        response = self.dut().run_redfish_command(uri="{}{}".format(self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU"), URI))
         JSONData = response.dict
         if member_hunt in JSONData:
             uri_listing.append(URI)
@@ -83,7 +83,7 @@ class TelemetryIfc(FunctionalIfc):
     
     # def ctam_chassis_instance(self):
     #     URI = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/Chassis", component_type="GPU")
-    #     response = self.dut().redfish_ifc.get(URI)
+    #     response = self.dut().run_redfish_command(URI)
     #     JSONData = response.dict
     #     chassis_instances = [data["@odata.id"] for data in JSONData["Members"]]
     #     return chassis_instances
@@ -100,11 +100,13 @@ class TelemetryIfc(FunctionalIfc):
         for uri in chassis_instances:
             uri = "/Chassis/" + uri + "/EnvironmentMetrics"
             chassis_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
-            response = self.dut().redfish_ifc.get(chassis_uri)
+            response = self.dut().run_redfish_command(uri=chassis_uri)
             JSONData = response.dict
             status = response.status
             if status == 200 or status == 201:
-                self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(uri, JSONData))
+                self.test_run().add_log(LogSeverity.INFO, "Test JSON")
+                self.dut_logger.info()
+                self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(uri, json.dumps(JSONData, indent=4)))
             else:
                 self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(uri, JSONData))
                 result = False
@@ -122,7 +124,7 @@ class TelemetryIfc(FunctionalIfc):
         for uri in chassis_instances:
             uri = "/Chassis/" + uri + "/ThermalSubsystem/ThermalMetrics"
             gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
-            response = self.dut().redfish_ifc.get(gpu_uri)
+            response = self.dut().run_redfish_command(uri=gpu_uri)
             JSONData = response.dict
             status = response.status
             if status == 200 or status == 201:
@@ -134,7 +136,7 @@ class TelemetryIfc(FunctionalIfc):
     
     # def ctam_baseboard_gpu_processor_instance(self): # return /redfish/v1/Systems/{BaseboardId} it will give baseboard id
     #     URI = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/Systems", component_type="GPU")
-    #     response = self.dut().redfish_ifc.get(URI)
+    #     response = self.dut().run_redfish_command(URI)
     #     JSONData = response.dict
     #     chassis_instances = [data["@odata.id"] for data in JSONData["Members"]]
     #     return chassis_instances
@@ -145,7 +147,7 @@ class TelemetryIfc(FunctionalIfc):
     #     for uri in chassis_instances:
     #         uri = uri + "/Processors"
     #         URI = self.dut().uri_builder.format_uri(redfish_str='{BaseURI}'+ uri, component_type="GPU") #/redfish/v1/Systems/{Baseboardid}/Processors
-    #         response = self.dut().redfish_ifc.get(URI)
+    #         response = self.dut().run_redfish_command(URI)
     #         response_list.append(response.dict)
     #     return response_list
 
@@ -176,7 +178,7 @@ class TelemetryIfc(FunctionalIfc):
         for gpu_id in gpu_instances:
             uri = "/Chassis/" + gpu_id + "/ThermalSubsystem/ThermalMetrics"
             gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
-            response = self.dut().redfish_ifc.get(gpu_uri)
+            response = self.dut().run_redfish_command(uri=gpu_uri)
             JSONData = response.dict
             status = response.status
             if status == 200 or status == 201:
@@ -200,7 +202,7 @@ class TelemetryIfc(FunctionalIfc):
             for gpu_id in system_gpu_id:
                 uri = "/Systems/" + id + "/Processors/" + gpu_id + "/ProcessorMetrics"
                 gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
-                response = self.dut().redfish_ifc.get(gpu_uri)
+                response = self.dut().run_redfish_command(uri=gpu_uri)
                 JSONData = response.dict
                 status = response.status
                 if status == 200 or status == 201:
@@ -214,7 +216,7 @@ class TelemetryIfc(FunctionalIfc):
         mr_uri_list = self.ctam_get_all_metric_reports_uri()
         mr_json = {}
         for URI in mr_uri_list:
-            response = self.dut().redfish_ifc.get("{}{}".format(self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU"), URI))
+            response = self.dut().run_redfish_command(uri="{}{}".format(self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU"), URI))
             JSONData = response.dict
             for metric_property in JSONData["MetricValues"]:
                 mr_json[metric_property["MetricProperty"]] = metric_property["MetricValue"]

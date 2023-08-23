@@ -45,6 +45,7 @@ class TestRunner:
         redfish_uri_config_file,
         net_rc,
         single_test_override=None,
+        sequence_test_override=None,
         single_group_override=None,
     ):
         """
@@ -52,10 +53,20 @@ class TestRunner:
 
         :param test_hierarchy: discovered list of test groups and associated test cases
         :type test_hierarchy: TestHierarchy
+        :param dut_info_json_file: dut info details json file path
+        :type dut_info_json_file: str
+        :param package_info_json_file: Package info json file path
+        :type package_info_json_file: str
         :param test_runner_json_file: test runner configuration
         :type test_runner_json_file: str
+        :param redfish_uri_config_file: redfish uri config json file path
+        :type redfish_uri_config_file: str
+        :param net_rc: system credentials config file path
+        :type net_rc: str
         :param single_test_override: single test to run, defaults to None
         :type single_test_override: str, optional
+        :param sequence_test_override: sequence of tests to run, defaults to None
+        :type sequence_test_override: list, optional
         :param single_group_override: single group to run, defaults to None
         :type single_group_override: str, optional
         :raises Exception: no tests to run
@@ -64,6 +75,7 @@ class TestRunner:
         self.comp_tool_dut = None
         self.test_hierarchy = test_hierarchy
         self.test_cases = []
+        self.test_sequence = []
         self.test_groups = []
 
         with open(dut_info_json_file) as dut_info_json:
@@ -107,8 +119,12 @@ class TestRunner:
             self.test_cases.append(single_test_override)
         elif single_group_override != None:
             self.test_groups.append(single_group_override)
+        elif sequence_test_override != None:
+            self.test_sequence = sequence_test_override
         elif runner_config["test_cases"]:
             self.test_cases = runner_config["test_cases"]
+        elif runner_config["test_sequence"]:
+            self.test_sequence = runner_config["test_sequence"]
         elif runner_config["active_test_suite"]:
             test_suite_to_select = runner_config.get("active_test_suite")
             # Remove the active_test_suite key before selecting the test suite
@@ -179,6 +195,21 @@ class TestRunner:
         """
         #system is up or not
         # If up then establish the connection and the discovery 
+        self.cwd = os.path.dirname(os.path.dirname(__file__))
+        self.dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+        if self.output_dir:
+            self.output_dir = os.path.join(
+                self.cwd, "workspace", self.output_dir, "TestRuns", testrun_name+"_{}".format(self.dt)
+            )
+        else:
+            self.output_dir = os.path.join(
+                self.cwd, "workspace", "TestRuns", testrun_name+"_{}".format(self.dt)
+            )
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+        dut_logger = LoggingWriter(
+            self.output_dir, self.console_log, "CommandDetails_"+testrun_name, "log", self.debug_mode
+        )
         self.comp_tool_dut = CompToolDut(
             id="actDut",
             config=self.dut_config,
@@ -186,24 +217,15 @@ class TestRunner:
             redfish_uri_config=self.redfish_uri_config,
             net_rc=self.net_rc,
             debugMode=self.debug_mode,
+            logger=dut_logger,
 
         )
         self.system_details, status_code = self.comp_tool_dut.GetSystemDetails()
         # writer has to be configured prior to TestRun init
-        if self.output_dir:
-            self.output_dir = os.path.join(
-                self.comp_tool_dut.cwd, self.output_dir, "TestRuns"
-            )
-        else:
-            self.output_dir = os.path.join(
-                self.comp_tool_dut.cwd, "workspace", "TestRuns"
-            )
 
-        if not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir)
 
         self.writer = LoggingWriter(
-            self.output_dir, self.console_log, testrun_name, self.debug_mode
+            self.output_dir, self.console_log, testrun_name, "json", self.debug_mode
         )
         tv.config(writer=self.writer)
 
@@ -258,6 +280,30 @@ class TestRunner:
                     continue
 
                 self._run_group_test_cases(group_instance, test_case_instances)
+        elif self.test_sequence:
+            for test in self.test_sequence:
+                (
+                    group_instance,
+                    test_case_instances,
+                ) = self.test_hierarchy.instantiate_obj_for_testcase(test)
+
+                group_inc_tags = group_instance.tags
+                # group_exc_tags = group_instance.exclude_tags
+                valid = self._is_enabled(
+                    self.include_tags_set,
+                    group_inc_tags,
+                    self.exclude_tags_set,
+                    # group_exc_tags,
+                )
+                print("Valid :{}".format(valid))
+                print("Test Sequence Name :{}: {}".format(test, test_case_instances))
+                if not valid:
+                    print(
+                        f"Group1 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
+                    )
+                    continue
+
+                self._run_group_test_cases(group_instance, test_case_instances)
 
         elif self.test_groups:
             for group in self.test_groups:
@@ -298,7 +344,8 @@ class TestRunner:
         group_result = TestResult.PASS
 
         try:
-            self._start(group_instance.__class__.__name__)
+            if not self.comp_tool_dut:
+                self._start(group_instance.__class__.__name__)
 
             group_instance.setup()
 
@@ -373,7 +420,7 @@ class LoggingWriter(Writer):
     :type Writer:
     """
 
-    def __init__(self, output_dir, console_log, testrun_name, debug):
+    def __init__(self, output_dir, console_log, testrun_name,extension_name,  debug):
         """
         Initialize file logging parameters
 
@@ -387,7 +434,7 @@ class LoggingWriter(Writer):
         :type debug: bool
         """
         # Create a logger
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(testrun_name)
         self.debug = debug
 
         # Set the level for this logger. This means that unless specified otherwise, all messages
@@ -400,7 +447,7 @@ class LoggingWriter(Writer):
 
         # Create a file handler that logs messages to a file
         dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        file_name_tmp = "/{}_{}.json".format(testrun_name, dt)
+        file_name_tmp = "/{}_{}.{}".format(testrun_name, dt, extension_name)
         self.file_handler = logging.FileHandler(output_dir + file_name_tmp)
         self.file_handler.setLevel(logging.INFO)
         self.file_handler.setFormatter(JsonFormatter())

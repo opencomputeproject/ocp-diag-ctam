@@ -156,11 +156,11 @@ class FWUpdateIfc(FunctionalIfc):
                 v1_str = self.dut().uri_builder.format_uri(
                     redfish_str="{GPUMC}" + "{}".format(TaskID), component_type="GPU"
                 )
-                response = self.dut().redfish_ifc.get(path=v1_str)
+                response = self.dut().run_redfish_command(uri=v1_str)
                 JSONData = response.dict
 
                 while JSONData["TaskState"] == "Running":
-                    response = self.dut().redfish_ifc.get(path=v1_str)
+                    response = self.dut().run_redfish_command(uri=v1_str)
                     JSONData = response.dict
                     if self.dut().is_debug_mode():
                         print(
@@ -301,7 +301,7 @@ class FWUpdateIfc(FunctionalIfc):
             redfish_str="{BaseURI}/UpdateService", component_type="GPU"
         )
 
-        response = self.dut().redfish_ifc.patch(path=v1_str, body=Payload)
+        response = self.dut().run_redfish_command(uri=v1_str, mode="PATCH", body=Payload)
 
         JSONData = response.dict
 
@@ -347,7 +347,7 @@ class FWUpdateIfc(FunctionalIfc):
                 open(FileName, "rb"),
                 "application/octet-stream",
             )
-        response = self.dut().redfish_ifc.post(path=URL, body=body, headers=headers)
+        response = self.dut().run_redfish_command(uri=URL, mode="POST", body=body, headers=headers)
         JSONData = response.dict
         msg = "{0}: RedFish Input: {1} Result: {2}".format(MyName, FileName, JSONData)
         # msg_2 = "FW Update URL = {}".format(URL)

@@ -63,7 +63,7 @@ class HealthCheckIfc(FunctionalIfc):
         v1_str = self.dut().uri_builder.format_uri(
             redfish_str="{BaseURI}", component_type="GPU"
         )
-        response = self.dut().redfish_ifc.get(v1_str)
+        response = self.dut().run_redfish_command(uri=v1_str)
         msg = f"Response is {response.dict}"
         self.test_run().add_log(severity=LogSeverity.DEBUG, message=msg)
         # self.test_run().add_log(response.status)
@@ -81,7 +81,7 @@ class HealthCheckIfc(FunctionalIfc):
 
         :returns:				None
         """
-        response = self.dut().redfish_ifc.get("{}{}".format(self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU"), URI))
+        response = self.dut().run_redfish_command("{}{}".format(self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU"), URI))
         JSONData = response.dict
         if uri_hunt in JSONData:
             uri_listing.append(URI + "/" + uri_hunt)
@@ -106,7 +106,7 @@ class HealthCheckIfc(FunctionalIfc):
                             self.ctam_redfish_uri_deep_hunt(URI, uri_hunt, uri_listing, uri_analyzed)
 
     def ctam_redfish_uri_hunt(self, URI, uri_hunt="", uri_listing=[]):
-        response = self.dut().redfish_ifc.get("{}{}".format(self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU"), URI))
+        response = self.dut().run_redfish_command(uri="{}{}".format(self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU"), URI))
         JSONData = response.dict
         if uri_hunt in JSONData:
             uri_listing.append(URI + "/" + uri_hunt)
@@ -154,7 +154,7 @@ class HealthCheckIfc(FunctionalIfc):
             clear_dump_uri = dumplog_uri + "/Actions/LogService.ClearLog" + " -d 0"
             print(clear_dump_uri)
             uri = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU")
-            self.dut().redfish_ifc.get(uri)
+            self.dut().run_redfish_command(uri=uri)
             # Need to check again
             # self.dut_obj.RedFishCommand(
             #     "{}{}".format(self.dut_obj.gpu_redfish_data["GPUMC"], clear_dump_uri)

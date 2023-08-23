@@ -39,6 +39,7 @@ class CompToolDut(Dut):
         redfish_uri_config,
         net_rc,
         debugMode: bool,
+        logger,
         name: ty.Optional[str] = None,
         metadata: ty.Optional[Metadata] = None,
     ):
@@ -60,6 +61,7 @@ class CompToolDut(Dut):
         self.redfish_uri_config = redfish_uri_config
         self.uri_builder = UriBuilder(redfish_uri_config)
         self.net_rc = net_rc
+        self.logger = logger
         self.cwd = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         super().__init__(id, name, metadata)
         self.connection_ip_address = config["properties"]["ConnectionIPAddress"][
@@ -99,6 +101,40 @@ class CompToolDut(Dut):
         )
 
         # self.redfish_ifc.login(auth="basic")   #TODO investigate 'session' token auth
+
+    def run_redfish_command(self, uri, mode="GET", body=None, headers=None):
+        """
+        This method is for running redfish commands according to mode and log the ouput into
+        a formatted log file and return the response
+        
+        :param uri: uri for redfish connection
+        :type uri: str
+        :param mode: Mode for fetching data or updating
+        :type mode: str
+        :param body: body for requests
+        :type body: ty.Optional[dict], optional
+        :param header: header for requests, defaults to None
+        :type metadata: ty.Optional[dict], optional
+
+        :return: response for requests
+        :rtype: response object
+        """
+        try:
+            response = None
+            if mode == "POST":
+                response = self.redfish_ifc.post(path=uri, body=body, headers=headers)
+            elif mode == "PATCH":
+                response = self.redfish_ifc.patch(path=uri, body=body, headers=headers)
+            elif mode == "GET":
+                response = self.redfish_ifc.get(path=uri, headers=headers)
+                import json
+            msg = {"URI": uri,
+                   "Response":response.dict}
+            self.logger.write(json.dumps(msg))
+            return response
+        except Exception as e:
+            print("FATAL: Exception occurred while running redfish command. Please see below exception...")
+            print(str(e))
 
     def is_debug_mode(self) -> bool:
         """
@@ -187,8 +223,8 @@ class CompToolDut(Dut):
                                                                 component_type="BMC")
             bmc_fw_inv_uri = self.uri_builder.format_uri(redfish_str="{BaseURI}{BMCFWInventory}/",
                                                                 component_type="BMC")
-            system_details = self.redfish_ifc.get(system_detail_uri).dict
-            bmc_fw_inv = self.redfish_ifc.get(bmc_fw_inv_uri).dict
+            system_details = self.run_redfish_command(system_detail_uri).dict
+            bmc_fw_inv = self.run_redfish_command(bmc_fw_inv_uri).dict
             if system_details and ("error" not in system_details):
                 t.add_row(["Model", system_details["Model"]])
                 t.add_row(["Manufacturer", system_details["Manufacturer"]])

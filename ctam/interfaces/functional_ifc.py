@@ -201,7 +201,7 @@ class FunctionalIfc:
                 redfish_str="{BaseURI}/UpdateService/FirmwareInventory?$expand=*($levels=1)",
                 component_type="GPU",
             )
-            response = self.dut().redfish_ifc.get(ctam_fi_uri)
+            response = self.dut().run_redfish_command(uri=ctam_fi_uri)
             data = response.dict
 
         else:
@@ -209,7 +209,7 @@ class FunctionalIfc:
                 redfish_str="{BaseURI}/UpdateService/FirmwareInventory",
                 component_type="GPU",
             )
-            response = self.dut().redfish_ifc.get(ctam_fi_uri)
+            response = self.dut().run_redfish_command(uri=ctam_fi_uri)
             data = response.dict
         msg = f"Command is : {ctam_fi_uri} \nThe Response is : {data}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
@@ -231,7 +231,7 @@ class FunctionalIfc:
                 redfish_str="{BaseURI}/UpdateService/SoftwareInventory?$expand=*($levels=1)",
                 component_type="GPU",
             )
-            response = self.dut().redfish_ifc.get(ctam_getsi_uri)
+            response = self.dut().run_redfish_command(uri=ctam_getsi_uri)
             data = response.dict
 
         else:
@@ -239,7 +239,7 @@ class FunctionalIfc:
                 redfish_str="{BaseURI}/UpdateService/SoftwareInventory",
                 component_type="GPU",
             )
-            response = self.dut().redfish_ifc.get(ctam_getsi_uri)
+            response = self.dut().run_redfish_command(uri=ctam_getsi_uri)
             data = response.dict
         msg = f"Command is : {ctam_getsi_uri} \nThe Response is : {data}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
@@ -256,7 +256,7 @@ class FunctionalIfc:
         ctam_getts_uri = self.dut().uri_builder.format_uri(
             redfish_str="{BaseURI}/TelemetryService", component_type="GPU"
         )
-        response = self.dut().redfish_ifc.get(ctam_getts_uri)
+        response = self.dut().run_redfish_command(uri=ctam_getts_uri)
         data = response.dict
         msg = (
             f"Command is : {ctam_getts_uri} \nThe Response for this command is : {data}"
@@ -276,7 +276,7 @@ class FunctionalIfc:
             redfish_str="{BaseURI}/UpdateService", component_type="GPU"
         )
 
-        response = self.dut().redfish_ifc.get(path=ctam_getus_uri)
+        response = self.dut().run_redfish_command(uri=ctam_getus_uri)
         data = response.dict
         msg = f"The Redfish Command URI is : {ctam_getus_uri} \nThe Response for this command is : {data}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
@@ -315,7 +315,7 @@ class FunctionalIfc:
             redfish_str="{BaseURI}{GPUCheckURI}", component_type="GPU"
         )
 
-        response = self.dut().redfish_ifc.get(ctam_getus_uri)
+        response = self.dut().run_redfish_command(uri=ctam_getus_uri)
         JSONData = response.dict
         msg = "GPU Reachable info : {}".format(JSONData)
         self.test_run().add_log(LogSeverity.INFO, msg)

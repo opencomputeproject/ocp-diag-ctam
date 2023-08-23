@@ -24,6 +24,12 @@ def parse_args():
         help="Runs a single test case. Overrides test_runner.json in the workspace",
         type=str,
     )
+    parser.add_argument(
+        "-seq",
+        "--testcase_sequence",
+        help="Runs no of tet cases with given sequence",
+        nargs='+',
+    )
 
     parser.add_argument("-s", "--Suite", help="Run full ACT Suite", action="store_true")
 
@@ -117,6 +123,17 @@ if __name__ == "__main__":
                 net_rc=net_rc,
                 single_test_override=args.testcase,
             )
+        elif args.testcase_sequence:
+            runner = TestRunner(
+                test_hierarchy=test_hierarchy,
+                test_runner_json_file=test_runner_json,
+                dut_info_json_file=dut_info_json,
+                package_info_json_file=package_info_json,
+                redfish_uri_config_file=redfish_uri_config,
+                net_rc=net_rc,
+                sequence_test_override=args.testcase_sequence,
+            )
+            print(args.testcase_sequence)
         elif args.group:
             runner = TestRunner(
                 test_hierarchy=test_hierarchy,
