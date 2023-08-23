@@ -1,0 +1,19 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "Need to add one",
+    "title": "Test Runner Configuration",
+    "description": "Configure the TestRunner obj, list of test cases overrides a test suite",
+    "output_override_directory": "",
+    "debug_mode": true,
+    "console_log": true,
+    "include_tags": [],
+    "exclude_tags": [],
+    "test_cases": [],
+    "test_sequence" : [],
+    "command_output_log_path": "",
+    "active_test_suite": "",
+    "dev_test_suite": [
+    ],
+    "full_compliance_test_suite": [
+    ]
+}

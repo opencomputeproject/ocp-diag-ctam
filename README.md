@@ -30,6 +30,7 @@ This tool provides acceptance testing for Accelerator Management in cloud data c
       python ctam.py -w ..\example_workspace -seq "<test case name or id>" <test case name or id>
       Logs will be created under example_workspace\TestRuns
 8. Choose test cases to run by using tags and specifying the tags to include/exclude in test_runner.json 
+9. Choose test sequence in test_runner.json if you want to run it from test runner config.
 
 
 
