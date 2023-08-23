@@ -95,7 +95,7 @@ if __name__ == "__main__":
             for file_name in missing_files:
                 print(f"The required file {file_name} does not exist in the workspace.")
             exit(1)
-        print(f"Worlspace : {args.workspace}")
+        print(f"WorkSpace : {args.workspace}")
         test_runner_json = os.path.join(args.workspace, "test_runner.json")
         dut_info_json = os.path.join(args.workspace, "dut_info.json")
         package_info_json = os.path.join(args.workspace, "package_info.json")
@@ -133,7 +133,6 @@ if __name__ == "__main__":
                 net_rc=net_rc,
                 sequence_test_override=args.testcase_sequence,
             )
-            print(args.testcase_sequence)
         elif args.group:
             runner = TestRunner(
                 test_hierarchy=test_hierarchy,

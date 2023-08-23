@@ -272,7 +272,6 @@ class TestRunner:
                     self.exclude_tags_set,
                     # group_exc_tags,
                 )
-                print("Valid :{}".format(valid))
                 if not valid:
                     print(
                         f"Group1 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
@@ -295,8 +294,6 @@ class TestRunner:
                     self.exclude_tags_set,
                     # group_exc_tags,
                 )
-                print("Valid :{}".format(valid))
-                print("Test Sequence Name :{}: {}".format(test, test_case_instances))
                 if not valid:
                     print(
                         f"Group1 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
@@ -359,7 +356,6 @@ class TestRunner:
                     self.exclude_tags_set,
                     # test_exc_tags,
                 )
-                print("Valid: {}".format(valid))
                 if not valid:
                     msg = f"Test {test_instance.__class__.__name__} skipped due to tags. tags = {test_inc_tags}"
                     self.active_run.add_log(severity=LogSeverity.INFO, message=msg)

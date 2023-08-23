@@ -61,7 +61,6 @@ class TelemetryIfc(FunctionalIfc):
             for element in JSONData["Members"]:
                 if "@odata.id" in element:
                     URI = JSONData["Members"][i]["@odata.id"]
-                    print(URI)
                     self.ctam_redfish_hunt(URI, member_hunt, uri_listing)
                     i = i + 1
 
@@ -77,7 +76,6 @@ class TelemetryIfc(FunctionalIfc):
         if "MetricReports" in JSONData:
             MetricReports = []
             URI = JSONData["MetricReports"]["@odata.id"]
-            print(URI)
             self.ctam_redfish_hunt(URI, "MetricValues", MetricReports)
         return MetricReports
     
@@ -322,9 +320,7 @@ class TelemetryIfc(FunctionalIfc):
                 sensor_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
                 response = self.dut().redfish_ifc.get(sensor_uri)
                 JSONData = response.dict
-                print(JSONData)
                 status = response.status
-                print(status)
                 if status == 200 or status == 201:
                     self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(URI, JSONData))
                 else:
