@@ -226,13 +226,9 @@ class TestRunner:
             logger=dut_logger,
 
         )
-<<<<<<< HEAD
-        #self.system_details, status_code = self.comp_tool_dut.GetSystemDetails()
-=======
         self.comp_tool_dut.current_test_name = "Initialization"
         # FIXME: This needs to be fixed
         # self.system_details, status_code = self.comp_tool_dut.GetSystemDetails()
->>>>>>> 777ff7d81127430b20676412bb1907c6259ffc72
         # writer has to be configured prior to TestRun init
 
 
@@ -242,18 +238,11 @@ class TestRunner:
         tv.config(writer=self.writer)
 
         self.active_run = tv.TestRun(name="CTAM Test Runner", version="1.0")
-<<<<<<< HEAD
-        # if status_code:
-            # self.active_run.add_log(LogSeverity.INFO, "{}".format(self.system_details))
-        # else:
-            # self.active_run.add_log(LogSeverity.FATAL, "{}".format(self.system_details))
-=======
         # FIXME: This needs to be fixed after system details 
         # if status_code:
         #     self.active_run.add_log(LogSeverity.INFO, "{}".format(self.system_details))
         # else:
         #     self.active_run.add_log(LogSeverity.FATAL, "{}".format(self.system_details))
->>>>>>> 777ff7d81127430b20676412bb1907c6259ffc72
         TestCase.SetUpAssociations(self.active_run, self.comp_tool_dut)
         TestGroup.SetUpAssociations(self.active_run, self.comp_tool_dut)
         FunctionalIfc.SetUpAssociations(self.active_run, self.comp_tool_dut)
