@@ -205,10 +205,13 @@ class TestRunner:
             self.output_dir = os.path.join(
                 self.cwd, "workspace", "TestRuns", testrun_name+"_{}".format(self.dt)
             )
+        self.cmd_output_dir = os.path.join(self.output_dir, "RedfishCommandDetails")
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
+        if not os.path.exists(self.cmd_output_dir):
+            os.makedirs(self.cmd_output_dir)
         dut_logger = LoggingWriter(
-            self.output_dir, self.console_log, "CommandDetails_"+testrun_name, "log", self.debug_mode
+            self.cmd_output_dir, self.console_log, "RedfishCommandDetails_"+testrun_name, "log", self.debug_mode
         )
         self.comp_tool_dut = CompToolDut(
             id="actDut",
@@ -220,20 +223,34 @@ class TestRunner:
             logger=dut_logger,
 
         )
+<<<<<<< HEAD
         #self.system_details, status_code = self.comp_tool_dut.GetSystemDetails()
+=======
+        self.comp_tool_dut.current_test_name = "Initialization"
+        # FIXME: This needs to be fixed
+        # self.system_details, status_code = self.comp_tool_dut.GetSystemDetails()
+>>>>>>> 777ff7d81127430b20676412bb1907c6259ffc72
         # writer has to be configured prior to TestRun init
 
 
         self.writer = LoggingWriter(
-            self.output_dir, self.console_log, testrun_name, "json", self.debug_mode
+            self.output_dir, self.console_log, "OCPTV_"+testrun_name, "json", self.debug_mode
         )
         tv.config(writer=self.writer)
 
         self.active_run = tv.TestRun(name="CTAM Test Runner", version="1.0")
+<<<<<<< HEAD
         # if status_code:
             # self.active_run.add_log(LogSeverity.INFO, "{}".format(self.system_details))
         # else:
             # self.active_run.add_log(LogSeverity.FATAL, "{}".format(self.system_details))
+=======
+        # FIXME: This needs to be fixed after system details 
+        # if status_code:
+        #     self.active_run.add_log(LogSeverity.INFO, "{}".format(self.system_details))
+        # else:
+        #     self.active_run.add_log(LogSeverity.FATAL, "{}".format(self.system_details))
+>>>>>>> 777ff7d81127430b20676412bb1907c6259ffc72
         TestCase.SetUpAssociations(self.active_run, self.comp_tool_dut)
         TestGroup.SetUpAssociations(self.active_run, self.comp_tool_dut)
         FunctionalIfc.SetUpAssociations(self.active_run, self.comp_tool_dut)
@@ -272,7 +289,6 @@ class TestRunner:
                     self.exclude_tags_set,
                     # group_exc_tags,
                 )
-                print("Valid :{}".format(valid))
                 if not valid:
                     print(
                         f"Group1 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
@@ -295,8 +311,6 @@ class TestRunner:
                     self.exclude_tags_set,
                     # group_exc_tags,
                 )
-                print("Valid :{}".format(valid))
-                print("Test Sequence Name :{}: {}".format(test, test_case_instances))
                 if not valid:
                     print(
                         f"Group1 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
@@ -359,7 +373,6 @@ class TestRunner:
                     self.exclude_tags_set,
                     # test_exc_tags,
                 )
-                print("Valid: {}".format(valid))
                 if not valid:
                     msg = f"Test {test_instance.__class__.__name__} skipped due to tags. tags = {test_inc_tags}"
                     self.active_run.add_log(severity=LogSeverity.INFO, message=msg)
@@ -368,6 +381,11 @@ class TestRunner:
                 # this exception block goal is to ensure test case teardown() is called even if setup() or run() fails
                 try:
                     test_instance.setup()
+                    self.comp_tool_dut.current_test_name = test_instance.test_name
+                    logger = LoggingWriter(
+                        self.cmd_output_dir, self.console_log, "RedfishCommandDetails_"+test_instance.test_name, "log", self.debug_mode
+                    )
+                    self.comp_tool_dut.logger = logger
                     test_result = test_instance.run()
                     if (
                         test_result == TestResult.FAIL

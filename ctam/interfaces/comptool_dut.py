@@ -60,6 +60,7 @@ class CompToolDut(Dut):
         self.dut_config = config["properties"]
         self.redfish_uri_config = redfish_uri_config
         self.uri_builder = UriBuilder(redfish_uri_config)
+        self.current_test_name = ""
         self.net_rc = net_rc
         self.logger = logger
         self.cwd = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -128,9 +129,16 @@ class CompToolDut(Dut):
             elif mode == "GET":
                 response = self.redfish_ifc.get(path=uri, headers=headers)
                 import json
-            msg = {"URI": uri,
-                   "Response":response.dict}
-            self.logger.write(json.dumps(msg))
+            if response:
+                msg = {
+                    "TestName": self.current_test_name,
+                    "URI": uri,
+                    "ResponseCode": response.status,
+                    "Response":response.dict
+                    }
+                self.logger.write(json.dumps(msg))
+            else:
+                print("Response is None please check the request you are trying to invoke ")
             return response
         except Exception as e:
             print("FATAL: Exception occurred while running redfish command. Please see below exception...")
