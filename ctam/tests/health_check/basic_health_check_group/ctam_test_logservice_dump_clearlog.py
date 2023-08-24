@@ -64,7 +64,7 @@ class CTAMTestLogserviceDumpClearlog(TestCase):
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  
         with step1.scope():
             if result:= self.group.health_check_ifc.ctam_clear_log_dump(): 
-                msg = f"{self.test_id} : Test Failed"
+                msg = f"{self.test_id} : Test Passed"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)  
             else:
                 msg = f"{self.test_id} : Test Failed"

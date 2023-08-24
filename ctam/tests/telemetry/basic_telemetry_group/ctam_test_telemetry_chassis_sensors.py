@@ -8,7 +8,7 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	telemetry
 :Score Weight:	10
 
-:Description:	Basic telemetry test case to discover & print all URI under Classis Sensors.
+:Description:	Basic telemetry test case to discover & print all URI under Chassis Sensors.
 
 :Usage 1:		python ctam.py -w ..\workspace -t T14
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Chassis Sensors Metrics"

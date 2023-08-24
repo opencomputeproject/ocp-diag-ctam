@@ -8,7 +8,7 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	telemetry
 :Score Weight:	10
 
-:Description:	Basic telemetry test case to discover & print the list of all MRDs
+:Description:	Basic telemetry test case to discover & print the list of Chassis Environment Metrics.
 
 :Usage 1:		python ctam.py -w ..\workspace -t T8
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Chassis Environment Metric"

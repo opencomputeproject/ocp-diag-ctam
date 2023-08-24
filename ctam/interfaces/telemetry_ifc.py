@@ -192,7 +192,7 @@ class TelemetryIfc(FunctionalIfc):
         :returns:				    Array of all URIs under ProcessorMetrics
         """
         MyName = __name__ + "." + self.ctam_baseboard_gpu_processor_metrics.__qualname__
-        system_gpu_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemGPUs}", component_type="GPU"))
+        system_gpu_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemGPUIDs}", component_type="GPU"))
         baseboard_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{BaseboardIDs}", component_type="GPU"))
         result = True
         for id in baseboard_id:
@@ -376,7 +376,7 @@ class TelemetryIfc(FunctionalIfc):
         """
         MyName = __name__ + "." + self.ctam_systems_gpu_ids.__qualname__
         systems_instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{BaseboardIDs}", component_type="GPU"))
-        gpu_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemGPUs}", component_type="GPU"))
+        gpu_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemGPUIDs}", component_type="GPU"))
         result = True
         for uri in systems_instances:
             for id in gpu_id:
@@ -399,8 +399,8 @@ class TelemetryIfc(FunctionalIfc):
         """
         MyName = __name__ + "." + self.ctam_system_gpu_port_ids.__qualname__
         systems_instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{BaseboardIDs}", component_type="GPU"))
-        gpu_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemGPUs}", component_type="GPU"))
-        port_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemPortsIDs}", component_type="GPU"))
+        gpu_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemGPUIDs}", component_type="GPU"))
+        port_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemGPUPortIDs}", component_type="GPU"))
         result = True
         for uri in systems_instances:
             for id in gpu_id:
@@ -424,7 +424,7 @@ class TelemetryIfc(FunctionalIfc):
         """
         MyName = __name__ + "." + self.ctam_system_gpu_dram_ids.__qualname__
         systems_instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{BaseboardIDs}", component_type="GPU"))
-        gpu_dram_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{GPUDRam}", component_type="GPU"))
+        gpu_dram_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{GPUDramIDs}", component_type="GPU"))
         
         result = True
         for uri in systems_instances:
@@ -448,7 +448,7 @@ class TelemetryIfc(FunctionalIfc):
         """
         MyName = __name__ + "." + self.ctam_system_fpga_ids.__qualname__
         systems_instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{BaseboardIDs}", component_type="GPU"))
-        gpu_dram_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{FpgaIDs}", component_type="GPU"))
+        gpu_dram_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemFpgaIDs}", component_type="GPU"))
         
         result = True
         for uri in systems_instances:
@@ -472,8 +472,8 @@ class TelemetryIfc(FunctionalIfc):
         """
         MyName = __name__ + "." + self.ctam_system_fpga_ports.__qualname__
         systems_instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{BaseboardIDs}", component_type="GPU"))
-        gpu_dram_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{FpgaIDs}", component_type="GPU"))
-        fpga_ports = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{FpgaPorts}", component_type="GPU"))
+        gpu_dram_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemFpgaIDs}", component_type="GPU"))
+        fpga_ports = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemFpgaPortIDs}", component_type="GPU"))
         result = True
         for uri in systems_instances:
             for id in gpu_dram_id:
@@ -496,7 +496,7 @@ class TelemetryIfc(FunctionalIfc):
 
         """
         MyName = __name__ + "." + self.ctam_managers_read.__qualname__
-        mgr_instance = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ManagersInstance}", component_type="GPU"))
+        mgr_instance = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ManagerIDs}", component_type="GPU"))
         result = True
         for uri in mgr_instance:
             URI = "/Managers/" + uri
@@ -519,14 +519,15 @@ class TelemetryIfc(FunctionalIfc):
 
         """
         MyName = __name__ + "." + self.ctam_managers_ethernet_interfaces_usb0.__qualname__
-        mgr_instance = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ManagersInstance}", component_type="GPU"))
+        mgr_instance = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ManagerIDs}", component_type="GPU"))
         result = True
         for uri in mgr_instance:
             URI = "/Managers/" + uri + "/EthernetInterfaces/usb0"
             gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
-            payload = {"IPv4StaticAddresses": [{"Address": "192.168.31.1", "AddressOrigin": "Static", "Gateway":"192.168.31.2", "SubnetMask": "255.255.0.0"}]}
-            head = {"Content-Type: application/json"}
-            response = self.dut().run_redfish_command(gpu_uri, body=payload, headers=head)
+            # payload = {"IPv4StaticAddresses": [{"Address": "192.168.31.1", "AddressOrigin": "Static", "Gateway":"192.168.31.2", "SubnetMask": "255.255.0.0"}]}
+            # head = {"Content-Type: application/json"}
+            # response = self.dut().run_redfish_command(gpu_uri, body=payload, headers=head)
+            response = self.dut().run_redfish_command(gpu_uri)
             JSONData = response.dict
             status = response.status
             if status == 200 or status == 201:
@@ -536,16 +537,38 @@ class TelemetryIfc(FunctionalIfc):
                 result = False
         return result
     
-    def ctam_managers_ethernet_interfaces_gateway(self):
+    def ctam_managers_ethernet_interfaces_gateway(self): # need improvement
         """
-        :Description:				Read back the data of redfish/v1/Managers/{mgr_instance}/EthernetInterfaces/usb0.Gateway property
+        :Description:				Read back the data of redfish/v1/Managers/{mgr_instance}/EthernetInterfaces/usb0/Gateway property
 
         """
         MyName = __name__ + "." + self.ctam_managers_ethernet_interfaces_gateway.__qualname__
-        mgr_instance = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ManagersInstance}", component_type="GPU"))
+        mgr_instance = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ManagerIDs}", component_type="GPU"))
         result = True
         for uri in mgr_instance:
-            URI = "/Managers/" + uri + "/EthernetInterfaces/usb0.Gatewayproperty"
+            URI = "/Managers/" + uri + "/EthernetInterfaces/usb0"
+            gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
+            response = self.dut().run_redfish_command(gpu_uri)
+            JSONData = response.dict
+            status = response.status
+            if status == 200 or status == 201:
+                if "IPv4StaticAddresses" in JSONData:
+                    self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(URI, JSONData))
+                else:
+                    self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(URI, JSONData))
+                    result = False
+        return result
+    
+    def ctam_managers_ethernet_interfaces_gateway_write(self): # need improvement
+        """
+        :Description:				Read back the data of redfish/v1/Managers/{mgr_instance}/EthernetInterfaces/usb0/Gateway property
+
+        """
+        MyName = __name__ + "." + self.ctam_managers_ethernet_interfaces_gateway_write.__qualname__
+        mgr_instance = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ManagerIDs}", component_type="GPU"))
+        result = True
+        for uri in mgr_instance:
+            URI = "/Managers/" + uri + "/EthernetInterfaces/usb0"
             gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
             payload = {"IPv4StaticAddresses": [{"Address": "192.168.31.1", "AddressOrigin": "Static", "Gateway":"192.168.31.2", "SubnetMask": "255.255.0.0"}]}
             head = {"Content-Type: application/json"}

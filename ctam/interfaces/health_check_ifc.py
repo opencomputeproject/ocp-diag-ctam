@@ -74,7 +74,7 @@ class HealthCheckIfc(FunctionalIfc):
     
     def ctam_redfish_uri_deep_hunt(self, URI, uri_hunt="", uri_listing=[], uri_analyzed=[]):
         """
-        :Description:			CTAM Redfish URI Hunt - a recursive function to look deep till we find al instances URI
+        :Description:			CTAM Redfish URI Hunt - a recursive function to look deep till we find all instances URI
         :param URI:             The top uri under which we are searching for the uri instances (type string)
         :param uri_hunt:        URI we are hunting for (type string).
         :param uri_listing:     An array that will eventually contain a list of all URIs that house the member to hunt.

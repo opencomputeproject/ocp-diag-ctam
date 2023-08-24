@@ -3,15 +3,15 @@ Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the 
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Telemetry Chassis PowerSubsystem Metrics
-:Test ID:		T13
+:Test Name:		CTAM Test Telemetry Managers Ethernet Interfaces Gateway Change
+:Test ID:		T38
 :Group Name:	telemetry
 :Score Weight:	10
 
-:Description:	Basic telemetry test case to discover & print the list of Chassis PowerSubsystem Metrics.
+:Description:	Basic telemetry test case to discover & change the value under Managers Ethernet Interfaces Gateway Property.
 
-:Usage 1:		python ctam.py -w ..\workspace -t T13
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Chassis PowerSubsystem Metrics"
+:Usage 1:		python ctam.py -w ..\workspace -t T38
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Managers Ethernet Interfaces Gateway Change"
 
 """
 from typing import Optional, List
@@ -26,11 +26,11 @@ from ocptv.output import (
 from tests.telemetry.basic_telemetry_group.basic_telemetry_group import (
     BasicTelemetryTestGroup
 )
-import json
-class CTAMTestTelemetryChassisPowerSubsystemMetrics(TestCase):
+
+class CTAMTestTelemetryManagersEthernetInterfacesGatewayChange(TestCase):
     
-    test_name: str = "CTAM Test Telemetry Chassis PowerSubsystem Metrics"
-    test_id: str = "T13"
+    test_name: str = "CTAM Test Telemetry Managers Ethernet Interfaces Gateway Change"
+    test_id: str = "T38"
     score_weight: int = 10
     tags: List[str] = []
 
@@ -60,7 +60,7 @@ class CTAMTestTelemetryChassisPowerSubsystemMetrics(TestCase):
         result = True
         step1 = self.test_run().add_step((f"{self.__class__.__name__} run(), step1"))  # type: ignore
         with step1.scope():
-            if self.group.telemetry_ifc.ctam_chassis_power_subsystem_metrics():
+            if self.group.telemetry_ifc.ctam_managers_ethernet_interfaces_gateway_write():
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Passed")
             else:
                 step1.add_log(LogSeverity.FATAL, f"{self.test_id} : Failed")
