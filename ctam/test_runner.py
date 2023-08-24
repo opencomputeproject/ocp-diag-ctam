@@ -213,6 +213,9 @@ class TestRunner:
         dut_logger = LoggingWriter(
             self.cmd_output_dir, self.console_log, "RedfishCommandDetails_"+testrun_name, "log", self.debug_mode
         )
+        self.score_logger = LoggingWriter(
+            self.output_dir, self.console_log, "TestScore_"+testrun_name, "log", self.debug_mode
+        )
         self.comp_tool_dut = CompToolDut(
             id="actDut",
             config=self.dut_config,
@@ -331,7 +334,18 @@ class TestRunner:
                     continue
 
                 self._run_group_test_cases(group_instance, test_case_instances)
-
+        grade = (
+                TestCase.total_compliance_score / TestCase.max_compliance_score * 100
+                if TestCase.max_compliance_score != 0
+                else 0
+            )
+        msg = {
+                "TotalScore": TestCase.total_compliance_score,
+                "MaxComplianceScore": TestCase.max_compliance_score,
+                "Grade": "{}%".format(grade),
+                }
+        self.score_logger.write(json.dumps(msg))
+        
     def _run_group_test_cases(self, group_instance, test_case_instances):
         """
         for now, create a separate test run for each group. In the event of failures
@@ -371,8 +385,10 @@ class TestRunner:
                 try:
                     test_instance.setup()
                     self.comp_tool_dut.current_test_name = test_instance.test_name
+                    file_name = "RedfishCommandDetails_{}_{}".format(test_instance.test_id,
+                                                                        test_instance.test_name)
                     logger = LoggingWriter(
-                        self.cmd_output_dir, self.console_log, "RedfishCommandDetails_"+test_instance.test_name, "log", self.debug_mode
+                        self.cmd_output_dir, self.console_log, file_name, "log", self.debug_mode
                     )
                     self.comp_tool_dut.logger = logger
                     test_result = test_instance.run()
@@ -390,6 +406,14 @@ class TestRunner:
                 finally:
                     # attempt test cleanup even if test exception raised
                     test_instance.teardown()
+                    msg = {
+                        "TestID": test_instance.test_id,
+                        "TestName": test_instance.test_name,
+                        "TestCaseScore": test_instance.score,
+                        "TestCaseResult": TestResult(test_instance.result).name
+                    }
+                    print("Message is : ", msg)
+                    self.score_logger.write(json.dumps(msg))
 
             grade = (
                 TestCase.total_compliance_score / TestCase.max_compliance_score * 100
@@ -399,7 +423,7 @@ class TestRunner:
 
             msg = f"Compliance Run completed. Total Score = {TestCase.total_compliance_score:0.2f} out of {TestCase.max_compliance_score:0.2f}, Grade = {grade:0.2f}%"
             self.active_run.add_log(severity=LogSeverity.INFO, message=msg)
-
+           
             group_status = TestStatus.COMPLETE
 
         except (NotImplementedError, Exception) as e:

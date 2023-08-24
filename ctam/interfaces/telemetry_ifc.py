@@ -103,7 +103,6 @@ class TelemetryIfc(FunctionalIfc):
             status = response.status
             if status == 200 or status == 201:
                 self.test_run().add_log(LogSeverity.INFO, "Test JSON")
-                self.dut_logger.info()
                 self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(uri, json.dumps(JSONData, indent=4)))
             else:
                 self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(uri, JSONData))
