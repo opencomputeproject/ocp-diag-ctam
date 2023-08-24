@@ -3,16 +3,15 @@ Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Redfish Software Inventory Collection
-:Test ID:		H9
+:Test Name:		CTAM Test Redfish Firmware Inventory Expanded Collection
+:Test ID:		H6
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test case entails performing firmware updates in a loop, one device at a time but using different versions
-				for each update.
+:Description:	This test attempts to get the expanded firmware inventory from update service
 
-:Usage 1:		python ctam.py -w ..\workspace -t H9
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Software Inventory Collection"
+:Usage 1:		python ctam.py -w ..\workspace -t H6
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Firmware Inventory Expanded Collection"
 
 """
 from typing import Optional, List
@@ -29,16 +28,16 @@ from tests.health_check.basic_health_check_group.basic_health_check_test_group i
 )
 
 
-class CTAMTestRedfishSoftwareInventoryCollection(TestCase):
+class CTAMTestRedfishFirmwareInventoryExpandedCollection(TestCase):
     """
-    Verify values of Software Inventory Collection are present
+    Verify values of Firmware Inventory Expanded Collection are present
 
     :param TestCase: super class for all test cases
     :type TestCase:
     """
 
-    test_name: str = "CTAM Test Redfish Software Inventory Collection"
-    test_id: str = "H9"
+    test_name: str = "CTAM Test Redfish Firmware Inventory Expanded Collection"
+    test_id: str = "H6"
     score_weight: int = 10
     tags: List[str] = ["HCheck"]
 
@@ -69,7 +68,7 @@ class CTAMTestRedfishSoftwareInventoryCollection(TestCase):
         """
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            self.group.health_check_ifc.ctam_getsi()
+            self.group.health_check_ifc.ctam_getfi(expanded=1)
 
         step2 = self.test_run().add_step(f"{self.__class__.__name__} step2")  # type: ignore
         with step2.scope():

@@ -48,29 +48,6 @@ class HealthCheckIfc(FunctionalIfc):
         if not isinstance(cls._instance, cls):
             cls._instance = cls(*args, **kwargs)
         return cls._instance
-
-    def get_software_inventory(self, expanded=False):
-        """
-        :Description:       Act Get Software Inventory
-
-        :param expanded:    Expand Param
-
-        :returns:          JSON Data after running Redfish command
-        :rtype:             JSON Dict
-        """
-
-        # here are some example response attributes that can be used
-        v1_str = self.dut().uri_builder.format_uri(
-            redfish_str="{BaseURI}", component_type="GPU"
-        )
-        response = self.dut().run_redfish_command(uri=v1_str)
-        msg = f"Response is {response.dict}"
-        self.test_run().add_log(severity=LogSeverity.DEBUG, message=msg)
-        # self.test_run().add_log(response.status)
-        # self.test_run().add_log(response.task_location)
-        # self.test_run().add_log(response.dict)
-
-        return response.dict
     
     def ctam_redfish_uri_deep_hunt(self, URI, uri_hunt="", uri_listing=[], uri_analyzed=[]):
         """
@@ -136,7 +113,6 @@ class HealthCheckIfc(FunctionalIfc):
         # print("LogService List = {}".format(self.logservice_uri_list))
         return self.logservice_uri_list
         
-
     def ctam_get_logdump_uris(self):
         if self.logservice_uri_list == []:
             self.logservice_uri_list = self.ctam_get_logservice_uris()

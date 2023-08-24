@@ -1,17 +1,17 @@
 """
 Copyright (c) Microsoft Corporation
-This source code is licensed under the MIT license found in the 
+This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Telemetry Systems GPU Memory DRAM IDs
-:Test ID:		T27
-:Group Name:	telemetry
+:Test Name:		CTAM Test Redfish Telemetry Service
+:Test ID:		H7
+:Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Basic telemetry test case to discover & print the list of Systems GPU Memory DRAM IDs.
+:Description:	This test attempts to get telemetry service
 
-:Usage 1:		python ctam.py -w ..\workspace -t T27
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Systems GPU Memory DRAM IDs"
+:Usage 1:		python ctam.py -w ..\workspace -t H7
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Telemetry Service"
 
 """
 from typing import Optional, List
@@ -23,18 +23,27 @@ from ocptv.output import (
     TestResult,
     TestStatus,
 )
-from tests.telemetry.basic_telemetry_group.basic_telemetry_group import (
-    BasicTelemetryTestGroup
+from tests.health_check.basic_health_check_group.basic_health_check_test_group import (
+    BasicHealthCheckTestGroup,
 )
 
-class CTAMTestTelemetrySystemsGPUMemoryDRAMIDs(TestCase):
-    
-    test_name: str = "CTAM Test Telemetry Systems GPU Memory DRAM IDs"
-    test_id: str = "T27"
-    score_weight: int = 10
-    tags: List[str] = []
 
-    def __init__(self, group: BasicTelemetryTestGroup):
+class CTAMTestRedfishTelemetryService(TestCase):
+    """
+    Verify the output of Telemetry Service
+
+    :param TestCase: super class for all test cases
+    :type TestCase:
+    """
+
+    test_name: str = "CTAM Test Redfish Telemetry Service"
+    test_id: str = "H7"
+    score_weight: int = 10
+    tags: List[str] = ["HCheck"]
+
+    # exclude_tags: List[str] = ["NotCheck"]
+
+    def __init__(self, group: BasicHealthCheckTestGroup):
         """
         _summary_
         """
@@ -57,17 +66,18 @@ class CTAMTestTelemetrySystemsGPUMemoryDRAMIDs(TestCase):
         """
         actual test verification
         """
-        result = True
-        step1 = self.test_run().add_step((f"{self.__class__.__name__} run(), step1"))  # type: ignore
+        step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if self.group.telemetry_ifc.ctam_system_gpu_dram_ids():
-                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Passed")
-            else:
-                step1.add_log(LogSeverity.FATAL, f"{self.test_id} : Failed")
-                result = False
+            self.group.health_check_ifc.ctam_getts()
+
+        step2 = self.test_run().add_step(f"{self.__class__.__name__} step2")  # type: ignore
+        with step2.scope():
+            debug_mode = self.dut().is_debug_mode()
+            msg = f"Debug mode is :{debug_mode} in {self.__class__.__name__}"
+            self.test_run().add_log(severity=LogSeverity.DEBUG, message=msg)  # type: ignore
 
         # ensure setting of self.result and self.score prior to calling super().run()
-        self.result = TestResult.PASS if result else TestResult.FAIL
+        self.result = TestResult.PASS
         if self.result == TestResult.PASS:
             self.score = self.score_weight
 

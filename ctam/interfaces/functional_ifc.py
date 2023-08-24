@@ -218,7 +218,7 @@ class FunctionalIfc:
 
     def ctam_getsi(self, expanded=0):
         """
-        :Description:       Act Get Software Inventory
+        :Description:       Get Software Inventory
 
         :param expanded:		Expand Param
 

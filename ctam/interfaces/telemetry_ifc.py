@@ -131,38 +131,6 @@ class TelemetryIfc(FunctionalIfc):
                 result = False
         return result
     
-    # def ctam_baseboard_gpu_processor_instance(self): # return /redfish/v1/Systems/{BaseboardId} it will give baseboard id
-    #     URI = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/Systems", component_type="GPU")
-    #     response = self.dut().run_redfish_command(URI)
-    #     JSONData = response.dict
-    #     chassis_instances = [data["@odata.id"] for data in JSONData["Members"]]
-    #     return chassis_instances
-    
-    # def ctam_gpu_thermal_instance(self): #return /redfish/v1/Chassis/{GpuId} it will give gpu id
-    #     chassis_instances = self.ctam_baseboard_gpu_processor_instance()
-    #     response_list = []
-    #     for uri in chassis_instances:
-    #         uri = uri + "/Processors"
-    #         URI = self.dut().uri_builder.format_uri(redfish_str='{BaseURI}'+ uri, component_type="GPU") #/redfish/v1/Systems/{Baseboardid}/Processors
-    #         response = self.dut().run_redfish_command(URI)
-    #         response_list.append(response.dict)
-    #     return response_list
-
-    # def ctam_gpu_thermal_id(self):
-    #     """
-    #     :returns:                   Only returns GpuId
-    #     """     
-    #     gpu_thermal_instance = self.ctam_gpu_thermal_instance()
-    #     members = []
-    #     for gpu in gpu_thermal_instance:
-    #         members.extend([data["@odata.id"] for data in gpu["Members"]])
-    #     gpu_id = []
-    #     for gpu in members:
-    #         value = gpu.split('/')[-1]
-    #         gpu_id.append(value)
-    #     return gpu_id
-
-
     def ctam_gpu_thermal_metrics(self):
         """
         :Description:				Read back the data of /redfish/v1/Chassis/{GpuId}/ThermalSubsystem/ThermalMetrics
@@ -571,8 +539,8 @@ class TelemetryIfc(FunctionalIfc):
             URI = "/Managers/" + uri + "/EthernetInterfaces/usb0"
             gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
             payload = {"IPv4StaticAddresses": [{"Address": "192.168.31.1", "AddressOrigin": "Static", "Gateway":"192.168.31.2", "SubnetMask": "255.255.0.0"}]}
-            head = {"Content-Type: application/json"}
-            response = self.dut().run_redfish_command(gpu_uri, body=payload, headers=head)
+            header = {"Content-Type: application/json"}
+            response = self.dut().run_redfish_command(gpu_uri, mode="PATCH", body=payload, headers=header)
             JSONData = response.dict
             status = response.status
             if status == 200 or status == 201:
@@ -581,3 +549,34 @@ class TelemetryIfc(FunctionalIfc):
                 self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(URI, JSONData))
                 result = False
         return result
+
+    # def ctam_baseboard_gpu_processor_instance(self): # return /redfish/v1/Systems/{BaseboardId} it will give baseboard id
+    #     URI = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/Systems", component_type="GPU")
+    #     response = self.dut().run_redfish_command(URI)
+    #     JSONData = response.dict
+    #     chassis_instances = [data["@odata.id"] for data in JSONData["Members"]]
+    #     return chassis_instances
+    
+    # def ctam_gpu_thermal_instance(self): #return /redfish/v1/Chassis/{GpuId} it will give gpu id
+    #     chassis_instances = self.ctam_baseboard_gpu_processor_instance()
+    #     response_list = []
+    #     for uri in chassis_instances:
+    #         uri = uri + "/Processors"
+    #         URI = self.dut().uri_builder.format_uri(redfish_str='{BaseURI}'+ uri, component_type="GPU") #/redfish/v1/Systems/{Baseboardid}/Processors
+    #         response = self.dut().run_redfish_command(URI)
+    #         response_list.append(response.dict)
+    #     return response_list
+
+    # def ctam_gpu_thermal_id(self):
+    #     """
+    #     :returns:                   Only returns GpuId
+    #     """     
+    #     gpu_thermal_instance = self.ctam_gpu_thermal_instance()
+    #     members = []
+    #     for gpu in gpu_thermal_instance:
+    #         members.extend([data["@odata.id"] for data in gpu["Members"]])
+    #     gpu_id = []
+    #     for gpu in members:
+    #         value = gpu.split('/')[-1]
+    #         gpu_id.append(value)
+    #     return gpu_id

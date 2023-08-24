@@ -120,25 +120,30 @@ class CompToolDut(Dut):
         :return: response for requests
         :rtype: response object
         """
+        import json
         try:
             response = None
+            msg = {
+                    "TestName": self.current_test_name,
+                    "URI": uri
+            }
             if mode == "POST":
                 response = self.redfish_ifc.post(path=uri, body=body, headers=headers)
+                msg.update({"Method":"POST","Data":body})
             elif mode == "PATCH":
                 response = self.redfish_ifc.patch(path=uri, body=body, headers=headers)
+                msg.update({"Mode":"PATCH","Data":body})
             elif mode == "GET":
                 response = self.redfish_ifc.get(path=uri, headers=headers)
-                import json
+                msg.update({"Method":"GET"})
             if response:
-                msg = {
-                    "TestName": self.current_test_name,
-                    "URI": uri,
+                msg.update({
                     "ResponseCode": response.status,
                     "Response":response.dict
-                    }
-                self.logger.write(json.dumps(msg))
+                    })
             else:
-                print("Response is None please check the request you are trying to invoke ")
+                msg.update({"Response":"Response is None please check the request you are trying to invoke."})
+            self.logger.write(json.dumps(msg))
             return response
         except Exception as e:
             print("FATAL: Exception occurred while running redfish command. Please see below exception...")
