@@ -3,15 +3,15 @@ Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the 
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Telemetry Systems GPU Memory DRam Metrics
+:Test Name:		CTAM Test Telemetry Systems GPU Memory DRAM Metrics
 :Test ID:		T28
 :Group Name:	telemetry
 :Score Weight:	10
 
-:Description:	Basic telemetry test case to discover & print the list of Systems GPU Memory DRam Metrics
+:Description:	Basic telemetry test case to discover & print the list of Systems GPU Memory DRAM Metrics
 
 :Usage 1:		python ctam.py -w ..\workspace -t T28
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Systems GPU Memory DRam Metrics"
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Systems GPU Memory DRAM Metrics"
 
 """
 from typing import Optional, List
@@ -27,9 +27,9 @@ from tests.telemetry.basic_telemetry_group.basic_telemetry_group import (
     BasicTelemetryTestGroup
 )
 
-class CTAMTestTelemetrySystemsGPUMemoryDRamMetrics(TestCase):
+class CTAMTestTelemetrySystemsGPUMemoryDRAMMetrics(TestCase):
     
-    test_name: str = "CTAM Test Telemetry Systems GPU Memory DRam Metrics"
+    test_name: str = "CTAM Test Telemetry Systems GPU Memory DRAM Metrics"
     test_id: str = "T28"
     score_weight: int = 10
     tags: List[str] = []

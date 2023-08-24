@@ -3,15 +3,15 @@ Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the 
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Telemetry Systems GPU DRam Environment Metrics
+:Test Name:		CTAM Test Telemetry Systems GPU DRAM Environment Metrics
 :Test ID:		T29
 :Group Name:	telemetry
 :Score Weight:	10
 
-:Description:	Basic telemetry test case to discover & print the list of Systems GPU DRam Environment Metrics.
+:Description:	Basic telemetry test case to discover & print the list of Systems GPU DRAM Environment Metrics.
 
 :Usage 1:		python ctam.py -w ..\workspace -t T29
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Systems GPU DRam Environment Metrics"
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Systems GPU DRAM Environment Metrics"
 
 """
 from typing import Optional, List
@@ -27,9 +27,9 @@ from tests.telemetry.basic_telemetry_group.basic_telemetry_group import (
     BasicTelemetryTestGroup
 )
 
-class CTAMTestTelemetrySystemsGPUDRamEnvironmentMetrics(TestCase):
+class CTAMTestTelemetrySystemsGPUDRAMEnvironmentMetrics(TestCase):
     
-    test_name: str = "CTAM Test Telemetry Systems GPU DRam Environment Metrics"
+    test_name: str = "CTAM Test Telemetry Systems GPU DRAM Environment Metrics"
     test_id: str = "T29"
     score_weight: int = 10
     tags: List[str] = []
