@@ -504,7 +504,7 @@ class TelemetryIfc(FunctionalIfc):
             gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
             payload = {"DateTime": "2023-08-22T05:17:24+00:00"}
             head = {"Content-Type: application/json"}
-            response = self.dut().redfish_ifc.patch(gpu_uri, body=payload, headers=head)
+            response = self.dut().run_redfish_command(gpu_uri, body=payload, headers=head)
             JSONData = response.dict
             status = response.status
             if status == 200 or status == 201:
@@ -527,7 +527,7 @@ class TelemetryIfc(FunctionalIfc):
             gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
             payload = {"IPv4StaticAddresses": [{"Address": "192.168.31.1", "AddressOrigin": "Static", "Gateway":"192.168.31.2", "SubnetMask": "255.255.0.0"}]}
             head = {"Content-Type: application/json"}
-            response = self.dut().redfish_ifc.patch(gpu_uri, body=payload, headers=head)
+            response = self.dut().run_redfish_command(gpu_uri, body=payload, headers=head)
             JSONData = response.dict
             status = response.status
             if status == 200 or status == 201:
@@ -550,7 +550,7 @@ class TelemetryIfc(FunctionalIfc):
             gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
             payload = {"IPv4StaticAddresses": [{"Address": "192.168.31.1", "AddressOrigin": "Static", "Gateway":"192.168.31.2", "SubnetMask": "255.255.0.0"}]}
             head = {"Content-Type: application/json"}
-            response = self.dut().redfish_ifc.patch(gpu_uri, body=payload, headers=head)
+            response = self.dut().run_redfish_command(gpu_uri, body=payload, headers=head)
             JSONData = response.dict
             status = response.status
             if status == 200 or status == 201:
