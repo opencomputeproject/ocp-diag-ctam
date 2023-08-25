@@ -282,6 +282,25 @@ class FunctionalIfc:
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return data
 
+    def ctam_getes(self):
+        """
+        :Description:       Get Event Service
+        :returns:	        JSON Data after running Redfish command
+        :rtype:             JSON Dict
+        """
+        MyName = __name__ + "." + self.ctam_getus.__qualname__
+
+        ctam_getes_uri = self.dut().uri_builder.format_uri(
+            redfish_str="{BaseURI}/EventService", component_type="GPU"
+        )
+
+        response = self.dut().run_redfish_command(uri=ctam_getes_uri)
+        data = response.dict
+        msg = f"The Redfish Command URI is : {ctam_getus_uri} \nThe Response for this command is : {data}"
+        self.test_run().add_log(LogSeverity.DEBUG, msg)
+        return data
+
+
     def NodeACReset(self):
         """
         :Description:        It will Reset the node.
