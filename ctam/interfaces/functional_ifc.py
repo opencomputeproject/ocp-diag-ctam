@@ -266,7 +266,7 @@ class FunctionalIfc:
 
     def ctam_getus(self):
         """
-        :Description:       Act Get Update Service
+        :Description:       Get Update Service
         :returns:	        JSON Data after running Redfish command
         :rtype:             JSON Dict
         """
@@ -296,7 +296,7 @@ class FunctionalIfc:
 
         response = self.dut().run_redfish_command(uri=ctam_getes_uri)
         data = response.dict
-        msg = f"The Redfish Command URI is : {ctam_getus_uri} \nThe Response for this command is : {data}"
+        msg = f"The Redfish Command URI is : {ctam_getes_uri} \nThe Response for this command is : {data}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return data
 
