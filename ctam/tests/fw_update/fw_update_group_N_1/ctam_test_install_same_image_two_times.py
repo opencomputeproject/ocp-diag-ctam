@@ -44,7 +44,7 @@ class CTAMTestInstallSameImageTwoTimes(TestCase):
     score_weight: int = 10
     tags: List[str] = []
 
-    def __init__(self, group: FWUpdateTestGroupN1):
+    def __init__(self, group: FWUpdateTestGroupNMinus1):
         """
         _summary_
         """
