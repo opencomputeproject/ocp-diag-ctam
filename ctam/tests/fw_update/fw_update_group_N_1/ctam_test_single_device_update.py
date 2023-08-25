@@ -26,7 +26,7 @@ from ocptv.output import (
     TestStatus,
 )
 from tests.fw_update.fw_update_group_N_1._fw_update_group_N_1 import (
-    FWUpdateTestGroupN1,
+    FWUpdateTestGroupNMinus1,
 )
 
 class CTAMTestSingleDeviceUpdate(TestCase):
