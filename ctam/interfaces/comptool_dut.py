@@ -13,6 +13,8 @@ import redfish
 import netrc
 import subprocess
 import platform
+import json
+
 
 from prettytable import PrettyTable
 from ocptv.output import Metadata
@@ -120,34 +122,35 @@ class CompToolDut(Dut):
         :return: response for requests
         :rtype: response object
         """
-        import json
         try:
             response = None
             msg = {
                     "TestName": self.current_test_name,
-                    "URI": uri
+                    "URI": uri,
             }
             if mode == "POST":
+                msg.update({"Method":"POST","Data":"{}".format(body),})
                 response = self.redfish_ifc.post(path=uri, body=body, headers=headers)
-                msg.update({"Method":"POST","Data":body})
             elif mode == "PATCH":
+                msg.update({"Mode":"PATCH","Data":"{}".format(body),})
                 response = self.redfish_ifc.patch(path=uri, body=body, headers=headers)
-                msg.update({"Mode":"PATCH","Data":body})
             elif mode == "GET":
+                msg.update({"Method":"GET",})
                 response = self.redfish_ifc.get(path=uri, headers=headers)
-                msg.update({"Method":"GET"})
             if response:
                 msg.update({
                     "ResponseCode": response.status,
-                    "Response":response.dict
+                    "Response":response.dict,
                     })
             else:
                 msg.update({"Response":"Response is None please check the request you are trying to invoke."})
-            self.logger.write(json.dumps(msg))
+            # self.logger.write(json.dumps(msg))
             return response
         except Exception as e:
             print("FATAL: Exception occurred while running redfish command. Please see below exception...")
             print(str(e))
+        finally:
+            self.logger.write(json.dumps(msg))
 
     def is_debug_mode(self) -> bool:
         """

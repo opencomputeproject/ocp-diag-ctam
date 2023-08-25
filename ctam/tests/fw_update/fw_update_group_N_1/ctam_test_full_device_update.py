@@ -24,7 +24,7 @@ from ocptv.output import (
     TestStatus,
 )
 from tests.fw_update.fw_update_group_N_1._fw_update_group_N_1 import (
-    FWUpdateTestGroupN1,
+    FWUpdateTestGroupNMinus1,
 )
 
 
@@ -41,7 +41,7 @@ class CTAMTestFullDeviceUpdate(TestCase):
     score_weight: int = 10
     tags: List[str] = []
 
-    def __init__(self, group: FWUpdateTestGroupN1):
+    def __init__(self, group: FWUpdateTestGroupNMinus1):
         """
         _summary_
         """
