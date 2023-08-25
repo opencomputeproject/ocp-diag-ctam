@@ -301,6 +301,24 @@ class FunctionalIfc:
         return data
 
 
+    def ctam_gettsks(self):
+        """
+        :Description:       Get Task Service
+        :returns:	        JSON Data after running Redfish command
+        :rtype:             JSON Dict
+        """
+        MyName = __name__ + "." + self.ctam_getus.__qualname__
+
+        ctam_gettsks_uri = self.dut().uri_builder.format_uri(
+            redfish_str="{BaseURI}/TaskService", component_type="GPU"
+        )
+
+        response = self.dut().run_redfish_command(uri=ctam_gettsks_uri)
+        data = response.dict
+        msg = f"The Redfish Command URI is : {ctam_gettsks_uri} \nThe Response for this command is : {data}"
+        self.test_run().add_log(LogSeverity.DEBUG, msg)
+        return data
+
     def NodeACReset(self):
         """
         :Description:        It will Reset the node.
