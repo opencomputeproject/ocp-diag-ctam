@@ -19,10 +19,8 @@ class ManualOverrideTestGroup(TestGroup):
     :type TestGroup:
     """
 
-    include_tags: List[str] = []
-    test_name: str = []
-    exclude_tags: List[str] = []
-    test_name: str = []
+    tags: List[str] = []
+    group_id : str = "GM1"
 
     def __init__(self):
         """

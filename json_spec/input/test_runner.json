@@ -10,6 +10,7 @@
     "exclude_tags": [],
     "test_cases": [],
     "test_sequence" : [],
+    "group_sequence" : [],
     "command_output_log_path": "",
     "active_test_suite": "",
     "dev_test_suite": [

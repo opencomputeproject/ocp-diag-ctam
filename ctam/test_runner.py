@@ -47,6 +47,7 @@ class TestRunner:
         single_test_override=None,
         sequence_test_override=None,
         single_group_override=None,
+        sequence_group_override=None,
     ):
         """
         Init function that handles test execution variations
@@ -77,6 +78,7 @@ class TestRunner:
         self.test_cases = []
         self.test_sequence = []
         self.test_groups = []
+        self.group_sequence = []
 
         with open(dut_info_json_file) as dut_info_json:
             self.dut_config = json.load(dut_info_json)
@@ -121,10 +123,14 @@ class TestRunner:
             self.test_groups.append(single_group_override)
         elif sequence_test_override != None:
             self.test_sequence = sequence_test_override
+        elif sequence_group_override != None:
+            self.group_sequence = sequence_group_override
         elif runner_config["test_cases"]:
             self.test_cases = runner_config["test_cases"]
         elif runner_config["test_sequence"]:
             self.test_sequence = runner_config["test_sequence"]
+        elif runner_config["group_sequence"]:
+            self.group_sequence = runner_config["group_sequence"]
         elif runner_config["active_test_suite"]:
             test_suite_to_select = runner_config.get("active_test_suite")
             # Remove the active_test_suite key before selecting the test suite
@@ -313,6 +319,29 @@ class TestRunner:
 
         elif self.test_groups:
             for group in self.test_groups:
+                (
+                    group_instance,
+                    test_case_instances,
+                ) = self.test_hierarchy.instantiate_obj_for_group(group)
+                group_inc_tags = group_instance.tags
+                # group_exc_tags = group_instance.exclude_tags
+
+                valid = self._is_enabled(
+                    self.include_tags_set,
+                    group_inc_tags,
+                    self.exclude_tags_set,
+                    # group_exc_tags,
+                )
+
+                if not valid:
+                    print(
+                        f"Group2 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
+                    )
+                    continue
+
+                self._run_group_test_cases(group_instance, test_case_instances)
+        elif self.group_sequence:
+            for group in self.group_sequence:
                 (
                     group_instance,
                     test_case_instances,

@@ -54,6 +54,7 @@ class TestGroup(ABC):
 
         required_attrs = [
             "tags",
+            "group_id",
             # "exclude_tags",
         ]
 

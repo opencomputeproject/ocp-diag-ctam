@@ -73,10 +73,17 @@ class TestHierarchy:
             for base in node.bases:
                 if isinstance(base, ast.Name):
                     if base.id == "TestGroup":
+                        group_attributes = {
+                            n.target.id: self.eval_node(n.value)
+                            for n in node.body
+                            if isinstance(n, (ast.Assign, ast.AnnAssign))
+                            and isinstance(n.target, ast.Name)
+                        }
                         self.test_groups[node.name] = {
                             "group_name": node.name,
                             "module_name": None,
                             "module_path": None,
+                            "group_attributes": group_attributes,
                             "test_cases": [],
                         }
                         self.current_group = self.test_groups[
@@ -157,7 +164,6 @@ class TestHierarchy:
         :rtype: List
         """
         visitor = self.ClassVisitor()
-
         for root, dirs, _ in os.walk(self.test_root_dir):
             for dir in dirs:
                 sys.path.append(
@@ -222,10 +228,10 @@ class TestHierarchy:
         """
 
         def print_group_info(group_name, group_info):
-            print(f"Test Group Name: {group_name}")
+            print(f'Group ID: {group_info["group_attributes"]["group_id"]}      Test Group Name: {group_name}')
             for testcase in group_info["test_cases"]:
                 print(
-                    f'    Test Case Name: {testcase["testcase_name"]}     Test Case ID: {testcase["attributes"]["test_id"]}'
+                    f'    Test Case ID: {testcase["attributes"]["test_id"]}      Test Case Name: {testcase["testcase_name"]}'
                 )
 
         if group_name is None:
@@ -234,7 +240,9 @@ class TestHierarchy:
                 print_group_info(group_name, group_info)
         else:
             # Otherwise, print the specified group.
-            group_info = self.test_groups.get(group_name)
+            print(self.test_groups)
+            group_info = self._find_group(group_name)
+            # group_info = self.test_groups.get(group_name)
             if group_info is not None:
                 print_group_info(group_name, group_info)
             else:
@@ -259,6 +267,25 @@ class TestHierarchy:
                 ].get("test_id"):
                     return group_info, testcase
         return None, None
+
+    def _find_group(self, param):
+        """
+        Search all the test groups and see if param matches the group_name or group_id
+
+        :param param: search item
+        :type param: str
+        :return: group attributes, 
+        :rtype: group
+        """
+        for group_name, group_info in self.test_groups.items():
+            # print(group_name, group_info)
+            # for group in group_info["group_attributes"]:
+            #     # Check if the param matches the testcase name or the test_id
+            if group_info[
+                "group_attributes"
+            ].get("group_id") == param or param == group_name:
+                return group_info
+        return None
 
     def _instantiate_object(self, obj_info, class_name, init_param=None):
         """
@@ -312,7 +339,8 @@ class TestHierarchy:
         :return: group instance, List of Test Cases
         :rtype: group instance, List of Test Cases
         """
-        group_info = self.test_groups.get(group_name)
+        group_info = self._find_group(group_name)
+        # group_info = self.test_groups.get(group_name)
         if not group_info:
             print(f"Test group {group_name} not found.")
             return None, None

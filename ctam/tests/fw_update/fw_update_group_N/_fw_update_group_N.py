@@ -19,6 +19,7 @@ class FWUpdateTestGroupN(TestGroup):
     """
 
     tags: List[str] = []
+    group_id : str = "GFW1"
     # exclude_tags: List[str] = []
 
     def __init__(self):

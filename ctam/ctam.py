@@ -25,12 +25,17 @@ def parse_args():
         type=str,
     )
     parser.add_argument(
-        "-seq",
+        "-test_seq",
         "--testcase_sequence",
-        help="Runs no of tet cases with given sequence",
+        help="Runs no of test cases with given sequence",
         nargs='+',
     )
-
+    parser.add_argument(
+        "-group_seq",
+        "--group_sequence",
+        help="Runs no of groups with given sequence",
+        nargs='+',
+    )
     parser.add_argument("-s", "--Suite", help="Run full ACT Suite", action="store_true")
 
     parser.add_argument(
@@ -142,6 +147,16 @@ if __name__ == "__main__":
                 redfish_uri_config_file=redfish_uri_config,
                 net_rc=net_rc,
                 single_group_override=args.group,
+            )
+        elif args.group_sequence:
+            runner = TestRunner(
+                test_hierarchy=test_hierarchy,
+                test_runner_json_file=test_runner_json,
+                dut_info_json_file=dut_info_json,
+                package_info_json_file=package_info_json,
+                redfish_uri_config_file=redfish_uri_config,
+                net_rc=net_rc,
+                sequence_group_override=args.group_sequence,
             )
         else:
             runner = TestRunner(

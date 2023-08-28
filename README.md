@@ -50,11 +50,17 @@ This project is part of [OCPTV](https://github.com/opencomputeproject/ocp-diag-c
 8. To run test cases with sequence
     ```
     cd ctam
-    python ctam.py -w ..\example_workspace -seq "<test case name or id>" <test case name or id>
+    python ctam.py -w ..\example_workspace -test_seq "<test case name or id>" <test case name or id>
     ```
     Logs will be created under `example_workspace\TestRuns`
-8. Choose test cases to run by using tags and specifying the tags to include/exclude in test_runner.json 
-9. Choose test sequence in test_runner.json if you want to run it from test runner config.
+9. To run groups with sequence
+    ```
+    cd ctam
+    python ctam.py -w ..\example_workspace -group_seq "<group name or id>" <group name or id>
+    ```
+    Logs will be created under `example_workspace\TestRuns`
+10. Choose test cases to run by using tags and specifying the tags to include/exclude in test_runner.json 
+11. Choose test sequence in test_runner.json if you want to run it from test runner config.
 
 
 ## Developer notes
