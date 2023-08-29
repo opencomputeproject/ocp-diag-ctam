@@ -19,6 +19,7 @@ class BasicRasTestGroup(TestGroup):
     """
 
     tags: List[str] = []
+    group_id : str = ""
     # exclude_tags: List[str] = []
 
     def __init__(self):

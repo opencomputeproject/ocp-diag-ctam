@@ -29,6 +29,9 @@ class RasIfc(FunctionalIfc):
     
     def __init__(self):
         super().__init__()
+        self.collectdiagnostic_uri_list = []
+        self.logdump_uri_list = []
+        self.dumplog_uri_list = []
 
     @classmethod
     def get_instance(cls, *args, **kwargs):
@@ -70,3 +73,21 @@ class RasIfc(FunctionalIfc):
 
         :returns:				    Array of all URIs under GpuId ThermalMetrics
         """
+
+    def ctam_get_collectdiagnostic_uris(self):
+        if self.collectdiagnostic_uri_list == []:
+            self.ctam_redfish_uri_deep_hunt(
+                "/redfish/v1/Managers/HGX_BMC_0/LogServices", "CollectDiagnosticData", self.collectdiagnostic_uri_list
+            )
+            self.ctam_redfish_uri_deep_hunt(
+                "/redfish/v1/Systems/HGX_Baseboard_0/LogServices", "CollectDiagnosticData", self.collectdiagnostic_uri_list
+            )
+        return self.collectdiagnostic_uri_list
+    
+    def ctam_get_dump_uris(self):
+        if self.logdump_uri_list == []:
+            self.logdump_uri_list = self.ctam_get_collectdiagnostic_uris()
+        for uri in self.logdump_uri_list:
+            self.ctam_redfish_uri_hunt(uri, "Dump", self.dumplog_uri_list)
+        return self.dumplog_uri_list
+    

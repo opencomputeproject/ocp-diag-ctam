@@ -3,15 +3,15 @@ Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Discover Crashdump
-:Test ID:		R1
-:Group Name:	fw_update
+:Test Name:		CTAM Test LogService URI List Read
+:Test ID:		H99
+:Group Name:	health_check
 :Score Weight:	10
 
-:Description:	This test attempts to get event service
+:Description:	Basic test case of ensuring that there are LogServices available in the accelerator
 
-:Usage 1:		python ctam.py -w ..\workspace -t R1
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Discover Crashdump"
+:Usage 1:		python ctam.py -w ..\workspace -t H99
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test LogService URI List Read"
 
 """
 from typing import Optional, List
@@ -24,27 +24,27 @@ from ocptv.output import (
     TestResult,
     TestStatus,
 )
-from tests.ras.basic_ras_test_group import (
-    BasicRasTestGroup,
+from tests.health_check.basic_health_check_group.basic_health_check_test_group import (
+    BasicHealthCheckTestGroup,
 )
 
 
-class CTAMTestDiscoverCrashdump(TestCase):
+class CTAMTestLogServiceURIListRead(TestCase):
     """
-    Get CollectDiagnosticDataActionInfo & discover non empty Allowable Values for DiagnosticDataType, OEMDiagnosticDataType
+        :param gpu_bb acc:		Accelerator Object
+        :param Logger logger:	Logger Object
 
-    :param TestCase: super class for all test cases
-    :type TestCase:
+        :returns:				Test result [Pass/Fail], Test score
     """
 
-    test_name: str = "CTAM Test Discover Crashdump"
-    test_id: str = "R1"
+    test_name: str = "CTAM Test LogService URI List Read"
+    test_id: str = "H99"
     score_weight: int = 10
-    tags: List[str] = []
+    tags: List[str] = ["HCheck"]
 
     # exclude_tags: List[str] = ["NotCheck"]
 
-    def __init__(self, group: BasicRasTestGroup):
+    def __init__(self, group: BasicHealthCheckTestGroup):
         """
         _summary_
         """
@@ -70,14 +70,14 @@ class CTAMTestDiscoverCrashdump(TestCase):
         result = True
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if (self.group.ras_ifc.ctam_get_dump_uris()) == []:
+            if (logservice := self.group.health_check_ifc.ctam_get_logservice_uris()) == []:
                 step1.add_log(
                     LogSeverity.FATAL,
                     f"{self.test_id} : Test case Failed - LogService list is empty",
                 )
                 result = False
             else:
-            
+                pprint(logservice)
                 step1.add_log(
                     LogSeverity.INFO,
                     f"{self.test_id} : Test case Passed.",
