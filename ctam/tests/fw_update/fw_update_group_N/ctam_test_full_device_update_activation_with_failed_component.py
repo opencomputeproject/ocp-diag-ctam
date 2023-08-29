@@ -3,14 +3,14 @@ Copyright (c) NVIDIA CORPORATION
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Full Device Update Staging Time
-:Test ID:		F63
+:Test Name:		CTAM Test Full Device Update Activation With Failed Component
+:Test ID:		F56
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Verfy that firmware copy operation (staging) does not exceed the max time specified in the requirements.
-:Usage 1:		python ctam.py -w ..\workspace -t F63
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Staging Time"
+:Description:	Firmware Update Stack Robustness Test. If one component copying (staging) fails, verify activation is handled correctly.
+:Usage 1:		python ctam.py -w ..\workspace -t F56
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Activation With Failed Component"
 
 """
 
@@ -28,16 +28,16 @@ from tests.fw_update.fw_update_group_N._fw_update_group_N import (
 )
 
 
-class CTAMTestFullDeviceUpdateStagingTime(TestCase):
+class CTAMTestFullDeviceUpdateActivationWithFailedComponent(TestCase):
     """
-    Verfy that firmware copy operation (staging) does not exceed the max time specified in the requirements
+    Verify If one component copying (staging) fails, activation is handled correctly.
 
     :param TestCase: super class for all test cases
     :type TestCase:
     """
 
-    test_name: str = "CTAM Test Full Device Update Staging Time"
-    test_id: str = "F63"
+    test_name: str = "CTAM Test Full Device Update Activation With Failed Component"
+    test_id: str = "F56"
     score_weight: int = 10
     tags: List[str] = []
 
@@ -65,6 +65,8 @@ class CTAMTestFullDeviceUpdateStagingTime(TestCase):
         actual test verification
         """
         result = True
+        
+        corrupted_component_id = self.group.fw_update_ifc.ctam_get_component_to_be_corrupted()
 
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
@@ -77,7 +79,10 @@ class CTAMTestFullDeviceUpdateStagingTime(TestCase):
 
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
-            if self.group.fw_update_ifc.ctam_stage_fw(check_time=True):
+            if self.group.fw_update_ifc.ctam_stage_fw(
+                image_type="empty_component", 
+                corrupted_component_id=corrupted_component_id
+                ):
                 step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
             else:
                 step2.add_log(
@@ -85,6 +90,36 @@ class CTAMTestFullDeviceUpdateStagingTime(TestCase):
                 )
                 result = False
 
+        if result:
+            step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
+            with step3.scope():
+                if self.group.fw_update_ifc.ctam_activate_ac():
+                    step3.add_log(
+                        LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
+                    )
+                else:
+                    step3.add_log(
+                        LogSeverity.ERROR,
+                        f"{self.test_id} : FW Update Activation Failed",
+                    )
+                    result = False
+
+        if result:
+            step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")
+            with step4.scope():
+                if self.group.fw_update_ifc.ctam_fw_update_verify(image_type="corrupt_component", 
+                                                                  corrupted_component_id=corrupted_component_id
+                                                                  ):
+                    step4.add_log(
+                        LogSeverity.INFO,
+                        f"{self.test_id} : Update Verification Completed",
+                    )
+                else:
+                    step4.add_log(
+                        LogSeverity.INFO, f"{self.test_id} : Update Verification Failed"
+                    )
+                    result = False
+        
         # ensure setting of self.result and self.score prior to calling super().run()
         self.result = TestResult.PASS if result else TestResult.FAIL
         if self.result == TestResult.PASS:
@@ -99,32 +134,9 @@ class CTAMTestFullDeviceUpdateStagingTime(TestCase):
         undo environment state change from setup() above, this function is called even if run() fails or raises exception
         """
         # add custom teardown here
-        result = True
-        step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...step1")
+        step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():
-            if self.group.fw_update_ifc.ctam_activate_ac():
-                step1.add_log(
-                    LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
-                )
-            else:
-                step1.add_log(
-                    LogSeverity.WARNING,
-                    f"{self.test_id} : FW Update Activation Failed",
-                )
-                result = False
-                    
-        if result:
-            step2 = self.test_run().add_step(f"{self.__class__.__name__} teardown()...step2")
-            with step2.scope():
-                if self.group.fw_update_ifc.ctam_fw_update_verify():
-                    step2.add_log(
-                        LogSeverity.INFO,
-                        f"{self.test_id} : Update Verification Completed",
-                    )
-                else:
-                    step2.add_log(
-                        LogSeverity.INFO, f"{self.test_id} : Update Verification Failed"
-                    )
+            pass
 
         # call super teardown last
         super().teardown()

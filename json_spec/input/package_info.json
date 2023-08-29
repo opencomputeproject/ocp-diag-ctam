@@ -54,9 +54,9 @@
     "JSON": "",
     "Vendor": ""
   },
-  "GPU_FW_IMAGE_EMPTY_METADATA": {
+  "GPU_FW_IMAGE_CORRUPT_COMPONENT": {
     "CorruptComponentIdentifier": "",
-    "MetadataSizeBytes": 1024,
+    "MetadataSizeBytes": 4096,
     "Vendor": ""
   }
 }

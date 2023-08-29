@@ -131,7 +131,7 @@ class CompToolDut(Dut):
                     "URI": uri,
             }
             if mode == "POST":
-                msg.update({"Method":"POST","Data":"{}".format(body),})
+                msg.update({"Method":"POST","Data":"{}".format(body),}) # FIXME: It floods the logs. Do we need to log the entire body? 
                 response = self.redfish_ifc.post(path=uri, body=body, headers=headers)
             elif mode == "PATCH":
                 msg.update({"Mode":"PATCH","Data":"{}".format(body),})

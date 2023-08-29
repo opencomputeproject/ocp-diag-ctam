@@ -124,18 +124,32 @@ class FunctionalIfc:
                 self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
             )
             json_fw_file_payload = PLDMFwpkg.corrupt_package_UUID(golden_fwpkg_path)
+        
         elif image_type == "empty_metadata":
             if corrupted_component_id is None:
                 corrupted_component_id = self.ctam_get_component_to_be_corrupted()
-            msg = f"Corrputed component ID: {corrupted_component_id}"
+            msg = f"Corrupted component ID: {corrupted_component_id}"
             self.test_run().add_log(LogSeverity.DEBUG, msg)
             golden_fwpkg_path = os.path.join(
                 self.dut().cwd,
                 self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
                 self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
             )
-            metadata_size = self.dut().package_config.get("GPU_FW_IMAGE_EMPTY_METADATA", {}).get("MetadataSizeBytes", 1024)
+            metadata_size = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("MetadataSizeBytes", 4096)
             json_fw_file_payload = PLDMFwpkg.clear_component_metadata_in_pkg(golden_fwpkg_path, corrupted_component_id, metadata_size)
+        
+        elif image_type == "empty_component":
+            if corrupted_component_id is None:
+                corrupted_component_id = self.ctam_get_component_to_be_corrupted()
+            msg = f"Corrupted component ID: {corrupted_component_id}"
+            self.test_run().add_log(LogSeverity.DEBUG, msg)
+            golden_fwpkg_path = os.path.join(
+                self.dut().cwd,
+                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+            )
+            json_fw_file_payload = PLDMFwpkg.clear_component_image_in_pkg(golden_fwpkg_path, corrupted_component_id)
+        
         elif image_type == "backup":
             json_fw_file_payload = os.path.join(
                 self.dut().cwd,
@@ -191,7 +205,7 @@ class FunctionalIfc:
         :rtype:                 string
         """
         pldm_json_file = ""
-        if image_type == "default":
+        if image_type == "default" or image_type == "corrupt_component":
             pldm_json_file = os.path.join(
                 self.dut().cwd,
                 self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
