@@ -75,6 +75,10 @@ class CompToolDut(Dut):
             self.connection_ip_address
         )
         
+        if not self.check_ping_status(self.connection_ip_address): # FIXME: Use logging method
+            print("[FATAL] Unable to ping the ip address. Please check the IP is valid or not.")
+            sys.exit(1)
+        
         # Set up SSH Tunneling if requested
         self.BindedPort = None
         if config["properties"].get("SshTunnel"):
@@ -93,9 +97,7 @@ class CompToolDut(Dut):
 
         # TODO investigate storing FW update files via add_software_info() in super
         connection_url = ("http://" if self.SshTunnel else "https://") + self.connection_ip_address + "/"
-        if not self.check_ping_status(self.connection_ip_address): # FIXME: Use logging method
-            print("[FATAL] Unable to ping the ip address. Please check the IP is valid or not.")
-            sys.exit(1)
+        
         self.redfish_ifc = redfish.redfish_client(
             connection_url,
             username=self.__user_name,
@@ -129,7 +131,7 @@ class CompToolDut(Dut):
                     "URI": uri,
             }
             if mode == "POST":
-                msg.update({"Method":"POST","Data":"{}".format(body),})
+                msg.update({"Method":"POST","Data":"{}".format(body),}) # FIXME: It floods the logs. Do we need to log the entire body? 
                 response = self.redfish_ifc.post(path=uri, body=body, headers=headers)
             elif mode == "PATCH":
                 msg.update({"Mode":"PATCH","Data":"{}".format(body),})
@@ -189,7 +191,7 @@ class CompToolDut(Dut):
                 self.BindedPort = port
                 break
         if self.BindedPort is None:
-            raise Exception("Failed to bind port! Please make sure the host machine has port forwarding enabled and there is at least one port avaailable in {PortList}.")
+            raise Exception(f"Failed to bind port! Please make sure the host machine has port forwarding enabled and there is at least one port avaailable in {PortList}.")
         print(f"Binded port {self.BindedPort}") # FIXME: Use logging method
         return
     
@@ -242,24 +244,24 @@ class CompToolDut(Dut):
             system_details = self.run_redfish_command(system_detail_uri).dict
             bmc_fw_inv = self.run_redfish_command(bmc_fw_inv_uri).dict
             if system_details and ("error" not in system_details):
-                t.add_row(["Model", system_details["Model"]])
-                t.add_row(["Manufacturer", system_details["Manufacturer"]])
-                t.add_row(["HostName", system_details["HostName"]])
-                t.add_row(["System UUID", system_details["UUID"]])
-                t.add_row(["Bios Version", system_details["BiosVersion"]])
-                t.add_row(["PartNumber", system_details["PartNumber"]])
-                t.add_row(["SerialNumber", system_details["SerialNumber"]])
-                t.add_row(["Processor Model", system_details["ProcessorSummary"]["Model"]])
+                t.add_row(["Model", system_details.get("Model")])
+                t.add_row(["Manufacturer", system_details.get("Manufacturer")])
+                t.add_row(["HostName", system_details.get("HostName")])
+                t.add_row(["System UUID", system_details.get("UUID")])
+                t.add_row(["Bios Version", system_details.get("BiosVersion")])
+                t.add_row(["PartNumber", system_details.get("PartNumber")])
+                t.add_row(["SerialNumber", system_details.get("SerialNumber")])
+                t.add_row(["Processor Model", system_details.get("ProcessorSummary").get("Model")])
                 t.add_row(
                     [
                         "Processor Health",
-                        system_details["ProcessorSummary"]["Status"]["Health"],
+                        system_details.get("ProcessorSummary").get("Status").get("Health"),
                     ]
                 )
                 t.add_row(
                     [
                         "Processor State",
-                        system_details["ProcessorSummary"]["Status"]["State"],
+                        system_details.get("ProcessorSummary").get("Status").get("State"),
                     ]
                 )
             else:
