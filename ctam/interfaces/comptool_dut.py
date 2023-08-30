@@ -14,6 +14,7 @@ import netrc
 import subprocess
 import platform
 import json
+from datetime import datetime
 
 
 from prettytable import PrettyTable
@@ -42,6 +43,7 @@ class CompToolDut(Dut):
         net_rc,
         debugMode: bool,
         logger,
+        test_info_logger,
         name: ty.Optional[str] = None,
         metadata: ty.Optional[Metadata] = None,
     ):
@@ -65,6 +67,7 @@ class CompToolDut(Dut):
         self.current_test_name = ""
         self.net_rc = net_rc
         self.logger = logger
+        self.test_info_logger = test_info_logger
         self.cwd = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         super().__init__(id, name, metadata)
         self.connection_ip_address = config["properties"]["ConnectionIPAddress"][
@@ -125,6 +128,7 @@ class CompToolDut(Dut):
         try:
             response = None
             msg = {
+                    "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
                     "TestName": self.current_test_name,
                     "URI": uri,
             }

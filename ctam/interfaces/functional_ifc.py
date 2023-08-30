@@ -10,7 +10,7 @@ import json
 import subprocess
 import time
 from typing import Optional, List
-
+from datetime import datetime
 import ocptv.output as tv
 from ocptv.output import LogSeverity
 
@@ -431,3 +431,11 @@ class FunctionalIfc:
                     URI = JSONData["Members"][i]["@odata.id"]
                     self.ctam_redfish_uri_hunt(URI, uri_hunt, uri_listing)
                     i = i + 1
+
+    def write_test_info(self, message):
+        msg = {
+                "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                "TestName": self.dut().current_test_name,
+                "Message": message,
+            }
+        self.dut().test_info_logger.write(json.dumps(msg))

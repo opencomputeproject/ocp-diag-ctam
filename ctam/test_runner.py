@@ -219,6 +219,9 @@ class TestRunner:
         dut_logger = LoggingWriter(
             self.cmd_output_dir, self.console_log, "RedfishCommandDetails_"+testrun_name, "log", self.debug_mode
         )
+        test_info_logger = LoggingWriter(
+            self.output_dir, self.console_log, "TestInfo_"+testrun_name, "log", self.debug_mode
+        )
         self.score_logger = LoggingWriter(
             self.output_dir, self.console_log, "TestScore_"+testrun_name, "log", self.debug_mode
         )
@@ -230,6 +233,7 @@ class TestRunner:
             net_rc=self.net_rc,
             debugMode=self.debug_mode,
             logger=dut_logger,
+            test_info_logger=test_info_logger,
 
         )
         self.comp_tool_dut.current_test_name = "Initialization"
@@ -369,6 +373,7 @@ class TestRunner:
                 else 0
             )
         msg = {
+                "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
                 "TotalScore": TestCase.total_compliance_score,
                 "MaxComplianceScore": TestCase.max_compliance_score,
                 "Grade": "{}%".format(grade),
@@ -436,12 +441,12 @@ class TestRunner:
                     # attempt test cleanup even if test exception raised
                     test_instance.teardown()
                     msg = {
+                        "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
                         "TestID": test_instance.test_id,
                         "TestName": test_instance.test_name,
                         "TestCaseScore": test_instance.score,
                         "TestCaseResult": TestResult(test_instance.result).name
                     }
-                    print("Message is : ", msg)
                     self.score_logger.write(json.dumps(msg))
 
             grade = (
@@ -546,4 +551,5 @@ class JsonFormatter(logging.Formatter):
         :rtype                              JSON Dict
         """
         msg = json.loads(getattr(record, "msg", None))
-        return json.dumps(msg, indent=4)
+        f_msg = json.dumps(msg, indent=4) 
+        return f_msg + ","
