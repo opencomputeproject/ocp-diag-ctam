@@ -8,7 +8,6 @@ LICENSE file in the root directory of this source tree.
 
 from typing import Optional, List
 from interfaces.functional_ifc import FunctionalIfc
-import ast
 from ocptv.output import LogSeverity
 from utils.json_utils import *
 
@@ -32,6 +31,7 @@ class RasIfc(FunctionalIfc):
         self.collectdiagnostic_uri_list = []
         self.logdump_uri_list = []
         self.dumplog_uri_list = []
+        
 
     @classmethod
     def get_instance(cls, *args, **kwargs):
@@ -74,20 +74,26 @@ class RasIfc(FunctionalIfc):
         :returns:				    Array of all URIs under GpuId ThermalMetrics
         """
 
-    def ctam_get_collectdiagnostic_uris(self):
+    def ctam_get_collectdiagnostic_uris(self): #FIXME
         if self.collectdiagnostic_uri_list == []:
             self.ctam_redfish_uri_deep_hunt(
-                "/redfish/v1/Managers/HGX_BMC_0/LogServices", "CollectDiagnosticData", self.collectdiagnostic_uri_list
+                "/redfish/v1/Managers", "Dump", self.collectdiagnostic_uri_list
             )
             self.ctam_redfish_uri_deep_hunt(
-                "/redfish/v1/Systems/HGX_Baseboard_0/LogServices", "CollectDiagnosticData", self.collectdiagnostic_uri_list
+                "/redfish/v1/Systems", "Dump", self.collectdiagnostic_uri_list
             )
+        print("Demo")
+        self.write_test_info("{}".format(self.collectdiagnostic_uri_list))
         return self.collectdiagnostic_uri_list
     
-    def ctam_get_dump_uris(self):
-        if self.logdump_uri_list == []:
-            self.logdump_uri_list = self.ctam_get_collectdiagnostic_uris()
-        for uri in self.logdump_uri_list:
-            self.ctam_redfish_uri_hunt(uri, "Dump", self.dumplog_uri_list)
-        return self.dumplog_uri_list
+    def ctam_get_dump_uris(self): #FIXME
+        target_values = []
+
+        for entry in self.ctam_get_collectdiagnostic_uris():
+            if "Response" in entry and "Actions" in entry["Response"]:
+                actions = entry["Response"]["Actions"]
+                for action_value in actions.items():
+                    if "target" in action_value:
+                        target_values.append(action_value["target"])
+        print(target_values)
     
