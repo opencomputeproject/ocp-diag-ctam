@@ -1,10 +1,14 @@
 """
 Copyright (c) Microsoft Corporation
+Copyright (c) NVIDIA CORPORATION
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
 """
+import time
+import json
+import os
 from typing import Optional, List
 from interfaces.functional_ifc import FunctionalIfc
 
@@ -86,3 +90,107 @@ class HealthCheckIfc(FunctionalIfc):
             #     "{}{}".format(self.dut_obj.gpu_redfish_data["GPUMC"], clear_dump_uri)
             # )
         return result
+    
+    def trigger_self_test_dump_collection(self):
+        """
+        :Description:							Trigger Self-test Dump Collection
+
+        :returns:				    			SelfTestDump_Status
+        :rtype: 								Bool
+        """
+        MyName = __name__ + "." + self.trigger_self_test_dump_collection.__qualname__
+        StartTime = time.time()
+
+        selftest_dump_collection_uri = self.dut().uri_builder.format_uri(
+            redfish_str="{BaseURI}{SystemURI}", component_type="BMC"
+        )
+        JSONData = self.RedfishTriggerDumpCollection(
+            "OEM",
+            selftest_dump_collection_uri,
+            "SelfTest"
+        )
+        if self.dut().is_debug_mode():
+            self.test_run().add_log(LogSeverity.DEBUG, f"{MyName}  {JSONData}")
+            
+        # Now Wait for TaskService/Tasks/$ID TaskState to reflect completed.
+        if "error" not in JSONData:
+            TaskID = JSONData["Id"]
+            
+            if self.dut().is_debug_mode():
+                self.test_run().add_log(LogSeverity.DEBUG, f"Self-test Dump Collection Task ID = {TaskID}")
+            DeployTime = time.time()
+            Task_Completed, JSONData = self.ctam_monitor_task(TaskID)
+            EndTime = time.time()
+            if Task_Completed:
+                for http_header in JSONData['Payload']['HttpHeaders']:
+                    if 'Location' in  http_header:
+                        self.selftest_dump_entry_uri=http_header.split(': ')[1]
+                        if self.dut().is_debug_mode():
+                            self.test_run().add_log(LogSeverity.DEBUG, 
+                                "Self-test Dump Location = {}".format(self.selftest_dump_entry_uri)
+                            )
+                if self.selftest_dump_entry_uri:
+                    SelfTestDump_Status = True
+                else:
+                    SelfTestDump_Status = False
+            else:
+                SelfTestDump_Status = False
+            msg= "{0}: Self-test Dump Trigger Time: {1} Self-test Dump Collection Time: {2} \n Redfish Outcome: {3}".format(
+                MyName,
+                DeployTime - StartTime,
+                EndTime - StartTime,
+                json.dumps(JSONData, indent=4),
+            )
+            self.test_run().add_log(LogSeverity.DEBUG, msg)
+            
+        else:
+            SelfTestDump_Status = False
+        
+        return SelfTestDump_Status
+    
+    def download_self_test_dump(self):
+        """
+        :Description:							Download Self-test Dump
+
+        :returns:				    			SelfTestDump_Status
+        :rtype: 								Bool
+        """
+        MyName = __name__ + "." + self.download_self_test_dump.__qualname__
+        
+        if self.selftest_dump_entry_uri:
+            self.selftest_dump_path  = self.RedfishDownloadDump(self.selftest_dump_entry_uri)
+            msg = "Self test Dump location: {}".format(self.selftest_dump_path)
+            self.test_run().add_log(LogSeverity.DEBUG, msg)
+            self.selftest_dump_entry_uri = None
+            
+        if self.selftest_dump_path:
+            SelfTestDump_Status = True
+        else:
+            SelfTestDump_Status = False
+        
+        return SelfTestDump_Status
+
+    
+    def check_self_test_report(self):
+        """
+        :Description:							Check Self-test Report for any Failure
+
+        :returns:				    			SelfTestReport_Status
+        :rtype: 								Bool
+        """
+        MyName = __name__ + "." + self.download_self_test_dump.__qualname__
+        SelfTestReport_Status = False
+        
+        for root, dirs, files in os.walk(self.selftest_dump_path):
+            if "selftest_report.json" in files:
+                with open(os.path.join(root, "selftest_report.json"), 'r') as fd:
+                    SelfTestReport_JSON = json.load(fd)
+                if SelfTestReport_JSON["header"]["summary"]["test-case-failed"] == 0:
+                    SelfTestReport_Status = True
+                else:
+                    msg = "Self-test reported failure with test-case-failed = {}"\
+                        .format(SelfTestReport_JSON["header"]["summary"]["test-case-failed"])
+                    self.test_run().add_log(LogSeverity.ERROR, msg)
+
+        return SelfTestReport_Status
+

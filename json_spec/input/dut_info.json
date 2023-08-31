@@ -83,6 +83,16 @@
       "description": "Options are GPU_BB & Discrete_GFX for now",
       "type": "string",
       "value": "GPU_BB"
+    },
+    "FwStagingTimeMax": {
+      "description": "Maximum time in seconds taken by staging (copy) phase of full device FW update",
+      "type": "int",
+      "value": 600
+    },
+    "FwActivationTimeMax": {
+      "description": "Maximum time in seconds taken by activation phase of full device FW update",
+      "type": "int",
+      "value": 600
     }
   },
   "required": [
@@ -92,6 +102,8 @@
     "PowerOnCommand",
     "DebugMode",
     "PowerOffWaitTime",
-    "PowerOnWaitTime"
+    "PowerOnWaitTime",
+    "FwStagingTimeMax",
+    "FwActivationTimeMax"
   ]
 }

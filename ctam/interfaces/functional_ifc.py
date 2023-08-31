@@ -1,5 +1,6 @@
 """
 Copyright (c) Microsoft Corporation
+Copyright (c) NVIDIA CORPORATION
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -9,13 +10,14 @@ import os
 import json
 import subprocess
 import time
+from datetime import datetime
 from typing import Optional, List
 from datetime import datetime
 import ocptv.output as tv
 from ocptv.output import LogSeverity
 
 from interfaces.comptool_dut import CompToolDut
-
+from utils.fwpkg_utils import FwpkgSignature, PLDMFwpkg
 
 class FunctionalIfc:
     """
@@ -72,7 +74,7 @@ class FunctionalIfc:
         """
         pass
 
-    def get_JSONFWFilePayload_file(self, image_type="default"):
+    def get_JSONFWFilePayload_file(self, image_type="default", corrupted_component_id=None):
         """
         :Description:           Get Payload file
 
@@ -97,15 +99,57 @@ class FunctionalIfc:
                 .get("Package", ""),
             )
         elif image_type == "invalid_sign":
-            json_fw_file_payload = os.path.join(
+            if self.dut().package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {}).get("Package", "") != "":
+                json_fw_file_payload = os.path.join(
+                    self.dut().cwd,
+                    self.dut()
+                    .package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {})
+                    .get("Path", ""),
+                    self.dut()
+                    .package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {})
+                    .get("Package", ""),
+                )
+            else:
+                golden_fwpkg_path = os.path.join(
+                    self.dut().cwd,
+                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+                )
+                json_fw_file_payload = FwpkgSignature.clear_signature_in_pkg(golden_fwpkg_path)
+            
+        elif image_type == "invalid_uuid":
+            golden_fwpkg_path = os.path.join(
                 self.dut().cwd,
-                self.dut()
-                .package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {})
-                .get("Path", ""),
-                self.dut()
-                .package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {})
-                .get("Package", ""),
+                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
             )
+            json_fw_file_payload = PLDMFwpkg.corrupt_package_UUID(golden_fwpkg_path)
+        
+        elif image_type == "empty_metadata":
+            if corrupted_component_id is None:
+                corrupted_component_id = self.ctam_get_component_to_be_corrupted()
+            msg = f"Corrupted component ID: {corrupted_component_id}"
+            self.test_run().add_log(LogSeverity.DEBUG, msg)
+            golden_fwpkg_path = os.path.join(
+                self.dut().cwd,
+                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+            )
+            metadata_size = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("MetadataSizeBytes", 4096)
+            json_fw_file_payload = PLDMFwpkg.clear_component_metadata_in_pkg(golden_fwpkg_path, corrupted_component_id, metadata_size)
+        
+        elif image_type == "empty_component":
+            if corrupted_component_id is None:
+                corrupted_component_id = self.ctam_get_component_to_be_corrupted()
+            msg = f"Corrupted component ID: {corrupted_component_id}"
+            self.test_run().add_log(LogSeverity.DEBUG, msg)
+            golden_fwpkg_path = os.path.join(
+                self.dut().cwd,
+                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+            )
+            json_fw_file_payload = PLDMFwpkg.clear_component_image_in_pkg(golden_fwpkg_path, corrupted_component_id)
+        
         elif image_type == "backup":
             json_fw_file_payload = os.path.join(
                 self.dut().cwd,
@@ -161,7 +205,7 @@ class FunctionalIfc:
         :rtype:                 string
         """
         pldm_json_file = ""
-        if image_type == "default":
+        if image_type == "default" or image_type == "corrupt_component":
             pldm_json_file = os.path.join(
                 self.dut().cwd,
                 self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
@@ -358,29 +402,143 @@ class FunctionalIfc:
         self.test_run().add_log(LogSeverity.INFO, msg)
         return JSONData
     
-    def ctam_activate_ac(self):
+    def ctam_activate_ac(self, check_time=False):
         """
         :Description:					Activate AC
+        
+        :param check_time:              Check the activation time does not exceed maximum time per spec
 
         :returns:				    	ActivationStatus
         :rtype: 						Bool
         """
         MyName = __name__ + "." + self.ctam_activate_ac.__qualname__
         ActivationStatus = False
+        
+        FwActivationTimeMax = self.dut().dut_config["FwActivationTimeMax"]["value"]
+        if check_time and self.dut().dut_config["PowerOnWaitTime"]["value"] > FwActivationTimeMax:
+            msg = f"PowerOnWaitTime is greater than FwActivationTimeMax as per the json config file. Setting FwActivationTimeMax = PowerOnWaitTime"
+            self.test_run().add_log(LogSeverity.WARNING, msg)
+            FwActivationTimeMax = self.dut().dut_config["PowerOnWaitTime"]["value"]
+        
         self.NodeACReset()  # NodeACReset declaration pending
-
+        
+        ActivationStartTime = time.time() - self.dut().dut_config["PowerOnWaitTime"]["value"] # When the system was reset
         while "error" in self.IsGPUReachable():  # declaration pending
             msg = "GPU showing error"
             self.test_run().add_log(LogSeverity.DEBUG, msg)
         while (self.IsGPUReachable())["Status"][
             "State"
-        ] != "Enabled":  # declaration pending
+        ] != "Enabled" \
+                and (not check_time or (check_time and (time.time() - ActivationStartTime) <= FwActivationTimeMax)): # declaration pending
             msg = "Waiting for GPU to be back up, {}".format(
                 (self.IsGPUReachable())["Status"]["State"]
             )
             self.test_run().add_log(LogSeverity.DEBUG, msg)
-        ActivationStatus = True
+            time.sleep(30)
+        ActivationEndTime = time.time()
+        
+        if check_time and (ActivationEndTime - ActivationStartTime) > FwActivationTimeMax:
+            ActivationStatus = False
+            msg = f"Activation is taking longer than the maximum time specified {FwActivationTimeMax} seconds."
+            self.test_run().add_log(LogSeverity.WARNING, msg)
+        else:
+            ActivationStatus = True
+        
         return ActivationStatus
+    
+    def RedfishTriggerDumpCollection(self, DiagnosticDataType, URI, OEMDiagnosticDataType=None):
+        """
+        :Description:                     It will trigger the collection of diagnostic data.
+        :param DiagnosticDataType:		  e.g. Manager, OEM etc.
+        :param URI:		                  URI for creating URL
+        :param OEMDiagnosticDataType:     Type of OEM Diagnostic. default=None.
+
+        :returns:		      JSON data after executing redfish command
+        :rtype:               JSON Dict
+        """
+        MyName = __name__ + "." + self.RedfishTriggerDumpCollection.__qualname__
+        URL = URI + "/LogServices/Dump/Actions/LogService.CollectDiagnosticData"
+        msg = "Dump Collection URL = {}".format(URL)
+        self.test_run().add_log(LogSeverity.DEBUG, msg)
+        
+        payload = { "DiagnosticDataType": DiagnosticDataType }
+        if OEMDiagnosticDataType:
+            payload["OEMDiagnosticDataType"] = "DiagnosticType=" + OEMDiagnosticDataType
+        response = self.dut().redfish_ifc.post(path=URL, body=payload)
+        JSONData = response.dict
+
+        msg = "{0}: RedFish Input: {1} Result: {2}".format(MyName, payload, JSONData)
+        self.test_run().add_log(LogSeverity.INFO, msg)
+        
+        return JSONData
+    
+    def RedfishDownloadDump(self, DumpURI):
+        """
+        :Description:              It will download the specified dump using redfish command and untar the downloaded dump.
+        :param DumpLocation:	   Dump location URI 
+
+        :returns:				   DumpPath (Path to downloaded dump)
+        :rtype:                    string
+        """
+        MyName = __name__ + "." + self.RedfishDownloadDump.__qualname__
+        URL = DumpURI + "/attachment"
+        msg = "Dump Entry URL = {}".format(URL)
+        self.test_run().add_log(LogSeverity.DEBUG, msg)
+        
+        dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+        dump_tarball_path = os.path.join(
+                self.dut().cwd, 
+                "workspace",
+                "{}_dump.tar.xz".format(dt))
+        response =  self.dut().redfish_ifc.get(path=URL)
+        try:
+            with open(dump_tarball_path, 'wb') as fd:
+                fd.write(response.read)
+            # Unzip the .tar file
+            import tarfile
+            dump = tarfile.open(dump_tarball_path)
+            DumpPath = os.path.join(
+                self.dut().cwd, 
+                "workspace", 
+                "{}_dump".format(dt))
+            dump.extractall(DumpPath) # This will create a directory if it's not present already.
+            dump.close()
+            os.remove(dump_tarball_path) # Delete the tarball as it's not needed anymore
+            return DumpPath
+        except Exception as e:
+            print(str(e))
+            return None
+    
+    def ctam_monitor_task(self, TaskID):
+        """
+        :Description:       CTAM Monitor a Task
+        :returns:	        (Task_Completed, JSONData response)
+        :rtype:             Tuple
+        """
+        Task_Completed = False
+        TaskURI = self.dut().uri_builder.format_uri(
+            redfish_str="{BaseURI}/TaskService/Tasks/" + "{}".format(TaskID), component_type="GPU"
+        )
+        if self.dut().is_debug_mode():
+            self.test_run().add_log(LogSeverity.DEBUG, f"Task URI: {TaskURI}")
+            
+        response = self.dut().redfish_ifc.get(TaskURI)
+        JSONData = response.dict
+        while JSONData["TaskState"] == "Running":
+            response = self.dut().redfish_ifc.get(TaskURI)
+            JSONData = response.dict
+            if self.dut().is_debug_mode():
+                self.test_run().add_log(LogSeverity.DEBUG,
+                    "Task Percentage_Completion = {}".format(JSONData["PercentComplete"])
+                )
+            time.sleep(30)
+        if JSONData["TaskState"] == "Completed":
+            Task_Completed = True
+        else:
+            Task_Completed = False
+        
+        return Task_Completed, JSONData
+
     
     def ctam_redfish_uri_deep_hunt(self, URI, uri_hunt="", uri_listing=[], uri_analyzed=[]):
         """

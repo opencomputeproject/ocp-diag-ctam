@@ -116,16 +116,22 @@ class FWUpdateIfc(FunctionalIfc):
         return VersionsDifferent
 
     def ctam_stage_fw(
-        self, partial=0, image_type="default", wait_for_stage_completion=True
+        self, partial=0, image_type="default", wait_for_stage_completion=True,
+        corrupted_component_id=None, corrupted_component_list=[],
+        check_time=False, return_task_id=False
     ):
         """
         :Description:							Stage Firmware
         :param partial:							Partial
         :param image_type:						Type of Firmware Image
         :param wait_for_stage_completion:		Wait for stage completion
+        :param corrupted_component_id:          ComponentIdentifier of the component image to be corrupted for specific negative tests
+        :param corrupted_component_list:        List component names (Ids) which are corrupted
+        :param check_time:                      Check the staging time does not exceed maximum time per spec
+        :param return_task_id:                  Return the task id of the FW update staging task.
 
-        :returns:				    			StageFWOOB_Status
-        :rtype: 								Bool
+        :returns:				    			StageFWOOB_Status or StageFWOOB_Status, return_task_id 
+        :rtype: 								Bool or (Bool, Bool)
         """
         MyName = __name__ + "." + self.ctam_stage_fw.__qualname__
         StartTime = time.time()
@@ -133,7 +139,7 @@ class FWUpdateIfc(FunctionalIfc):
         if partial == 0:
             self.ctam_pushtargets()
 
-        JSONFWFilePayload = self.get_JSONFWFilePayload_file(image_type=image_type)
+        JSONFWFilePayload = self.get_JSONFWFilePayload_file(image_type=image_type, corrupted_component_id=corrupted_component_id)
 
         print(JSONFWFilePayload)
         uri = self.dut().uri_builder.format_uri(
@@ -141,11 +147,14 @@ class FWUpdateIfc(FunctionalIfc):
         )
         if self.dut().is_debug_mode():
             self.test_run().add_log(LogSeverity.DEBUG, f"URI : {uri}")
+        
         JSONData = self.RedFishFWUpdate(JSONFWFilePayload, uri)
+        StagingStartTime = time.time()
 
         if self.dut().is_debug_mode():
             self.test_run().add_log(LogSeverity.DEBUG, f"{MyName}  {JSONData}")
 
+        FwUpdTaskID = JSONData.get("Id")
         if "error" not in JSONData:
             if wait_for_stage_completion:
                 TaskID = JSONData["@odata.id"]
@@ -159,7 +168,9 @@ class FWUpdateIfc(FunctionalIfc):
                 response = self.dut().run_redfish_command(uri=v1_str)
                 JSONData = response.dict
 
-                while JSONData["TaskState"] == "Running":
+                FwStagingTimeMax = self.dut().dut_config["FwStagingTimeMax"]["value"]
+                while JSONData["TaskState"] == "Running" \
+                        and (not check_time or (check_time and (time.time() - StagingStartTime) <= FwStagingTimeMax)):
                     response = self.dut().run_redfish_command(uri=v1_str)
                     JSONData = response.dict
                     if self.dut().is_debug_mode():
@@ -175,6 +186,11 @@ class FWUpdateIfc(FunctionalIfc):
                     StageFWOOB_Status = True
                 else:
                     StageFWOOB_Status = False
+                    
+                if check_time and (EndTime - StagingStartTime) > FwStagingTimeMax:
+                    msg = f"FW copy operation exceeded the maximum time {FwStagingTimeMax} seconds."
+                    self.test_run().add_log(LogSeverity.DEBUG, msg)
+                    StageFWOOB_Status = False
 
                 msg = "{0}: GPU Deployment Time: {1} GPU Update Time: {2} \n Redfish Outcome: {3}".format(
                     MyName,
@@ -183,7 +199,7 @@ class FWUpdateIfc(FunctionalIfc):
                     json.dumps(JSONData, indent=4),
                 )
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
-                if image_type in ["invalid_sign", "unsigned", "corrupt"]:
+                if image_type in ["invalid_sign", "unsigned", "corrupt", "invalid_uuid", "empty_metadata", "empty_component"]:
                     if "TaskState" in JSONData and "TaskStatus" in JSONData:
                         if (
                             JSONData["TaskState"] == "Exception"
@@ -193,7 +209,13 @@ class FWUpdateIfc(FunctionalIfc):
                                 JSONData["TaskState"], JSONData["TaskStatus"]
                             )
                             self.test_run().add_log(LogSeverity.DEBUG, msg)
-                            StageFWOOB_Status = True
+                            if image_type == "empty_component":
+                                StageFWOOB_Status = self.ctam_check_component_fwupd_failure(
+                                    task_message_list=JSONData["Messages"],
+                                    corrupted_component_id=corrupted_component_id
+                                    )
+                            else:
+                                StageFWOOB_Status = True
                         else:
                             msg = "Staging failed but with an unexpected TaskState = {}, TaskStatus = {}".format(
                                 JSONData["TaskState"], JSONData["TaskStatus"]
@@ -209,22 +231,26 @@ class FWUpdateIfc(FunctionalIfc):
                     StageFWOOB_Status = True
                 else:
                     StageFWOOB_Status = False
-            elif not (image_type in ["invalid_sign", "unsigned", "corrupt"]):
+            elif not (image_type in ["invalid_sign", "unsigned", "corrupt", "invalid_uuid", "empty_metadata", "empty_component"]):
                 msg = "Staging failed with incorrect error message {}".format(
                     JSONData["error"]
                 )
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
 
                 StageFWOOB_Status = False
-        return StageFWOOB_Status
+        if return_task_id:
+            return StageFWOOB_Status, FwUpdTaskID
+        else:
+            return StageFWOOB_Status
 
-    def ctam_fw_update_verify(self, image_type="default"):
+    def ctam_fw_update_verify(self, image_type="default", corrupted_component_id=None):
         """
-        :Description:				Firmware Update verification
-        :param image_type:			Firmware image type
+        :Description:				    Firmware Update verification
+        :param image_type:			    Firmware image type
+        :param corrupted_component_id:  ComponentIdentifier (in hex format) of the corrupted component image
 
-        :returns:				    Update_Verified
-        :rtype: 					Bool
+        :returns:				        Update_Verified
+        :rtype: 					    Bool
         """
         MyName = __name__ + "." + self.ctam_fw_update_verify.__qualname__
         Update_Verified = True
@@ -240,13 +266,14 @@ class FWUpdateIfc(FunctionalIfc):
 
         for element in self.PostInstallDetails:
             if str(element["Updateable"]) == "True":
-                if image_type == "negate":
+                if image_type == "negate" \
+                    or (image_type == "corrupt_component" and element["SoftwareId"] == corrupted_component_id):
                     ExpectedVersion = self.PreInstallVersionDetails[element["Id"]]
                     msg = "negative test case, expected version = {}".format(
                         ExpectedVersion
                     )
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
-
+                    
                 else:
                     ExpectedVersion = jsonhunt(
                         PLDMPkgJson,
@@ -275,6 +302,7 @@ class FWUpdateIfc(FunctionalIfc):
                             element["Id"], element["SoftwareId"], element["Version"]
                         )
                         self.test_run().add_log(LogSeverity.DEBUG, msg)
+                    
                     else:
                         # Positive test case but a failure
                         msg = "{} : {} : {} : Update Successful".format(
@@ -390,3 +418,70 @@ class FWUpdateIfc(FunctionalIfc):
                 self.test_run().add_log(LogSeverity.INFO, "specific_targets is not available in Device list")
             JSONData = self.ctam_getus()
         return PartialDeviceSelected
+    
+    def ctam_get_component_to_be_corrupted(self):
+        """
+        :Description:         It will check the package_info.json for CorruptComponentIdentifier.
+                              If it is not provided, it'll find the first updatabele element from firmware inventory.
+
+        :returns:		      SoftwareID of the component to be corrupted (in hex format)
+        :rtype:               str
+        """
+        MyName = __name__ + "." + self.ctam_get_component_to_be_corrupted.__qualname__        
+        corrupt_component_id = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("CorruptComponentIdentifier", "")
+        
+        if corrupt_component_id == "":
+            JSONData = self.ctam_getfi(expanded=1)
+            for element in JSONData["Members"]:
+                if str(element["Updateable"]) == "True":
+                    corrupt_component_id = element["SoftwareId"]
+        #component_id = hex(int(corrupt_component_id, 16))
+        msg = f"{MyName} returned component ID to be corrupted: {corrupt_component_id}"
+        self.test_run().add_log(LogSeverity.DEBUG, msg)
+        
+        return corrupt_component_id
+    
+    def ctam_check_component_fwupd_failure(self, task_message_list, corrupted_component_id):
+        """
+        :Description:                       It will check if the task status message list is showing the
+                                            corrupted component update failed and all other component
+                                            copying (staging) went through.
+        
+        :param task_message_list:           List of message from the task status response
+        :param corrupted_component_id:      ComponentIdentifier (in hex format) of the corrupted component image
+
+        :returns:				    	    NonCorruptCompStaging_Success
+        :rtype:                             Bool
+        """
+        MyName = __name__ + "." + self.ctam_check_component_fwupd_failure.__qualname__        
+        NonCorruptCompStaging_Success = True
+        
+        corrupted_component_list = self.ctam_get_component_list(corrupted_component_id)
+        
+        for message in task_message_list:
+            # Check if the component is not corrupted, but the severity is not OK
+            if (not any(item in corrupted_component_list for item in message["MessageArgs"])) \
+                and "Update" in message["MessageId"] \
+                and message["Severity"] != "OK":
+                    NonCorruptCompStaging_Success = False
+                    return
+            
+        return NonCorruptCompStaging_Success
+    
+    def ctam_get_component_list(self, component_id):
+        """
+        :Description:                       It will check FW Inventory and find all the components with
+                                            the provided component ID.
+        
+        :param component_id:                Component ID / SoftwareID
+
+        :returns:				    	    List of components with the component ID
+        :rtype:                             list
+        """
+        JSONData = self.ctam_getfi(expanded=1)
+        component_list = []
+        jsonhuntall(JSONData, "SoftwareId", component_id, "Id", component_list)
+        return component_list
+        
+        
+    
