@@ -527,7 +527,7 @@ class TelemetryIfc(FunctionalIfc):
                     result = False
         return result
     
-    def ctam_managers_ethernet_interfaces_gateway_write(self): # need improvement
+    def ctam_managers_ethernet_interfaces_gateway_write(self):
         """
         :Description:				Read back the data of redfish/v1/Managers/{mgr_instance}/EthernetInterfaces/usb0/Gateway property
 
@@ -538,15 +538,16 @@ class TelemetryIfc(FunctionalIfc):
         for uri in mgr_instance:
             URI = "/Managers/" + uri + "/EthernetInterfaces/usb0"
             gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
-            payload = {"IPv4StaticAddresses": [{"Address": "192.168.31.1", "AddressOrigin": "Static", "Gateway":"192.168.31.2", "SubnetMask": "255.255.0.0"}]}
+            payload = {"IPv4StaticAddresses": [{"Address": "192.168.31.1", "Gateway":"192.168.31.2", "SubnetMask": "255.255.0.0"}]}
             header = {"Content-Type: application/json"}
+            response = False
+            status = "Failure"
             response = self.dut().run_redfish_command(gpu_uri, mode="PATCH", body=payload, headers=header)
-            JSONData = response.dict
-            status = response.status
-            if status == 200 or status == 201:
-                self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(URI, JSONData))
+            if response == None:
+                status = "Success"
+                self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(URI, status))
             else:
-                self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(URI, JSONData))
+                self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(URI, response))
                 result = False
         return result
 
@@ -580,3 +581,27 @@ class TelemetryIfc(FunctionalIfc):
     #         value = gpu.split('/')[-1]
     #         gpu_id.append(value)
     #     return gpu_id
+
+    def ctam_managers_set_sel_time(self): # Probably need improvement
+        """
+        :Description:				Set sel time at redfish/v1/Managers/{mgr_instance} property
+
+        """
+        MyName = __name__ + "." + self.ctam_managers_ethernet_interfaces_gateway_write.__qualname__
+        mgr_instance = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ManagerIDs}", component_type="GPU"))
+        result = True
+        for uri in mgr_instance:
+            URI = "/Managers/" + uri
+            gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
+            payload = {"DateTime": "1970-01-01T22:47:09+00:00"}
+            header = {"Content-Type: application/json"}
+            response = self.dut().run_redfish_command(gpu_uri, mode="PATCH", body=payload, headers=header)
+            JSONData = response.dict
+            status = response.status
+            if status == 200 or status == 201:
+                if "DateTime" in JSONData:
+                    self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(URI, JSONData))
+                else:
+                    self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(URI, JSONData))
+                    result = False
+        return result
