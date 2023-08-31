@@ -76,10 +76,10 @@ class RasIfc(FunctionalIfc):
 
     def ctam_get_collectdiagnostic_uris(self): #FIXME
         if self.collectdiagnostic_uri_list == []:
-            self.ctam_redfish_uri_deep_hunt(
+            self.ctam_redfish_uri_hunt(
                 "/redfish/v1/Managers", "Dump", self.collectdiagnostic_uri_list
             )
-            self.ctam_redfish_uri_deep_hunt(
+            self.ctam_redfish_uri_hunt(
                 "/redfish/v1/Systems", "Dump", self.collectdiagnostic_uri_list
             )
         print("Demo")

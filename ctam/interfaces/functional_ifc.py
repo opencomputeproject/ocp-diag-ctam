@@ -563,15 +563,17 @@ class FunctionalIfc:
                     uri_analyzed.append(URI)
                     self.ctam_redfish_uri_deep_hunt(URI, uri_hunt, uri_listing, uri_analyzed)
             # Consider the case of list of dictionaries
+
             elif type(JSONData[element]) == type([]):
                 for dictionary in JSONData[element]:
                     # Verify that it is indeed an array of dictionaries
+                    URI = None 
                     if type(dictionary) == type(dict()) and ("@odata.id" in dictionary):
                         URI = dictionary["@odata.id"]
-                        # print(URI)
-                        if URI not in uri_analyzed:
-                            uri_analyzed.append(URI)
-                            self.ctam_redfish_uri_deep_hunt(URI, uri_hunt, uri_listing, uri_analyzed)
+    
+                    if URI and URI not in uri_analyzed:
+                        uri_analyzed.append(URI)
+                        self.ctam_redfish_uri_deep_hunt(URI, uri_hunt, uri_listing, uri_analyzed)
 
     def ctam_redfish_uri_hunt(self, URI, uri_hunt="", uri_listing=[]):
         response = self.dut().run_redfish_command(uri="{}{}".format(self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU"), URI))

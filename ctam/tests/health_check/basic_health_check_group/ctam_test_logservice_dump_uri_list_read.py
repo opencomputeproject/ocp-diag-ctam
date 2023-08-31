@@ -3,15 +3,15 @@ Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test LogServices URI List Read
-:Test ID:		H99
+:Test Name:		CTAM Test LogService Dump URI List Read
+:Test ID:		H97
 :Group Name:	health_check
 :Score Weight:	10
 
-:Description:	Basic test case of ensuring that there are LogServices available in the accelerator
+:Description:	Basic test case of ensuring that there are LogServices Dump available in the accelerator
 
 :Usage 1:		python ctam.py -w ..\workspace -t H99
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test LogServices URI List Read"
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test LogService Dump URI List Read"
 
 """
 from typing import Optional, List
@@ -28,8 +28,7 @@ from tests.health_check.basic_health_check_group.basic_health_check_test_group i
     BasicHealthCheckTestGroup,
 )
 
-
-class CTAMTestLogServicesURIListRead(TestCase):
+class CTAMTestLogServiceDumpURIListRead(TestCase):
     """
         :param gpu_bb acc:		Accelerator Object
         :param Logger logger:	Logger Object
@@ -37,10 +36,10 @@ class CTAMTestLogServicesURIListRead(TestCase):
         :returns:				Test result [Pass/Fail], Test score
     """
 
-    test_name: str = "CTAM Test LogServices URI List Read"
-    test_id: str = "H99"
+    test_name: str = "CTAM Test LogService Dump URI List Read"
+    test_id: str = "H97"
     score_weight: int = 10
-    tags: List[str] = ["HCheck"]
+    tags: List[str] = []
 
     def __init__(self, group: BasicHealthCheckTestGroup):
         """
@@ -65,17 +64,17 @@ class CTAMTestLogServicesURIListRead(TestCase):
         """
         actual test verification
         """
-        result = False
+        result = True
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if (logservice := self.group.health_check_ifc.ctam_get_logservice_uris()) == []:
+            if (dump_uri := self.group.health_check_ifc.ctam_get_logdump_uris()) == []:
                 step1.add_log(
                     LogSeverity.FATAL,
-                    f"{self.test_id} : Test case Failed - LogService list is empty",
+                    f"{self.test_id} : Test case Failed - LogService Dump list is empty",
                 )
                 result = False
             else:
-                pprint(logservice)
+                pprint(dump_uri)
                 step1.add_log(
                     LogSeverity.INFO,
                     f"{self.test_id} : Test case Passed.",

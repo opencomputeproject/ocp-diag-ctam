@@ -55,24 +55,17 @@ class HealthCheckIfc(FunctionalIfc):
     
     def ctam_get_logservice_uris(self):
         if self.logservice_uri_list == []:
-            #self.ctam_redfish_uri_deep_hunt(
-            #    "/redfish/v1/Systems", "LogServices", self.logservice_uri_list
-            #)
+            self.ctam_redfish_uri_deep_hunt(
+               "/redfish/v1/Systems", "LogServices", self.logservice_uri_list
+            )
             self.ctam_redfish_uri_deep_hunt(
                 "/redfish/v1/Managers", "LogServices", self.logservice_uri_list
             )
-            #self.ctam_redfish_uri_deep_hunt(
-            #    "/redfish/v1/Chassis", "LogServices", self.logservice_uri_list
-            #)
+            self.ctam_redfish_uri_deep_hunt(
+               "/redfish/v1/Chassis", "LogServices", self.logservice_uri_list
+            )
         self.write_test_info("{}".format(self.logservice_uri_list))
         return self.logservice_uri_list
-        
-    def ctam_get_logdump_uris(self):
-        if self.logservice_uri_list == []:
-            self.logservice_uri_list = self.ctam_get_logservice_uris()
-        for uri in self.logservice_uri_list:
-            self.ctam_redfish_uri_hunt(uri, "Dump", self.dumplog_uri_list)
-        return self.dumplog_uri_list
 
     def ctam_clear_log_dump(self):
         result = True
@@ -85,10 +78,7 @@ class HealthCheckIfc(FunctionalIfc):
             print(clear_dump_uri)
             uri = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU")
             self.dut().run_redfish_command(uri=uri)
-            # Need to check again
-            # self.dut_obj.RedFishCommand(
-            #     "{}{}".format(self.dut_obj.gpu_redfish_data["GPUMC"], clear_dump_uri)
-            # )
+        self.write_test_info("{}".format(result))
         return result
     
     def trigger_self_test_dump_collection(self):
@@ -193,4 +183,12 @@ class HealthCheckIfc(FunctionalIfc):
                     self.test_run().add_log(LogSeverity.ERROR, msg)
 
         return SelfTestReport_Status
+    
+    def ctam_get_logdump_uris(self):
+        if self.logservice_uri_list == []:
+            self.logservice_uri_list = self.ctam_get_logservice_uris()
+        for uri in self.logservice_uri_list:
+            self.ctam_redfish_uri_hunt(uri, "Dump", self.dumplog_uri_list)
+        self.write_test_info("{}".format(self.dumplog_uri_list))
+        return self.dumplog_uri_list
 
