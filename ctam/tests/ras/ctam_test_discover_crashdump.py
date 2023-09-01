@@ -8,7 +8,11 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test attempts to get event service
+:Description:	Ensure that we have at least one LogServiceids each under Systems and Managers. 
+                Next it checks to see if at least one of them have LogService.CollectDiagnosticData 
+                Return list of uris with LogService.CollectDiagnosticData. For eg. this is a pass. 
+                /redfish/v1/Managers/{ManagerId}/LogServices/{LogServiceId}/Actions/CollectDiagnosticData 
+                /redfish/v1/Systems/{ComputerSystemId}/LogServices/{LogServiceId}/Actions/CollectDiagnosticData
 
 :Usage 1:		python ctam.py -w ..\workspace -t R1
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Discover Crashdump"
