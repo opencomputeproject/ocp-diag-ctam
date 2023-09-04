@@ -6,6 +6,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
 """
+from operator import contains
 import os
 import json
 import subprocess
@@ -540,7 +541,7 @@ class FunctionalIfc:
         return Task_Completed, JSONData
 
     
-    def ctam_redfish_uri_deep_hunt(self, URI, uri_hunt="", uri_listing=[], uri_analyzed=[]):
+    def ctam_redfish_uri_deep_hunt(self, URI, uri_hunt="", uri_listing=[], uri_analyzed=[],action=0):
         """
         :Description:			CTAM Redfish URI Hunt - a recursive function to look deep till we find all instances URI
         :param URI:             The top uri under which we are searching for the uri instances (type string)
@@ -555,15 +556,17 @@ class FunctionalIfc:
             uri_listing.append(URI + "/" + uri_hunt)
             uri_analyzed.append(URI + "/" + uri_hunt)
             JSONData.pop(uri_hunt)
+        if "Actions" in JSONData and (action == 1):
+            self.ctam_redfish_action_hunt(JSONData["Actions"], uri_hunt,uri_listing,uri_analyzed)
+            JSONData.pop("Actions")
         for element in JSONData:
             # Consider the case of nested dictionary
             if type(JSONData[element]) == type(dict()) and ("@odata.id" in JSONData[element]):
                 URI = JSONData[element]["@odata.id"]
                 if URI not in uri_analyzed:
                     uri_analyzed.append(URI)
-                    self.ctam_redfish_uri_deep_hunt(URI, uri_hunt, uri_listing, uri_analyzed)
-            # Consider the case of list of dictionaries
-
+                    self.ctam_redfish_uri_deep_hunt(URI, uri_hunt, uri_listing, uri_analyzed,action)
+            # Consider the case of list of dictionaries                
             elif type(JSONData[element]) == type([]):
                 for dictionary in JSONData[element]:
                     # Verify that it is indeed an array of dictionaries
@@ -573,7 +576,7 @@ class FunctionalIfc:
     
                     if URI and URI not in uri_analyzed:
                         uri_analyzed.append(URI)
-                        self.ctam_redfish_uri_deep_hunt(URI, uri_hunt, uri_listing, uri_analyzed)
+                        self.ctam_redfish_uri_deep_hunt(URI, uri_hunt, uri_listing, uri_analyzed,action)
 
     def ctam_redfish_uri_hunt(self, URI, uri_hunt="", uri_listing=[]):
         response = self.dut().run_redfish_command(uri="{}{}".format(self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU"), URI))
@@ -591,6 +594,29 @@ class FunctionalIfc:
                     URI = JSONData["Members"][i]["@odata.id"]
                     self.ctam_redfish_uri_hunt(URI, uri_hunt, uri_listing)
                     i = i + 1
+
+    def ctam_redfish_action_hunt(self, ActionJson, target_action_hunt="", uri_listing=[],uri_analyzed=[]):
+        """
+        :Description:			CTAM Redfish Action Hunt - a recursive function to look deep till we find all instances that contain a "target" or "actioninfo" whose value has target_action_hunt
+        :param ActionJson:
+        :param target_action_hunt:      URI we are hunting for (type string).
+        :param uri_listing:             An array that will eventually contain a list of all URIs that house the member to hunt.
+        :param uri_analyzed:            An array that contains the list of uris which are already analyzed. 
+        :returns:				None
+        """
+        
+        if "target" in ActionJson and target_action_hunt in ActionJson["target"] and ActionJson["target"] not in uri_analyzed:
+            uri_listing.append(ActionJson["target"])
+            uri_analyzed.append(ActionJson["target"])
+            ActionJson.pop("target")
+        if "@Redfish.ActionInfo" in ActionJson and target_action_hunt in ActionJson["@Redfish.ActionInfo"] and ActionJson["@Redfish.ActionInfo"] not in uri_analyzed:
+            uri_listing.append(ActionJson["@Redfish.ActionInfo"])
+            uri_analyzed.append(ActionJson["@Redfish.ActionInfo"])
+            ActionJson.pop("@Redfish.ActionInfo")
+        for element in ActionJson:
+            # Consider the case of nested dictionary
+            if type(ActionJson[element]) == type(dict()):
+                    self.ctam_redfish_action_hunt(ActionJson[element], target_action_hunt, uri_listing, uri_analyzed)
 
     def write_test_info(self, message):
         msg = {

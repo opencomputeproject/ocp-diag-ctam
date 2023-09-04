@@ -8,7 +8,11 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test attempts to get event service
+:Description:	Ensure that we have at least one LogServiceids each under Systems and Managers. 
+                Next it checks to see if at least one of them have LogService.CollectDiagnosticData 
+                Return list of uris with LogService.CollectDiagnosticData. For eg. this is a pass. 
+                /redfish/v1/Managers/{ManagerId}/LogServices/{LogServiceId}/Actions/CollectDiagnosticData 
+                /redfish/v1/Systems/{ComputerSystemId}/LogServices/{LogServiceId}/Actions/CollectDiagnosticData
 
 :Usage 1:		python ctam.py -w ..\workspace -t R1
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Discover Crashdump"
@@ -70,7 +74,7 @@ class CTAMTestDiscoverCrashdump(TestCase):
         result = True
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if (collectdata:=self.group.ras_ifc.ctam_get_collectdiagnostic_uris()) == []:
+            if (collectdata:=self.group.ras_ifc.ctam_discover_crashdump_cap()) == []:
                 step1.add_log(
                     LogSeverity.FATAL,
                     f"{self.test_id} : Test case Failed - CollectDiagnostic list is empty",
