@@ -74,7 +74,7 @@ class CTAMTestDiscoverCrashdump(TestCase):
         result = True
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if (collectdata:=self.group.ras_ifc.ctam_get_collectdiagnostic_uris()) == []:
+            if (collectdata:=self.group.ras_ifc.ctam_discover_crashdump_cap()) == []:
                 step1.add_log(
                     LogSeverity.FATAL,
                     f"{self.test_id} : Test case Failed - CollectDiagnostic list is empty",

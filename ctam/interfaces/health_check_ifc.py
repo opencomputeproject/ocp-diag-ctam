@@ -160,7 +160,6 @@ class HealthCheckIfc(FunctionalIfc):
         
         return SelfTestDump_Status
 
-    
     def check_self_test_report(self):
         """
         :Description:							Check Self-test Report for any Failure
@@ -191,4 +190,3 @@ class HealthCheckIfc(FunctionalIfc):
             self.ctam_redfish_uri_hunt(uri, "Dump", self.dumplog_uri_list)
         self.write_test_info("{}".format(self.dumplog_uri_list))
         return self.dumplog_uri_list
-
