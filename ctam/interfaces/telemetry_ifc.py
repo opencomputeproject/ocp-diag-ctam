@@ -95,13 +95,16 @@ class TelemetryIfc(FunctionalIfc):
         MyName = __name__ + "." + self.ctam_get_chassis_environment_metrics.__qualname__
         chassis_instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisIDs}", component_type="GPU"))
         result = True
+        reference_uri = r"/redfish/v1/Chassis/{ChassisId}/EnvironmentMetrics"
         for uri in chassis_instances:
             uri = "/Chassis/" + uri + "/EnvironmentMetrics"
-            chassis_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
+            base_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
+            chassis_uri = base_uri + uri
             response = self.dut().run_redfish_command(uri=chassis_uri)
             JSONData = response.dict
+            response_check = self.dut().check_uri_response(reference_uri, JSONData)
             status = response.status
-            if status == 200 or status == 201:
+            if (status == 200 or status == 201) and response_check:
                 self.test_run().add_log(LogSeverity.INFO, "Test JSON")
                 self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(uri, json.dumps(JSONData, indent=4)))
             else:

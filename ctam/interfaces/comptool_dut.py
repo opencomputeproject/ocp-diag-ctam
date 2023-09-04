@@ -16,6 +16,7 @@ import platform
 import json
 from datetime import datetime
 
+import pandas as pd
 
 from prettytable import PrettyTable
 from ocptv.output import Metadata
@@ -44,6 +45,7 @@ class CompToolDut(Dut):
         debugMode: bool,
         logger,
         test_info_logger,
+        test_uri_response_check,
         name: ty.Optional[str] = None,
         metadata: ty.Optional[Metadata] = None,
     ):
@@ -68,6 +70,7 @@ class CompToolDut(Dut):
         self.net_rc = net_rc
         self.logger = logger
         self.test_info_logger = test_info_logger
+        self.test_uri_response_check = test_uri_response_check
         self.cwd = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         super().__init__(id, name, metadata)
         self.connection_ip_address = config["properties"]["ConnectionIPAddress"][
@@ -158,6 +161,67 @@ class CompToolDut(Dut):
         finally:
             self.logger.write(json.dumps(msg))
 
+    def check_uri_response(self, uri, response):
+        if not self.test_uri_response_check:
+            msg = {"Message":"FATAL: Please provide the file name in test runner config"}
+            self.test_info_logger.write(json.dumps(msg))
+            return True
+        try:
+            def get_val_from_str(string, dct):
+                keys = string.split('.')
+                v = dct
+                for key in keys:
+                    v = v.get(key, {})
+                return True if v else False
+            nested_data = []
+            
+            data = pd.read_excel(self.test_uri_response_check).to_dict(orient='records')
+            msg = {
+                "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                "TestName": self.current_test_name,
+                "Message":"Configuration from excel",
+                "Data": data
+            }
+            self.test_info_logger.write(json.dumps(msg))
+            attributes = ""
+            result = True
+            for d in data:
+                if uri in d["TestURI"]:
+                    attributes = d["TestResponseCheck"]
+            msg = {
+                "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                "TestName": self.current_test_name,
+                "Message":"Need to check this attributes with uri",
+                "Data": attributes,
+                "URI": uri
+            }
+            self.test_info_logger.write(json.dumps(msg))
+            for i in attributes.split("\n"):
+                if "." not in i:
+                    if i not in response:
+                        result = False
+                else:
+                    nested_data = get_val_from_str(i, response)
+                    if not nested_data:
+                        result = False
+            msg = {
+                "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                "TestName": self.current_test_name,
+                "Message":"Result of checking response",
+                "Result": result,
+            }
+            self.test_info_logger.write(json.dumps(msg))
+            return result
+        except Exception as e:
+            msg = {
+                "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                "TestName": self.current_test_name,
+                "Message": "FATAL: Exception occurred while reading the config file. Please see below exception",
+                "Exception": str(e)
+            }
+            self.test_info_logger.write(json.dumps(msg))
+            
+    
     def is_debug_mode(self) -> bool:
         """
         Typically shouldn't be necessary. Log messages of LogSeverity.DEBUG are filtered.

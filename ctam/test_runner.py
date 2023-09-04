@@ -100,6 +100,8 @@ class TestRunner:
         # use override output directory if specified in test_runner.json, otherwise
         # use TestRuns directory below workspace directory
         self.output_dir = runner_config["output_override_directory"]
+        self.response_check_name = runner_config["test_uri_response_excel"]
+        
         # if out_dir:
         #     self.output_dir = out_dir
         # else:
@@ -225,6 +227,11 @@ class TestRunner:
         self.score_logger = LoggingWriter(
             self.output_dir, self.console_log, "TestScore_"+testrun_name, "log", self.debug_mode
         )
+
+        self.test_uri_response_check = None
+        if self.response_check_name:
+            self.test_uri_response_check = os.path.join(self.cwd, "workspace", self.response_check_name)
+
         self.comp_tool_dut = CompToolDut(
             id="actDut",
             config=self.dut_config,
@@ -234,6 +241,7 @@ class TestRunner:
             debugMode=self.debug_mode,
             logger=dut_logger,
             test_info_logger=test_info_logger,
+            test_uri_response_check=self.test_uri_response_check
 
         )
         self.comp_tool_dut.current_test_name = "Initialization"
