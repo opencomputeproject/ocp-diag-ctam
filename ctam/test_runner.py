@@ -100,7 +100,7 @@ class TestRunner:
         # use override output directory if specified in test_runner.json, otherwise
         # use TestRuns directory below workspace directory
         self.output_dir = runner_config["output_override_directory"]
-        self.response_check_name = runner_config["test_uri_response_excel"]
+        self.response_check_name = runner_config.get("test_uri_response_excel", None)
         
         # if out_dir:
         #     self.output_dir = out_dir
