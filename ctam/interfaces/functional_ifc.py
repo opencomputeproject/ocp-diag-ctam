@@ -513,6 +513,7 @@ class FunctionalIfc:
     def ctam_monitor_task(self, TaskID):
         """
         :Description:       CTAM Monitor a Task
+        :param TaskID       Task ID of TaskService/Tasks (for accelerator management) to monitor
         :returns:	        (Task_Completed, JSONData response)
         :rtype:             Tuple
         """
@@ -543,10 +544,13 @@ class FunctionalIfc:
     
     def ctam_redfish_uri_deep_hunt(self, URI, uri_hunt="", uri_listing=[], uri_analyzed=[],action=0):
         """
-        :Description:			CTAM Redfish URI Hunt - a recursive function to look deep till we find all instances URI
+        :Description:			CTAM Redfish URI Deep Hunt - a recursive function to look deep till we find all instances URI
         :param URI:             The top uri under which we are searching for the uri instances (type string)
         :param uri_hunt:        URI we are hunting for (type string).
         :param uri_listing:     An array that will eventually contain a list of all URIs that house the member to hunt.
+        :param uri_analyzed:    An array that will eventually contain a list of all URIs that have been searched for. 
+                                IMPORTANT - This filed must be passed else it will pick the list from previous test cases. 
+        :param action           Should be set if we are searching for action uris. 
 
         :returns:				None
         """
@@ -579,6 +583,14 @@ class FunctionalIfc:
                         self.ctam_redfish_uri_deep_hunt(URI, uri_hunt, uri_listing, uri_analyzed,action)
 
     def ctam_redfish_uri_hunt(self, URI, uri_hunt="", uri_listing=[]):
+        """
+        :Description:			CTAM Redfish URI Hunt - a recursive function to look into Members till we find all instances URI
+        :param URI:             The top uri under which we are searching for the uri instances (type string)
+        :param uri_hunt:        URI we are hunting for (type string).
+        :param uri_listing:     An array that will eventually contain a list of all URIs that house the member to hunt.
+
+        :returns:				None
+        """
         response = self.dut().run_redfish_command(uri="{}{}".format(self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU"), URI))
         JSONData = response.dict
         if uri_hunt in JSONData:
@@ -598,11 +610,11 @@ class FunctionalIfc:
     def ctam_redfish_action_hunt(self, ActionJson, target_action_hunt="", uri_listing=[],uri_analyzed=[]):
         """
         :Description:			CTAM Redfish Action Hunt - a recursive function to look deep till we find all instances that contain a "target" or "actioninfo" whose value has target_action_hunt
-        :param ActionJson:
+        :param ActionJson:              Actions JSON Dict object to work on
         :param target_action_hunt:      URI we are hunting for (type string).
         :param uri_listing:             An array that will eventually contain a list of all URIs that house the member to hunt.
         :param uri_analyzed:            An array that contains the list of uris which are already analyzed. 
-        :returns:				None
+        :returns:				        None
         """
         
         if "target" in ActionJson and target_action_hunt in ActionJson["target"] and ActionJson["target"] not in uri_analyzed:
@@ -619,6 +631,13 @@ class FunctionalIfc:
                     self.ctam_redfish_action_hunt(ActionJson[element], target_action_hunt, uri_listing, uri_analyzed)
 
     def write_test_info(self, message):
+        """
+        :Description:           JSON Formatter for CTAM TestInfo File Logging
+
+        :param message:		    MEssage to be added
+
+        :returns:	            None
+        """
         msg = {
                 "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
                 "TestName": self.dut().current_test_name,

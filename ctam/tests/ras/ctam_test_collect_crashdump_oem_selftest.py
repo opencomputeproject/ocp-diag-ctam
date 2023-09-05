@@ -5,10 +5,10 @@ LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Collect Crashdump OEM Self Test
 :Test ID:		R3
-:Group Name:	fw_update
+:Group Name:	ras
 :Score Weight:	10
 
-:Description:	This test attempts to get event service
+:Description:	Placeholder only. Post CollectDiagnisticData for '\redfish\v1\Systems\{BaseboardId}\LogService\EventLog with DiagnosticDataType = OEMSelfTest
 
 :Usage 1:		python ctam.py -w ..\workspace -t R3
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Collect Crashdump OEM Self Test"

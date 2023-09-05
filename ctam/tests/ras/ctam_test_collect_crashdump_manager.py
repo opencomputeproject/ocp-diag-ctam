@@ -5,10 +5,10 @@ LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Collect Crashdump Manager
 :Test ID:		R2
-:Group Name:	fw_update
+:Group Name:	ras
 :Score Weight:	10
 
-:Description:	Post CollectDiagnisticData for '\redfish\v1\Managers\{Manager}\LogService\EventLog with DiagnosticDataType = Manager
+:Description:	Placeholder only. Post CollectDiagnisticData for '\redfish\v1\Managers\{Manager}\LogService\EventLog with DiagnosticDataType = Manager
 
 :Usage 1:		python ctam.py -w ..\workspace -t R2
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Collect Crashdump Manager"

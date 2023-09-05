@@ -22,7 +22,7 @@ class TelemetryIfc(FunctionalIfc):
         ensure only 1 instance can be created
 
         :return: instance
-        :rtype: FWUpdateIfc
+        :rtype: TelemetryIfc
         """
         if not isinstance(cls._instance, cls):
             cls._instance = super(TelemetryIfc, cls).__new__(cls, *args, **kwargs)
@@ -37,7 +37,7 @@ class TelemetryIfc(FunctionalIfc):
         if there is an existing instance, return it, otherwise create the singleton instance and return it
 
         :return: instance
-        :rtype: FWUpdateIfc
+        :rtype: TelemetryIfc
         """
         if not isinstance(cls._instance, cls):
             cls._instance = cls(*args, **kwargs)

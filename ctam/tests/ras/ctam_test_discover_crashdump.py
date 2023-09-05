@@ -5,7 +5,7 @@ LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Discover Crashdump
 :Test ID:		R1
-:Group Name:	fw_update
+:Group Name:	ras
 :Score Weight:	10
 
 :Description:	Ensure that we have at least one LogServiceids each under Systems and Managers. 
