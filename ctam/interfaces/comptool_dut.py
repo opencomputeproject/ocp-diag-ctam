@@ -176,26 +176,11 @@ class CompToolDut(Dut):
             nested_data = []
             
             data = pd.read_excel(self.test_uri_response_check).to_dict(orient='records')
-            msg = {
-                "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
-                "TestName": self.current_test_name,
-                "Message":"Configuration from excel",
-                "Data": data
-            }
-            self.test_info_logger.write(json.dumps(msg))
             attributes = ""
             result = True
             for d in data:
-                if uri in d["TestURI"]:
-                    attributes = d["TestResponseCheck"]
-            msg = {
-                "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
-                "TestName": self.current_test_name,
-                "Message":"Need to check this attributes with uri",
-                "Data": attributes,
-                "URI": uri
-            }
-            self.test_info_logger.write(json.dumps(msg))
+                if uri in d["URI"]:
+                    attributes = d["Response"]
             for i in attributes.split("\n"):
                 if "." not in i:
                     if i not in response:
@@ -204,13 +189,6 @@ class CompToolDut(Dut):
                     nested_data = get_val_from_str(i, response)
                     if not nested_data:
                         result = False
-            msg = {
-                "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
-                "TestName": self.current_test_name,
-                "Message":"Result of checking response",
-                "Result": result,
-            }
-            self.test_info_logger.write(json.dumps(msg))
             return result
         except Exception as e:
             msg = {

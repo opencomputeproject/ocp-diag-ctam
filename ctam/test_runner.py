@@ -219,13 +219,13 @@ class TestRunner:
         if not os.path.exists(self.cmd_output_dir):
             os.makedirs(self.cmd_output_dir)
         dut_logger = LoggingWriter(
-            self.cmd_output_dir, self.console_log, "RedfishCommandDetails_"+testrun_name, "log", self.debug_mode
+            self.cmd_output_dir, self.console_log, "RedfishCommandDetails_"+testrun_name, "json", self.debug_mode
         )
         test_info_logger = LoggingWriter(
-            self.output_dir, self.console_log, "TestInfo_"+testrun_name, "log", self.debug_mode
+            self.output_dir, self.console_log, "TestInfo_"+testrun_name, "json", self.debug_mode
         )
         self.score_logger = LoggingWriter(
-            self.output_dir, self.console_log, "TestScore_"+testrun_name, "log", self.debug_mode
+            self.output_dir, self.console_log, "TestScore_"+testrun_name, "json", self.debug_mode
         )
 
         self.test_uri_response_check = None

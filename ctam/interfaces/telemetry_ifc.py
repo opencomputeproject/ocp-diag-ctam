@@ -9,6 +9,7 @@ LICENSE file in the root directory of this source tree.
 from typing import Optional, List
 from interfaces.functional_ifc import FunctionalIfc
 import ast
+from datetime import datetime
 from ocptv.output import LogSeverity
 from utils.json_utils import *
 
@@ -103,6 +104,8 @@ class TelemetryIfc(FunctionalIfc):
             response = self.dut().run_redfish_command(uri=chassis_uri)
             JSONData = response.dict
             response_check = self.dut().check_uri_response(reference_uri, JSONData)
+            msg = "Checking for redfish uri for Accelerator Compliance, Result : {}".format( response_check)            
+            self.write_test_info(msg)
             status = response.status
             if (status == 200 or status == 201) and response_check:
                 self.test_run().add_log(LogSeverity.INFO, "Test JSON")
