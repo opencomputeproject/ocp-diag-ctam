@@ -56,13 +56,13 @@ class HealthCheckIfc(FunctionalIfc):
     def ctam_get_logservice_uris(self):
         if self.logservice_uri_list == []:
             self.ctam_redfish_uri_deep_hunt(
-               "/redfish/v1/Systems", "LogServices", self.logservice_uri_list
+               "/redfish/v1/Systems", "LogServices", self.logservice_uri_list, uri_analyzed=[]
             )
             self.ctam_redfish_uri_deep_hunt(
-                "/redfish/v1/Managers", "LogServices", self.logservice_uri_list
+                "/redfish/v1/Managers", "LogServices", self.logservice_uri_list, uri_analyzed=[]
             )
             self.ctam_redfish_uri_deep_hunt(
-               "/redfish/v1/Chassis", "LogServices", self.logservice_uri_list
+               "/redfish/v1/Chassis", "LogServices", self.logservice_uri_list, uri_analyzed=[]
             )
         self.write_test_info("{}".format(self.logservice_uri_list))
         return self.logservice_uri_list
