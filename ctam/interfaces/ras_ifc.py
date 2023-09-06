@@ -8,6 +8,8 @@ LICENSE file in the root directory of this source tree.
 
 from typing import Optional, List
 from interfaces.functional_ifc import FunctionalIfc
+import time
+import json
 from ocptv.output import LogSeverity
 from utils.json_utils import *
 
@@ -70,3 +72,52 @@ class RasIfc(FunctionalIfc):
         self.write_test_info("{}".format(self.collectdiagnostic_logservices_uri_list))
         return self.collectdiagnostic_logservices_uri_list
             
+    def ctam_collect_crashdump_manager(self):
+        wait_for_task_completion = True
+        TaskStartTime = time.time()
+        check_time = True
+        Task_completion_Status = False
+        self.collect_managers_list = []
+        self.crashdump_uri_list = self.ctam_discover_crashdump_cap()
+        for uri in self.crashdump_uri_list:
+            if "/redfish/v1/Managers" in uri:
+                self.collect_managers_list.append(uri)
+        for uri in self.collect_managers_list:
+            body = {"DiagnosticDataType": "Manager"}
+            headers = {"Content-Type": "application/json"}
+            url = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}" + "{}".format(uri), component_type="GPU")
+            response = self.dut().run_redfish_command(uri=url, mode="POST", body=body, headers=headers)
+            print(response)
+            print(url)
+            JSONData = response.dict
+            if "error" not in JSONData:
+                if wait_for_task_completion:
+                    TaskID = JSONData["@odata.id"]
+
+                    if self.dut().is_debug_mode():
+                        self.test_run().add_log(LogSeverity.DEBUG, TaskID)
+                    v1_str = self.dut().uri_builder.format_uri(
+                        redfish_str="{GPUMC}" + "{}".format(TaskID), component_type="GPU"
+                    )
+                    response = self.dut().run_redfish_command(uri=v1_str)
+                    JSONData = response.dict
+
+                    FwStagingTimeMax = self.dut().dut_config["FwStagingTimeMax"]["value"]
+                    while JSONData["TaskState"] == "Running" \
+                            and (not check_time or (check_time and (time.time() - TaskStartTime) <= FwStagingTimeMax)):
+                        response = self.dut().run_redfish_command(uri=v1_str)
+                        JSONData = response.dict
+                        if self.dut().is_debug_mode():
+                            print(
+                                f"Task completion = {JSONData['PercentComplete']}"
+                            )
+                        msg = f"Task completion = {JSONData['PercentComplete']}"
+                        self.test_run().add_log(LogSeverity.DEBUG, msg)
+
+                        time.sleep(5)
+                    if JSONData["TaskState"] == "Completed":
+                        Task_completion_Status = True
+                    else:
+                        Task_completion_Status = False
+
+        return Task_completion_Status

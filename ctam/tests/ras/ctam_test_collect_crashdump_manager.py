@@ -23,7 +23,7 @@ from ocptv.output import (
     TestResult,
     TestStatus,
 )
-from tests.health_check.basic_health_check_group.basic_health_check_test_group import (
+from tests.ras.basic_ras_test_group import (
     BasicRasTestGroup,
 )
 
@@ -43,7 +43,7 @@ class CTAMTestCollectCrashdumpManager(TestCase):
 
     # exclude_tags: List[str] = ["NotCheck"]
 
-    def __init__(self, group: BasicHealthCheckTestGroup):
+    def __init__(self, group: BasicRasTestGroup):
         """
         _summary_
         """
@@ -66,18 +66,24 @@ class CTAMTestCollectCrashdumpManager(TestCase):
         """
         actual test verification
         """
+        result = True
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            self.group.health_check_ifc.ctam_getes()
-
-        step2 = self.test_run().add_step(f"{self.__class__.__name__} step2")  # type: ignore
-        with step2.scope():
-            debug_mode = self.dut().is_debug_mode()
-            msg = f"Debug mode is :{debug_mode} in {self.__class__.__name__}"
-            self.test_run().add_log(severity=LogSeverity.DEBUG, message=msg)  # type: ignore
+            if self.group.ras_ifc.ctam_collect_crashdump_manager():
+                step1.add_log(
+                    LogSeverity.FATAL,
+                    f"{self.test_id} : Test case Passed.",
+                )
+                result = True
+            else:
+                step1.add_log(
+                    LogSeverity.INFO,
+                    f"{self.test_id} : Test case Failed.",
+                )
+                result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
-        self.result = TestResult.PASS
+        self.result = TestResult.PASS if result else TestResult.FAIL
         if self.result == TestResult.PASS:
             self.score = self.score_weight
 
