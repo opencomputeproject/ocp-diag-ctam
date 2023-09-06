@@ -597,17 +597,31 @@ class TelemetryIfc(FunctionalIfc):
         mgr_instance = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ManagerIDs}", component_type="GPU"))
         result = True
         for uri in mgr_instance:
+
             URI = "/Managers/" + uri
             gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
-            payload = {"DateTime": "1970-01-01T22:47:09+00:00"}
+            response = self.dut().run_redfish_command(uri=gpu_uri)
+            JSONData = response.dict
+            JSONData_DateTime = JSONData["DateTime"]
+            status = response.status
+            if status == 200 or status == 201:
+                self.test_run().add_log(LogSeverity.INFO, "Getting Date time from Manager with ID Pass: {} : {}".format(uri, JSONData_DateTime))
+            else:
+                self.test_run().add_log(LogSeverity.FATAL, "Getting Date time from Manager ID Fails: {} : {}".format(uri, JSONData_DateTime))
+                result = False
+                break
+
+            URI = "/Managers/" + uri
+            gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
+            payload = {"DateTime": JSONData_DateTime}
             header = {"Content-Type: application/json"}
             response = self.dut().run_redfish_command(gpu_uri, mode="PATCH", body=payload, headers=header)
             JSONData = response.dict
             status = response.status
             if status == 200 or status == 201:
                 if "DateTime" in JSONData:
-                    self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(URI, JSONData))
+                    self.test_run().add_log(LogSeverity.INFO, "Setting Sel Time ID Pass: {} : {}".format(URI, JSONData))
                 else:
-                    self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(URI, JSONData))
+                    self.test_run().add_log(LogSeverity.FATAL, "Setting Sel Time ID Fails: {} : {}".format(URI, JSONData))
                     result = False
         return result
