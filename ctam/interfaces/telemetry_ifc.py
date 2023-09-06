@@ -611,8 +611,6 @@ class TelemetryIfc(FunctionalIfc):
                 result = False
                 break
 
-            URI = "/Managers/" + uri
-            gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
             payload = {"DateTime": JSONData_DateTime}
             header = {"Content-Type: application/json"}
             response = self.dut().run_redfish_command(gpu_uri, mode="PATCH", body=payload, headers=header)
