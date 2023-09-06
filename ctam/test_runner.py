@@ -20,6 +20,8 @@ from tests.test_case import TestCase
 from tests.test_group import TestGroup
 from interfaces.functional_ifc import FunctionalIfc
 from test_hierarchy import TestHierarchy
+
+from prettytable import PrettyTable
 import ocptv.output as tv
 from ocptv.output import (
     DiagnosisType,
@@ -79,6 +81,7 @@ class TestRunner:
         self.test_sequence = []
         self.test_groups = []
         self.group_sequence = []
+        self.test_result_data = []
 
         with open(dut_info_json_file) as dut_info_json:
             self.dut_config = json.load(dut_info_json)
@@ -387,6 +390,9 @@ class TestRunner:
                 "Grade": "{}%".format(grade),
                 }
         self.score_logger.write(json.dumps(msg))
+        self.test_result_data.append(("Total Score",TestCase.total_compliance_score, 
+                                       TestCase.max_compliance_score,"{}%".format(grade)))
+        self.generate_test_report()
         
     def _run_group_test_cases(self, group_instance, test_case_instances):
         """
@@ -455,6 +461,10 @@ class TestRunner:
                         "TestCaseScore": test_instance.score,
                         "TestCaseResult": TestResult(test_instance.result).name
                     }
+                    self.test_result_data.append((test_instance.test_id,
+                                                   test_instance.test_name,
+                                                   test_instance.score,
+                                                   TestResult(test_instance.result).name))
                     self.score_logger.write(json.dumps(msg))
 
             grade = (
@@ -484,6 +494,21 @@ class TestRunner:
     def get_system_details(self):
         self._start()
         pass
+
+    def generate_test_report(self):
+        print(self.test_result_data)
+        t = PrettyTable(["TestID", "TestName", "TestScore", "TestResult"])
+        t.title = "Test Result"
+        t.add_rows(self.test_result_data[:len(self.test_result_data) - 1:])
+        t.add_row(["", "", "", ""], divider=True)
+        t.add_row(["", "Compliance Score", 
+                   "Total Test Score", "Grade"], divider=True)
+        t.add_row(self.test_result_data[-1], divider=True)
+        t.align["TestName"] = "l"
+        test_result_file = os.path.join(self.output_dir, "TestReport_{}.log".format(self.dt))
+        with open(test_result_file, 'w') as f:
+            f.write(str(t))
+        print(t)
 
 class LoggingWriter(Writer):
     """
