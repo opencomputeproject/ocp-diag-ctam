@@ -9,6 +9,7 @@ LICENSE file in the root directory of this source tree.
 from typing import Optional, List
 from interfaces.functional_ifc import FunctionalIfc
 import ast
+from datetime import datetime
 from ocptv.output import LogSeverity
 from utils.json_utils import *
 
@@ -21,7 +22,7 @@ class TelemetryIfc(FunctionalIfc):
         ensure only 1 instance can be created
 
         :return: instance
-        :rtype: FWUpdateIfc
+        :rtype: TelemetryIfc
         """
         if not isinstance(cls._instance, cls):
             cls._instance = super(TelemetryIfc, cls).__new__(cls, *args, **kwargs)
@@ -36,7 +37,7 @@ class TelemetryIfc(FunctionalIfc):
         if there is an existing instance, return it, otherwise create the singleton instance and return it
 
         :return: instance
-        :rtype: FWUpdateIfc
+        :rtype: TelemetryIfc
         """
         if not isinstance(cls._instance, cls):
             cls._instance = cls(*args, **kwargs)
@@ -95,13 +96,18 @@ class TelemetryIfc(FunctionalIfc):
         MyName = __name__ + "." + self.ctam_get_chassis_environment_metrics.__qualname__
         chassis_instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisIDs}", component_type="GPU"))
         result = True
+        reference_uri = r"/redfish/v1/Chassis/{ChassisId}/EnvironmentMetrics"
         for uri in chassis_instances:
             uri = "/Chassis/" + uri + "/EnvironmentMetrics"
-            chassis_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
+            base_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
+            chassis_uri = base_uri + uri
             response = self.dut().run_redfish_command(uri=chassis_uri)
             JSONData = response.dict
+            response_check = self.dut().check_uri_response(reference_uri, JSONData)
+            msg = "Checking for redfish uri for Accelerator Compliance, Result : {}".format( response_check)            
+            self.write_test_info(msg)
             status = response.status
-            if status == 200 or status == 201:
+            if (status == 200 or status == 201) and response_check:
                 self.test_run().add_log(LogSeverity.INFO, "Test JSON")
                 self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(uri, json.dumps(JSONData, indent=4)))
             else:
@@ -527,7 +533,7 @@ class TelemetryIfc(FunctionalIfc):
                     result = False
         return result
     
-    def ctam_managers_ethernet_interfaces_gateway_write(self): # need improvement
+    def ctam_managers_ethernet_interfaces_gateway_write(self):
         """
         :Description:				Read back the data of redfish/v1/Managers/{mgr_instance}/EthernetInterfaces/usb0/Gateway property
 
@@ -538,15 +544,16 @@ class TelemetryIfc(FunctionalIfc):
         for uri in mgr_instance:
             URI = "/Managers/" + uri + "/EthernetInterfaces/usb0"
             gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
-            payload = {"IPv4StaticAddresses": [{"Address": "192.168.31.1", "AddressOrigin": "Static", "Gateway":"192.168.31.2", "SubnetMask": "255.255.0.0"}]}
+            payload = {"IPv4StaticAddresses": [{"Address": "192.168.31.1", "Gateway":"192.168.31.2", "SubnetMask": "255.255.0.0"}]}
             header = {"Content-Type: application/json"}
+            response = False
+            status = "Failure"
             response = self.dut().run_redfish_command(gpu_uri, mode="PATCH", body=payload, headers=header)
-            JSONData = response.dict
-            status = response.status
-            if status == 200 or status == 201:
-                self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(URI, JSONData))
+            if response == None:
+                status = "Success"
+                self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(URI, status))
             else:
-                self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(URI, JSONData))
+                self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(URI, response))
                 result = False
         return result
 
@@ -580,3 +587,39 @@ class TelemetryIfc(FunctionalIfc):
     #         value = gpu.split('/')[-1]
     #         gpu_id.append(value)
     #     return gpu_id
+
+    def ctam_managers_set_sel_time(self): # Probably need improvement
+        """
+        :Description:				Set sel time at redfish/v1/Managers/{mgr_instance} property
+
+        """
+        MyName = __name__ + "." + self.ctam_managers_ethernet_interfaces_gateway_write.__qualname__
+        mgr_instance = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ManagerIDs}", component_type="GPU"))
+        result = True
+        for uri in mgr_instance:
+
+            URI = "/Managers/" + uri
+            gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
+            response = self.dut().run_redfish_command(uri=gpu_uri)
+            JSONData = response.dict
+            JSONData_DateTime = JSONData["DateTime"]
+            status = response.status
+            if status == 200 or status == 201:
+                self.test_run().add_log(LogSeverity.INFO, "Getting Date time from Manager with ID Pass: {} : {}".format(uri, JSONData_DateTime))
+            else:
+                self.test_run().add_log(LogSeverity.FATAL, "Getting Date time from Manager ID Fails: {} : {}".format(uri, JSONData_DateTime))
+                result = False
+                break
+
+            payload = {"DateTime": JSONData_DateTime}
+            header = {"Content-Type: application/json"}
+            response = self.dut().run_redfish_command(gpu_uri, mode="PATCH", body=payload, headers=header)
+            JSONData = response.dict
+            status = response.status
+            if status == 200 or status == 201:
+                if "DateTime" in JSONData:
+                    self.test_run().add_log(LogSeverity.INFO, "Setting Sel Time ID Pass: {} : {}".format(URI, JSONData))
+                else:
+                    self.test_run().add_log(LogSeverity.FATAL, "Setting Sel Time ID Fails: {} : {}".format(URI, JSONData))
+                    result = False
+        return result

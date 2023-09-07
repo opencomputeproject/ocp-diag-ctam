@@ -16,5 +16,6 @@
     "dev_test_suite": [
     ],
     "full_compliance_test_suite": [
-    ]
+    ],
+    "test_uri_response_excel":"Excel file name for checking the response"
 }

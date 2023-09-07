@@ -6,13 +6,14 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
 """
+from operator import contains
 import os
 import json
 import subprocess
 import time
 from datetime import datetime
 from typing import Optional, List
-
+from datetime import datetime
 import ocptv.output as tv
 from ocptv.output import LogSeverity
 
@@ -512,6 +513,7 @@ class FunctionalIfc:
     def ctam_monitor_task(self, TaskID):
         """
         :Description:       CTAM Monitor a Task
+        :param TaskID       Task ID of TaskService/Tasks (for accelerator management) to monitor
         :returns:	        (Task_Completed, JSONData response)
         :rtype:             Tuple
         """
@@ -539,3 +541,106 @@ class FunctionalIfc:
         
         return Task_Completed, JSONData
 
+    
+    def ctam_redfish_uri_deep_hunt(self, URI, uri_hunt="", uri_listing=[], uri_analyzed=[],action=0):
+        """
+        :Description:			CTAM Redfish URI Deep Hunt - a recursive function to look deep till we find all instances URI
+        :param URI:             The top uri under which we are searching for the uri instances (type string)
+        :param uri_hunt:        URI we are hunting for (type string).
+        :param uri_listing:     An array that will eventually contain a list of all URIs that house the member to hunt.
+        :param uri_analyzed:    An array that will eventually contain a list of all URIs that have been searched for. 
+                                IMPORTANT - This filed must be passed else it will pick the list from previous test cases. 
+        :param action           Should be set if we are searching for action uris. 
+
+        :returns:				None
+        """
+        response = self.dut().run_redfish_command("{}{}".format(self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU"), URI))
+        JSONData = response.dict
+        if uri_hunt in JSONData:
+            uri_listing.append(URI + "/" + uri_hunt)
+            uri_analyzed.append(URI + "/" + uri_hunt)
+            JSONData.pop(uri_hunt)
+        if "Actions" in JSONData and (action == 1):
+            self.ctam_redfish_action_hunt(JSONData["Actions"], uri_hunt,uri_listing,uri_analyzed)
+            JSONData.pop("Actions")
+        for element in JSONData:
+            # Consider the case of nested dictionary
+            if type(JSONData[element]) == type(dict()) and ("@odata.id" in JSONData[element]):
+                URI = JSONData[element]["@odata.id"]
+                if URI not in uri_analyzed:
+                    uri_analyzed.append(URI)
+                    self.ctam_redfish_uri_deep_hunt(URI, uri_hunt, uri_listing, uri_analyzed,action)
+            # Consider the case of list of dictionaries                
+            elif type(JSONData[element]) == type([]):
+                for dictionary in JSONData[element]:
+                    # Verify that it is indeed an array of dictionaries
+                    URI = None 
+                    if type(dictionary) == type(dict()) and ("@odata.id" in dictionary):
+                        URI = dictionary["@odata.id"]
+    
+                    if URI and URI not in uri_analyzed:
+                        uri_analyzed.append(URI)
+                        self.ctam_redfish_uri_deep_hunt(URI, uri_hunt, uri_listing, uri_analyzed,action)
+
+    def ctam_redfish_uri_hunt(self, URI, uri_hunt="", uri_listing=[]):
+        """
+        :Description:			CTAM Redfish URI Hunt - a recursive function to look into Members till we find all instances URI
+        :param URI:             The top uri under which we are searching for the uri instances (type string)
+        :param uri_hunt:        URI we are hunting for (type string).
+        :param uri_listing:     An array that will eventually contain a list of all URIs that house the member to hunt.
+
+        :returns:				None
+        """
+        response = self.dut().run_redfish_command(uri="{}{}".format(self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU"), URI))
+        JSONData = response.dict
+        if uri_hunt in JSONData:
+            uri_listing.append(URI + "/" + uri_hunt)
+            return
+        elif "Id" in JSONData and (uri_hunt in JSONData["Id"]):
+            # possible for member to not have a name, like EventLog
+            uri_listing.append(URI)
+        elif "Members" in JSONData:
+            i = 0
+            for element in JSONData["Members"]:
+                if "@odata.id" in element:
+                    URI = JSONData["Members"][i]["@odata.id"]
+                    self.ctam_redfish_uri_hunt(URI, uri_hunt, uri_listing)
+                    i = i + 1
+
+    def ctam_redfish_action_hunt(self, ActionJson, target_action_hunt="", uri_listing=[],uri_analyzed=[]):
+        """
+        :Description:			CTAM Redfish Action Hunt - a recursive function to look deep till we find all instances that contain a "target" or "actioninfo" whose value has target_action_hunt
+        :param ActionJson:              Actions JSON Dict object to work on
+        :param target_action_hunt:      URI we are hunting for (type string).
+        :param uri_listing:             An array that will eventually contain a list of all URIs that house the member to hunt.
+        :param uri_analyzed:            An array that contains the list of uris which are already analyzed. 
+        :returns:				        None
+        """
+        
+        if "target" in ActionJson and target_action_hunt in ActionJson["target"] and ActionJson["target"] not in uri_analyzed:
+            uri_listing.append(ActionJson["target"])
+            uri_analyzed.append(ActionJson["target"])
+            ActionJson.pop("target")
+        if "@Redfish.ActionInfo" in ActionJson and target_action_hunt in ActionJson["@Redfish.ActionInfo"] and ActionJson["@Redfish.ActionInfo"] not in uri_analyzed:
+            uri_listing.append(ActionJson["@Redfish.ActionInfo"])
+            uri_analyzed.append(ActionJson["@Redfish.ActionInfo"])
+            ActionJson.pop("@Redfish.ActionInfo")
+        for element in ActionJson:
+            # Consider the case of nested dictionary
+            if type(ActionJson[element]) == type(dict()):
+                    self.ctam_redfish_action_hunt(ActionJson[element], target_action_hunt, uri_listing, uri_analyzed)
+
+    def write_test_info(self, message):
+        """
+        :Description:           JSON Formatter for CTAM TestInfo File Logging
+
+        :param message:		    MEssage to be added
+
+        :returns:	            None
+        """
+        msg = {
+                "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                "TestName": self.dut().current_test_name,
+                "Message": message,
+            }
+        self.dut().test_info_logger.write(json.dumps(msg))
