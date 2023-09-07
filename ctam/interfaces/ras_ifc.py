@@ -87,8 +87,6 @@ class RasIfc(FunctionalIfc):
             headers = {"Content-Type": "application/json"}
             url = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}" + "{}".format(uri), component_type="GPU")
             response = self.dut().run_redfish_command(uri=url, mode="POST", body=body, headers=headers)
-            print(response)
-            print(url)
             JSONData = response.dict
             if "error" not in JSONData:
                 if wait_for_task_completion:
@@ -119,5 +117,14 @@ class RasIfc(FunctionalIfc):
                         Task_completion_Status = True
                     else:
                         Task_completion_Status = False
-
+                    if Task_completion_Status:
+                        location_list = JSONData.get("Payload", {}).get("HttpHeaders", [])
+                        if location_list:
+                            location = location_list[-1].split(": ")[-1]
+                            location_uri = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}" + "{}".format(location), component_type="GPU")
+                            self.test_run().add_log(LogSeverity.INFO, "Dump is downloaded.")
+                            self.RedfishDownloadDump(location_uri)
+                        else:
+                            self.test_run().add_log(LogSeverity.FATAL, "Empty list or dictionary.")
+                            Task_completion_Status = False
         return Task_completion_Status

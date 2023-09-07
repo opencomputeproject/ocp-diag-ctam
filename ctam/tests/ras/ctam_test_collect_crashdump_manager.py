@@ -71,13 +71,13 @@ class CTAMTestCollectCrashdumpManager(TestCase):
         with step1.scope():
             if self.group.ras_ifc.ctam_collect_crashdump_manager():
                 step1.add_log(
-                    LogSeverity.FATAL,
+                    LogSeverity.INFO,
                     f"{self.test_id} : Test case Passed.",
                 )
                 result = True
             else:
                 step1.add_log(
-                    LogSeverity.INFO,
+                    LogSeverity.FATAL,
                     f"{self.test_id} : Test case Failed.",
                 )
                 result = False
