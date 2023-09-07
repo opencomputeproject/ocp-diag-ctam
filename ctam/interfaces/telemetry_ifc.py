@@ -593,7 +593,7 @@ class TelemetryIfc(FunctionalIfc):
         :Description:				Set sel time at redfish/v1/Managers/{mgr_instance} property
 
         """
-        MyName = __name__ + "." + self.ctam_managers_ethernet_interfaces_gateway_write.__qualname__
+        MyName = __name__ + "." + self.ctam_managers_set_sel_time.__qualname__
         mgr_instance = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ManagerIDs}", component_type="GPU"))
         result = True
         for uri in mgr_instance:
@@ -622,4 +622,32 @@ class TelemetryIfc(FunctionalIfc):
                 else:
                     self.test_run().add_log(LogSeverity.FATAL, "Setting Sel Time ID Fails: {} : {}".format(URI, JSONData))
                     result = False
+        return result
+
+    def ctam_get_chassis_smc_fpga_metrics(self):
+        """
+        :Description:				Read back the data of /redfish/v1/Chassis/{ChassisFpgaIDs}
+
+        :returns:				    Dictionary record under of all URIs under /redfish/v1/Chassis/{ChassisFpgaIDs}
+        """
+        MyName = __name__ + "." + self.ctam_get_chassis_smc_fpga_metrics.__qualname__
+        systemchassis_instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisFpgaIDs}", component_type="GPU"))
+        result = True
+        reference_uri = r"/redfish/v1/Chassis/{ChassisFpgaIDs}"
+        for uri in systemchassis_instances:
+            uri = "/Chassis/" + uri
+            base_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
+            chassis_uri = base_uri + uri
+            response = self.dut().run_redfish_command(uri=chassis_uri)
+            JSONData = response.dict
+            response_check = self.dut().check_uri_response(reference_uri, JSONData)
+            msg = "Checking for redfish uri for Accelerator Compliance, Result : {}".format( response_check)            
+            self.write_test_info(msg)
+            status = response.status
+            if (status == 200 or status == 201) and response_check:
+                self.test_run().add_log(LogSeverity.INFO, "Test JSON")
+                self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass *****: {} : {}".format(uri, json.dumps(JSONData, indent=4)))
+            else:
+                self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(uri, JSONData))
+                result = False
         return result
