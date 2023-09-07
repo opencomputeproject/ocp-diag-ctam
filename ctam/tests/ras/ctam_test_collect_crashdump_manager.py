@@ -69,18 +69,48 @@ class CTAMTestCollectCrashdumpManager(TestCase):
         result = True
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if self.group.ras_ifc.ctam_collect_crashdump_manager():
-                step1.add_log(
-                    LogSeverity.INFO,
-                    f"{self.test_id} : Test case Passed.",
-                )
-                result = True
-            else:
+            if self.group.ras_ifc.ctam_discover_crashdump_cap() == []:
                 step1.add_log(
                     LogSeverity.FATAL,
                     f"{self.test_id} : Test case Failed.",
                 )
                 result = False
+            else:
+                step1.add_log(
+                    LogSeverity.INFO,
+                    f"{self.test_id} : Test case Passed.",
+                )
+                result = True
+
+        if result:
+            step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")
+            with step2.scope():
+                if self.group.ras_ifc.ctam_collect_crashdump_manager_list() == []:
+                    step2.add_log(LogSeverity.FATAL, f"{self.test_id} : Test case Failed.")
+                    result = False
+                else:
+                    step2.add_log(LogSeverity.INFO, f"{self.test_id} : Test case Passed.")
+                    result = True
+
+        if result:
+            step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")
+            with step3.scope():
+                if self.group.ras_ifc.ctam_collect_crashdump_manager_list():
+                    step2.add_log(LogSeverity.INFO, f"{self.test_id} : Test case Passed.")
+                    result = True
+                else:
+                    step2.add_log(LogSeverity.FATAL, f"{self.test_id} : Test case Failed.")
+                    result = False
+
+        if result:
+            step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")
+            with step4.scope():
+                if self.group.ras_ifc.ctam_download_crashdump_attachment():
+                    step2.add_log(LogSeverity.INFO, f"{self.test_id} : Test case Passed.")
+                    result = True
+                else:
+                    step2.add_log(LogSeverity.FATAL, f"{self.test_id} : Test case Failed.")
+                    result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
         self.result = TestResult.PASS if result else TestResult.FAIL
