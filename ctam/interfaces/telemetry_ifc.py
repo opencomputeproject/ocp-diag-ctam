@@ -826,14 +826,14 @@ class TelemetryIfc(FunctionalIfc):
 
     def ctam_get_chassis_smc_fpga_Thermal_metrics(self):
         """
-        :Description:				Read back the data of /redfish/v1/Chassis/{SystemFpgaIDs}/ThermalSubsystem/ThermalMetrics
+        :Description:				Read back the data of /redfish/v1/Chassis/{ChassisSmcFpgaIDs}/ThermalSubsystem/ThermalMetrics
 
-        :returns:				    Dictionary record under of all URIs under /redfish/v1/Chassis/{SystemFpgaIDs}/ThermalSubsystem/ThermalMetrics
+        :returns:				    Dictionary record under of all URIs under /redfish/v1/Chassis/{ChassisSmcFpgaIDs}/ThermalSubsystem/ThermalMetrics
         """
         MyName = __name__ + "." + self.ctam_get_chassis_smc_fpga_Thermal_metrics.__qualname__
-        chassis_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisFpgaIds}", component_type="GPU"))
+        chassis_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisSmcFpgaIDs}", component_type="GPU"))
         result = True
-        reference_uri = r"/redfish/v1/Chassis/{SystemFpgaIDs}/ThermalSubsystem/ThermalMetrics"
+        reference_uri = r"/redfish/v1/Chassis/{ChassisSmcFpgaIDs}/ThermalSubsystem/ThermalMetrics"
         for chassisItem in chassis_list:
             uri = "/Chassis/" + chassisItem + "/ThermalSubsystem/ThermalMetrics"
             base_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
