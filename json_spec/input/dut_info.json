@@ -17,7 +17,17 @@
     "SshTunnel": {
       "description": "Indicates if the user wants to communicate through SSH tunnel",
       "type": "bool",
-      "value": ""
+      "value": false
+    },
+    "AuthenticationRequired": {
+      "description": "Indicates if REST API authentication is required by the Redfish service",
+      "type": "bool",
+      "value": false
+    },
+    "UnstructuredHttpPush": {
+      "description": "Indicates if firmware update service supports Unstructured HTTP push update operation (vendor-specific)",
+      "type": "bool",
+      "value": false
     },
     "DefaultPrefix": {
       "description": "Default preix for connecting to redfish",

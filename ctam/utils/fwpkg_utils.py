@@ -99,6 +99,36 @@ class PLDMFwpkg:
             corrupted_package_path = None
             
         return corrupted_package_path
+    
+    @staticmethod
+    def make_large_package(golden_fwpkg_path, max_bundle_size):
+        """
+        :Description:                       Create a package that is larger than the allowed max size.
+
+        :param str golden_fwpkg_path:	    Path to golden firmware package
+        :param int max_bundle_size:         Maximum allowed size of the PLDM bundle.
+
+        :returns:                           Path to corrupted package. None if corruption fails. 
+        :rtype:                             str
+        """
+        # Make a copy of the golden fwpkg
+        corrupted_package =  os.path.join(os.path.dirname(golden_fwpkg_path), "corrupted-pkg.fwpkg")
+        corrupted_package_path = shutil.copy(golden_fwpkg_path, corrupted_package)
+        
+        with open(golden_fwpkg_path, 'rb') as infile:
+            golden_fwpkg_content = infile.read()
+        golden_fwpkg_size = os.path.getsize(golden_fwpkg_path)
+        try:
+            with open(corrupted_package_path, 'a+b') as large_fwpkg:
+                for i in range(max_bundle_size//golden_fwpkg_size+1):
+                    large_fwpkg.write(golden_fwpkg_content)
+        except Exception as e:
+            print(f"Error in creating a large package: {e}")
+            # delete the package
+            os.remove(corrupted_package_path)
+            corrupted_package_path = None
+
+        return corrupted_package_path
 
 class FwpkgSignature:
     """

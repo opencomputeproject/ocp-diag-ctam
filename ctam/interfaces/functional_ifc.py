@@ -92,13 +92,24 @@ class FunctionalIfc:
                 self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
             )
         elif image_type == "large":
-            json_fw_file_payload = os.path.join(
-                self.dut().cwd,
-                self.dut().package_config.get("GPU_FW_IMAGE_LARGE", {}).get("Path", ""),
-                self.dut()
-                .package_config.get("GPU_FW_IMAGE_LARGE", {})
-                .get("Package", ""),
-            )
+            if self.dut().package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {}).get("Package", "") != "":
+                json_fw_file_payload = os.path.join(
+                    self.dut().cwd,
+                    self.dut().package_config.get("GPU_FW_IMAGE_LARGE", {}).get("Path", ""),
+                    self.dut()
+                    .package_config.get("GPU_FW_IMAGE_LARGE", {})
+                    .get("Package", ""),
+                )
+            else:
+                golden_fwpkg_path = os.path.join(
+                    self.dut().cwd,
+                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+                )
+                JSONData = self.ctam_getus()
+                max_bundle_size = JSONData.get("MaxImageSizeBytes") # FIXME: Do we need a default?
+                json_fw_file_payload = PLDMFwpkg.make_large_package(golden_fwpkg_path, max_bundle_size)
+                
         elif image_type == "invalid_sign":
             if self.dut().package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {}).get("Package", "") != "":
                 json_fw_file_payload = os.path.join(
@@ -465,7 +476,7 @@ class FunctionalIfc:
         payload = { "DiagnosticDataType": DiagnosticDataType }
         if OEMDiagnosticDataType:
             payload["OEMDiagnosticDataType"] = "DiagnosticType=" + OEMDiagnosticDataType
-        response = self.dut().redfish_ifc.post(path=URL, body=payload)
+        response = self.dut().run_redfish_command(uri=URL, mode="POST", body=payload)
         JSONData = response.dict
 
         msg = "{0}: RedFish Input: {1} Result: {2}".format(MyName, payload, JSONData)
@@ -491,7 +502,7 @@ class FunctionalIfc:
                 self.dut().cwd, 
                 "workspace",
                 "{}_dump.tar.xz".format(dt))
-        response =  self.dut().redfish_ifc.get(path=URL)
+        response =  self.dut().run_redfish_command(uri=URL, timeout=60)
         try:
             with open(dump_tarball_path, 'wb') as fd:
                 fd.write(response.read)
@@ -524,10 +535,10 @@ class FunctionalIfc:
         if self.dut().is_debug_mode():
             self.test_run().add_log(LogSeverity.DEBUG, f"Task URI: {TaskURI}")
             
-        response = self.dut().redfish_ifc.get(TaskURI)
+        response = self.dut().run_redfish_command(TaskURI)
         JSONData = response.dict
         while JSONData["TaskState"] == "Running":
-            response = self.dut().redfish_ifc.get(TaskURI)
+            response = self.dut().run_redfish_command(TaskURI)
             JSONData = response.dict
             if self.dut().is_debug_mode():
                 self.test_run().add_log(LogSeverity.DEBUG,

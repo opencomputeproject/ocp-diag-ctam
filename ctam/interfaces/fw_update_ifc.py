@@ -92,14 +92,22 @@ class FWUpdateIfc(FunctionalIfc):
             PLDMPkgJson = json.load(f)
         self.ctam_get_fw_version(PostInstall=0)
         for element in self.PreInstallDetails:
-            if str(element["Updateable"]) == "True":
+            if str(element["Updateable"]) == "True" and element["SoftwareId"] != "":
                 Package_Version = jsonhunt(
                     PLDMPkgJson,
                     "ComponentIdentifier",
-                    str(hex(int(element["SoftwareId"], 16))),
+                    #str(hex(int(element["SoftwareId"], 16))),
+                    int(element["SoftwareId"], 16),
                     "ComponentVersionString",
                 )
-                if element["Version"] != Package_Version and (
+                if Package_Version is None:
+                        msg = "{} : {} : {} : Not in the PLDM bundle".format(
+                            element["Id"],
+                            element["SoftwareId"],
+                            element["Version"]
+                        )
+                        self.test_run().add_log(LogSeverity.DEBUG, msg)
+                elif element["Version"] != Package_Version and (
                     self.included_targets == []
                     or element["@odata.id"] in self.included_targets
                 ):
@@ -265,7 +273,7 @@ class FWUpdateIfc(FunctionalIfc):
         self.test_run().add_log(LogSeverity.DEBUG, msg)
 
         for element in self.PostInstallDetails:
-            if str(element["Updateable"]) == "True":
+            if str(element["Updateable"]) == "True" and element["SoftwareId"] != "":
                 if image_type == "negate" \
                     or (image_type == "corrupt_component" and element["SoftwareId"] == corrupted_component_id):
                     ExpectedVersion = self.PreInstallVersionDetails[element["Id"]]
@@ -278,14 +286,22 @@ class FWUpdateIfc(FunctionalIfc):
                     ExpectedVersion = jsonhunt(
                         PLDMPkgJson,
                         "ComponentIdentifier",
-                        str(hex(int(element["SoftwareId"], 16))),
+                        #str(hex(int(element["SoftwareId"], 16))),
+                        int(element["SoftwareId"], 16),
                         "ComponentVersionString",
                     )
                 if (
                     self.included_targets == []
                     or element["@odata.id"] in self.included_targets
                 ):
-                    if element["Version"] != ExpectedVersion:
+                    if ExpectedVersion is None:
+                        msg = "{} : {} : {} : Not in the PLDM bundle".format(
+                            element["Id"],
+                            element["SoftwareId"],
+                            element["Version"]
+                        )
+                        self.test_run().add_log(LogSeverity.DEBUG, msg)
+                    elif element["Version"] != ExpectedVersion:
                         # Positive Cases.
                         Update_Verified = False
                         msg = "{} : {} : {} : Update Failed : Expected {}".format(
@@ -363,7 +379,8 @@ class FWUpdateIfc(FunctionalIfc):
         FileName = BinPath
 
         URL = URI  # + '"' + FileName + '"'
-        if self.dut().SshTunnel:
+        if self.dut().SshTunnel \
+            or self.dut().dut_config.get("UnstructuredHttpPush", {}).get("value", False):
             # Unstructured HTTP push update
             headers = {"Content-Type": "application/octet-stream"}
             body = open(FileName, "rb").read()

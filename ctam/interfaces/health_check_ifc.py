@@ -74,10 +74,10 @@ class HealthCheckIfc(FunctionalIfc):
             if self.dumplog_uri_list == []:
                 result = False
         for dumplog_uri in self.dumplog_uri_list:
-            clear_dump_uri = dumplog_uri + "/Actions/LogService.ClearLog" + " -d 0"
+            clear_dump_uri = dumplog_uri + "/Actions/LogService.ClearLog"
             print(clear_dump_uri)
-            uri = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU")
-            self.dut().run_redfish_command(uri=uri)
+            uri = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}" + "{}".format(clear_dump_uri), component_type="GPU")
+            self.dut().run_redfish_command(uri=uri, mode="POST")
         self.write_test_info("{}".format(result))
         return result
     
