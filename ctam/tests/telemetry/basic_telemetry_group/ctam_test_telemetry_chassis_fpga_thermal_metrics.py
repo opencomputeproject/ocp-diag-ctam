@@ -4,13 +4,13 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Telemetry Chassis Fpga Thermal Metrics
-:Test ID:		T45
+:Test ID:		T47
 :Group Name:	telemetry
 :Score Weight:	10
 
 :Description:	Basic telemetry test case to discover & print the thermal sensors under chassis Fpga.
 
-:Usage 1:		python ctam.py -w ..\workspace -t T45
+:Usage 1:		python ctam.py -w ..\workspace -t T47
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Chassis Fpga Thermal Metrics"
 
 """
@@ -30,7 +30,7 @@ from tests.telemetry.basic_telemetry_group.basic_telemetry_group import (
 class CTAMTestTelemetryChassisFpgaThermalMetrics(TestCase):
     
     test_name: str = "CTAM Test Telemetry Chassis Fpga Thermal Metrics"
-    test_id: str = "T45"
+    test_id: str = "T47"
     score_weight: int = 10
     tags: List[str] = []
 
