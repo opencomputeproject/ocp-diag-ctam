@@ -3,15 +3,15 @@ Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the 
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Telemetry Chassis Smc Fpga sSensors Metrics
-:Test ID:		T43
+:Test Name:		CTAM Test Telemetry Chassis Retimers sSensors Metrics
+:Test ID:		T44
 :Group Name:	telemetry
 :Score Weight:	10
 
-:Description:	Basic telemetry test case to discover & print the smc fpga sensors under chassis.
+:Description:	Basic telemetry test case to discover & print the retimers sensors under chassis.
 
-:Usage 1:		python ctam.py -w ..\workspace -t T43
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Chassis Smc Fpga Sensors Metrics"
+:Usage 1:		python ctam.py -w ..\workspace -t T44
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Chassis Retimers Sensors Metrics"
 
 """
 from typing import Optional, List
@@ -27,10 +27,10 @@ from tests.telemetry.basic_telemetry_group.basic_telemetry_group import (
     BasicTelemetryTestGroup
 )
 
-class CTAMTestTelemetryChassisSmcFpgaSensorsMetrics(TestCase):
+class CTAMTestTelemetryChassisRetimersSensorsMetrics(TestCase):
     
-    test_name: str = "CTAM Test Telemetry Chassis Smc Fpga Sensors Metrics"
-    test_id: str = "T43"
+    test_name: str = "CTAM Test Telemetry Chassis Retimers Sensors Metrics"
+    test_id: str = "T44"
     score_weight: int = 10
     tags: List[str] = []
 
@@ -61,7 +61,7 @@ class CTAMTestTelemetryChassisSmcFpgaSensorsMetrics(TestCase):
         result = True
         step1 = self.test_run().add_step((f"{self.__class__.__name__} run(), step1"))  # type: ignore
         with step1.scope():
-            if self.group.telemetry_ifc.ctam_get_chassis_smc_fpga_sensor_metrics():
+            if self.group.telemetry_ifc.ctam_get_chassis_retimers_sensor_metrics():
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Passed")
             else:
                 step1.add_log(LogSeverity.FATAL, f"{self.test_id} : Failed")
