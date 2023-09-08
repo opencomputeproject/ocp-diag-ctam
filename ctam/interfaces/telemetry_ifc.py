@@ -627,14 +627,14 @@ class TelemetryIfc(FunctionalIfc):
 
     def ctam_get_chassis_smc_fpga_metrics(self):
         """
-        :Description:				Read back the data of /redfish/v1/Chassis/{SystemFpgaIDs}
+        :Description:				Read back the data of /redfish/v1/Chassis/{ChassisSmcFpgaIDs}
 
-        :returns:				    Dictionary record under of all URIs under /redfish/v1/Chassis/{SystemFpgaIDs}
+        :returns:				    Dictionary record under of all URIs under /redfish/v1/Chassis/{ChassisSmcFpgaIDs}
         """
         MyName = __name__ + "." + self.ctam_get_chassis_smc_fpga_metrics.__qualname__
-        systemchassis_instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemFpgaIDs}", component_type="GPU"))
+        systemchassis_instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisSmcFpgaIDs}", component_type="GPU"))
         result = True
-        reference_uri = r"/redfish/v1/Chassis/{SystemFpgaIDs}"
+        reference_uri = r"/redfish/v1/Chassis/{ChassisSmcFpgaIDs}"
         for uri in systemchassis_instances:
             uri = "/Chassis/" + uri
             base_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
@@ -712,15 +712,15 @@ class TelemetryIfc(FunctionalIfc):
 
     def ctam_get_chassis_smc_fpga_sensor_metrics(self):
         """
-        :Description:				Read back the data of /redfish/v1/Chassis/{SystemFpgaIDs}/Sensors
+        :Description:				Read back the data of /redfish/v1/Chassis/{ChassisSmcFpgaIDs}/Sensors
 
-        :returns:				    Dictionary record under of all URIs under /redfish/v1/Chassis/{SystemFpgaIDs}/Sensors
+        :returns:				    Dictionary record under of all URIs under /redfish/v1/Chassis/{ChassisSmcFpgaIDs}/Sensors
         """
         MyName = __name__ + "." + self.ctam_get_chassis_smc_fpga_sensor_metrics.__qualname__
         chassis_smc_sensor_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisSmcSensorID}", component_type="GPU"))
-        chassis_fpga_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemFpgaIDs}", component_type="GPU"))
+        chassis_fpga_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisSmcFpgaIDs}", component_type="GPU"))
         result = True
-        reference_uri = r"/redfish/v1/Chassis/{SystemFpgaIDs}/Sensors"
+        reference_uri = r"/redfish/v1/Chassis/{ChassisSmcFpgaIDs}/Sensors"
         for sensorInstance,fpgaInstance in product(chassis_smc_sensor_list, chassis_fpga_list):
             uri = "/Chassis/" + fpgaInstance + "/Sensors/" + sensorInstance
             base_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
@@ -741,15 +741,15 @@ class TelemetryIfc(FunctionalIfc):
 
     def ctam_get_chassis_retimers_sensor_metrics(self):
         """
-        :Description:				Read back the data of /redfish/v1/Chassis/{RetimerIDs}/Sensors
+        :Description:				Read back the data of /redfish/v1/Chassis/{ChassisRETIMERs}/Sensors
 
-        :returns:				    Dictionary record under of all URIs under /redfish/v1/Chassis/{RetimerIDs}/Sensors
+        :returns:				    Dictionary record under of all URIs under /redfish/v1/Chassis/{ChassisRETIMERs}/Sensors
         """
         MyName = __name__ + "." + self.ctam_get_chassis_retimers_sensor_metrics.__qualname__
-        chassis_smc_sensor_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisSmcSensorID}", component_type="GPU"))
-        chassis_retimer_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisRetimersIDs}", component_type="GPU"))
+        chassis_smc_sensor_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{RetimerSensorsIDs}", component_type="GPU"))
+        chassis_retimer_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisRETIMERs}", component_type="GPU"))
         result = True
-        reference_uri = r"/redfish/v1/Chassis/{SystemFpgaIDs}/Sensors"
+        reference_uri = r"/redfish/v1/Chassis/{ChassisRETIMERs}/Sensors"
         for sensorInstance,retimerInstance in product(chassis_smc_sensor_list, chassis_retimer_list):
             uri = "/Chassis/" + retimerInstance + "/Sensors/" + sensorInstance
             base_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
