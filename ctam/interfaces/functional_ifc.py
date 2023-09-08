@@ -505,7 +505,12 @@ class FunctionalIfc:
             dump.extractall(DumpPath) # This will create a directory if it's not present already.
             dump.close()
             os.remove(dump_tarball_path) # Delete the tarball as it's not needed anymore
-            return DumpPath
+            folder_size = sum(os.path.getsize(os.path.join(DumpPath, f)) for f in os.listdir(DumpPath))
+            if folder_size > 0:
+                return DumpPath
+            else:
+                print("Downloaded folder size is 0 KB.")
+                return None
         except Exception as e:
             print(str(e))
             return None

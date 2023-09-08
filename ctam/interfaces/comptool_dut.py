@@ -16,7 +16,7 @@ import platform
 import json
 from datetime import datetime
 
-#import pandas as pd
+import pandas as pd
 
 from prettytable import PrettyTable
 from ocptv.output import Metadata
@@ -181,14 +181,15 @@ class CompToolDut(Dut):
             for d in data:
                 if uri in d["URI"]:
                     attributes = d["Response"]
-            for i in attributes.split("\n"):
-                if "." not in i:
-                    if i not in response:
-                        result = False
-                else:
-                    nested_data = get_val_from_str(i, response)
-                    if not nested_data:
-                        result = False
+            if attributes:
+                for i in attributes.split("\n"):
+                    if "." not in i:
+                        if i not in response:
+                            result = False
+                    else:
+                        nested_data = get_val_from_str(i, response)
+                        if not nested_data:
+                            result = False
             return result
         except Exception as e:
             msg = {

@@ -831,11 +831,11 @@ class TelemetryIfc(FunctionalIfc):
         :returns:				    Dictionary record under of all URIs under /redfish/v1/Chassis/{SystemFpgaIDs}/ThermalSubsystem/ThermalMetrics
         """
         MyName = __name__ + "." + self.ctam_get_chassis_smc_fpga_Thermal_metrics.__qualname__
-        chassis_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemFpgaIDs}", component_type="GPU"))
+        chassis_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisFpgaIds}", component_type="GPU"))
         result = True
         reference_uri = r"/redfish/v1/Chassis/{SystemFpgaIDs}/ThermalSubsystem/ThermalMetrics"
         for chassisItem in chassis_list:
-            uri = "/Chassis/" + chassisItem + "/ThermalSubsystem/ThermalMetrics/"
+            uri = "/Chassis/" + chassisItem + "/ThermalSubsystem/ThermalMetrics"
             base_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
             chassis_uri = base_uri + uri
             response = self.dut().run_redfish_command(uri=chassis_uri)
