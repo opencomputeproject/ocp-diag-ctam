@@ -823,3 +823,31 @@ class TelemetryIfc(FunctionalIfc):
                 self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(uri, JSONData))
                 result = False
         return result
+
+    def ctam_get_chassis_smc_fpga_Thermal_metrics(self):
+        """
+        :Description:				Read back the data of /redfish/v1/Chassis/{SystemFpgaIDs}/ThermalSubsystem/ThermalMetrics
+
+        :returns:				    Dictionary record under of all URIs under /redfish/v1/Chassis/{SystemFpgaIDs}/ThermalSubsystem/ThermalMetrics
+        """
+        MyName = __name__ + "." + self.ctam_get_chassis_smc_fpga_Thermal_metrics.__qualname__
+        chassis_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemFpgaIDs}", component_type="GPU"))
+        result = True
+        reference_uri = r"/redfish/v1/Chassis/{SystemFpgaIDs}/ThermalSubsystem/ThermalMetrics"
+        for chassisItem in chassis_list:
+            uri = "/Chassis/" + chassisItem + "/ThermalSubsystem/ThermalMetrics/"
+            base_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
+            chassis_uri = base_uri + uri
+            response = self.dut().run_redfish_command(uri=chassis_uri)
+            JSONData = response.dict
+            response_check = self.dut().check_uri_response(reference_uri, JSONData)
+            msg = "Checking for redfish uri for Accelerator Compliance, Result : {}".format( response_check)            
+            self.write_test_info(msg)
+            status = response.status
+            if (status == 200 or status == 201) and response_check:
+                self.test_run().add_log(LogSeverity.INFO, "Test JSON")
+                self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(uri, json.dumps(JSONData, indent=4)))
+            else:
+                self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(uri, JSONData))
+                result = False
+        return result
