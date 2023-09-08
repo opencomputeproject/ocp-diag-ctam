@@ -807,7 +807,7 @@ class TelemetryIfc(FunctionalIfc):
         result = True
         reference_uri = r"/redfish/v1/Chassis/{ChassisFpgaId}/ThermalSubsystem/ThermalMetrics"
         for chassisItem in chassis_list:
-            uri = "/Chassis/" + chassisItem + "/ThermalSubsystem/ThermalMetrics/"
+            uri = "/Chassis/" + chassisItem + "/ThermalSubsystem/ThermalMetrics"
             base_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
             chassis_uri = base_uri + uri
             response = self.dut().run_redfish_command(uri=chassis_uri)
