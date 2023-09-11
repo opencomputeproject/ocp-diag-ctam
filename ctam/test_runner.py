@@ -230,7 +230,7 @@ class TestRunner:
         self.score_logger = LoggingWriter(
             self.output_dir, self.console_log, "TestScore_"+testrun_name, "json", self.debug_mode
         )
-
+        self.test_result_file = os.path.join(self.output_dir, "TestReport_{}.log".format(self.dt))
         self.test_uri_response_check = None
         if self.response_check_name:
             self.test_uri_response_check = os.path.join(self.cwd, "workspace", self.response_check_name)
@@ -383,16 +383,20 @@ class TestRunner:
                 if TestCase.max_compliance_score != 0
                 else 0
             )
+        
+        gtotal = round(grade, 2)
+
         msg = {
                 "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
                 "TotalScore": TestCase.total_compliance_score,
                 "MaxComplianceScore": TestCase.max_compliance_score,
-                "Grade": "{}%".format(grade),
+                "Grade": "{}%".format(gtotal),
                 }
         self.score_logger.write(json.dumps(msg))
-        self.test_result_data.append(("Total Score",TestCase.total_compliance_score, 
+        self.test_result_data.append(("Total Score", "", TestCase.total_compliance_score, 
                                        TestCase.max_compliance_score,"{}%".format(grade)))
         self.generate_test_report()
+        self.generate_domain_test_report()
         
     def _run_group_test_cases(self, group_instance, test_case_instances):
         """
@@ -458,12 +462,14 @@ class TestRunner:
                         "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
                         "TestID": test_instance.test_id,
                         "TestName": test_instance.test_name,
+                        "TestCaseScoreWeight":test_instance.score_weight,
                         "TestCaseScore": test_instance.score,
                         "TestCaseResult": TestResult(test_instance.result).name
                     }
                     self.test_result_data.append((test_instance.test_id,
                                                    test_instance.test_name,
-                                                   test_instance.score,
+                                                   test_instance.score_weight,
+                                                   test_instance.score,                                              
                                                    TestResult(test_instance.result).name))
                     self.score_logger.write(json.dumps(msg))
 
@@ -473,7 +479,9 @@ class TestRunner:
                 else 0
             )
 
-            msg = f"Compliance Run completed. Total Score = {TestCase.total_compliance_score:0.2f} out of {TestCase.max_compliance_score:0.2f}, Grade = {grade:0.2f}%"
+            grt = round(grade, 2)
+
+            msg = f"Compliance Run completed. Total Score = {TestCase.total_compliance_score:0.2f} out of {TestCase.max_compliance_score:0.2f}, Grade = {grt:0.2f}%"
             self.active_run.add_log(severity=LogSeverity.INFO, message=msg)
            
             group_status = TestStatus.COMPLETE
@@ -491,24 +499,94 @@ class TestRunner:
             # attempt group cleanup even if test exception raised
             group_instance.teardown()
             self._end(group_status, group_result)
+
     def get_system_details(self):
         self._start()
         pass
 
     def generate_test_report(self):
+        """
+        This method is used for creating a tabula format for test result.
+        It will have TestID, TestName, Test Score, Test Result, Test Weight and total
+
+        """
         print(self.test_result_data)
-        t = PrettyTable(["TestID", "TestName", "TestScore", "TestResult"])
+        t = PrettyTable(["TestID", "TestName", "TestScore", "TestScoreWeight", "TestResult"])
         t.title = "Test Result"
         t.add_rows(self.test_result_data[:len(self.test_result_data) - 1:])
-        t.add_row(["", "", "", ""], divider=True)
-        t.add_row(["", "Compliance Score", 
+        t.add_row(["", "", "", "", ""], divider=True)
+        t.add_row(["", "","Compliance Score",
                    "Total Test Score", "Grade"], divider=True)
         t.add_row(self.test_result_data[-1], divider=True)
         t.align["TestName"] = "l"
-        test_result_file = os.path.join(self.output_dir, "TestReport_{}.log".format(self.dt))
-        with open(test_result_file, 'w') as f:
+        
+        with open(self.test_result_file, 'a') as f:
             f.write(str(t))
         print(t)
+
+    def generate_domain_test_report(self):
+        """
+        This method is used for creating a tabula format for test result for Domain level.
+        It will have DomainID, Domain, TComplianceWeight, ComplianceScore, Grade and total
+
+        """
+        dt = PrettyTable(["DomainID", "Domain", "ComplianceWeight", "ComplianceScore", "Grade"])
+        dt.title = "Domain-wise Test Report"
+
+        compScore = [0, 0, 0, 0]
+        compWeight = [0, 0, 0, 0]
+
+        for i in range(len(self.test_result_data)-1):
+            testID = self.test_result_data[i][0]
+            testWeight = self.test_result_data[i][2]
+            testScore = self.test_result_data[i][3]
+
+            # check for telemetry cases
+            if testID.startswith("T"):
+                compWeight[0] += testWeight
+                compScore[0] += testScore
+
+            # check for RAS cases
+            elif testID.startswith("R"):
+                compWeight[1] += testWeight   
+                compScore[1] += testScore
+
+            # check for health check cases
+            elif testID.startswith("H"):
+                compWeight[2] += testWeight    
+                compScore[2] += testScore
+
+            # check for fw update cases
+            elif testID.startswith("F"):
+                compWeight[3] += testWeight    
+                compScore[3] += testScore
+
+        grade = [0, 0, 0, 0]
+        for j in range(len(compScore)):
+            if compWeight[j] != 0:
+                grade[j] = compScore[j]/compWeight[j]*100
+
+        dt.add_row(["T", "Telemetry", compWeight[0], compScore[0], grade[0]])
+        dt.add_row(["R", "RAS", compWeight[1], compScore[1], grade[1]])
+        dt.add_row(["H", "Health Check", compWeight[2], compScore[2], grade[2]])
+        dt.add_row(["F", "FW Update", compWeight[3], compScore[3], grade[3]], divider=True)
+
+        compWeightTotal = sum(compWeight)
+        compScoreTotal = sum(compScore)
+        gradeTotal = (
+                compScoreTotal/ compWeightTotal * 100
+                if compWeightTotal != 0
+                else 0
+            )
+        
+        gt = round(gradeTotal, 2)
+
+        dt.add_row(["", "Overall", 
+                   compWeightTotal, compScoreTotal, gt], divider=True)
+        with open(self.test_result_file, 'a') as f:
+            f.write("\n" + str(dt))
+        print(dt)
+
 
 class LoggingWriter(Writer):
     """
