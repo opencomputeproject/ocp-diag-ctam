@@ -16,7 +16,7 @@ import platform
 import json
 from datetime import datetime
 
-#import pandas as pd
+import pandas as pd
 
 from prettytable import PrettyTable
 from ocptv.output import Metadata

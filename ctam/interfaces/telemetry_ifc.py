@@ -770,14 +770,14 @@ class TelemetryIfc(FunctionalIfc):
 
     def ctam_get_chassis_retimers_ThermalSubsystem_metrics(self):
         """
-        :Description:				Read back the data of /redfish/v1/Chassis/{ChassisRETIMERs}/ThermalSubsystem
+        :Description:				Read back the data of /redfish/v1/Chassis/{ChassisRetimersIDs}/ThermalSubsystem
 
-        :returns:				    Dictionary record under of all URIs under /redfish/v1/Chassis/{ChassisRETIMERs}/ThermalSubsystem
+        :returns:				    Dictionary record under of all URIs under /redfish/v1/Chassis/{ChassisRetimersIDs}/ThermalSubsystem
         """
         MyName = __name__ + "." + self.ctam_get_chassis_retimers_ThermalSubsystem_metrics.__qualname__
-        chassis_retimer_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisRETIMERs}", component_type="GPU"))
+        chassis_retimer_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisRetimersIDs}", component_type="GPU"))
         result = True
-        reference_uri = r"/redfish/v1/Chassis/{ChassisRETIMERs}/ThermalSubsystem"
+        reference_uri = r"/redfish/v1/Chassis/{ChassisRetimersIDs}/ThermalSubsystem"
         for retimerInstance in chassis_retimer_list:
             uri = "/Chassis/" + retimerInstance + "/ThermalSubsystem/"
             base_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
