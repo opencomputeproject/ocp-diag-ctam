@@ -394,7 +394,7 @@ class TestRunner:
                 }
         self.score_logger.write(json.dumps(msg))
         self.test_result_data.append(("Total Score", "", TestCase.total_compliance_score, 
-                                       TestCase.max_compliance_score,"{}%".format(grade)))
+                                       TestCase.max_compliance_score,"{}%".format(gtotal)))
         self.generate_test_report()
         self.generate_domain_test_report()
         
@@ -511,7 +511,7 @@ class TestRunner:
 
         """
         print(self.test_result_data)
-        t = PrettyTable(["TestID", "TestName", "TestScore", "TestScoreWeight", "TestResult"])
+        t = PrettyTable(["TestID", "TestName", "TestScoreWeight", "TestScore", "TestResult"])
         t.title = "Test Result"
         t.add_rows(self.test_result_data[:len(self.test_result_data) - 1:])
         t.add_row(["", "", "", "", ""], divider=True)
@@ -565,11 +565,12 @@ class TestRunner:
         for j in range(len(compScore)):
             if compWeight[j] != 0:
                 grade[j] = compScore[j]/compWeight[j]*100
+                grade[j] = round(grade[j], 2)
 
-        dt.add_row(["T", "Telemetry", compWeight[0], compScore[0], grade[0]])
-        dt.add_row(["R", "RAS", compWeight[1], compScore[1], grade[1]])
-        dt.add_row(["H", "Health Check", compWeight[2], compScore[2], grade[2]])
-        dt.add_row(["F", "FW Update", compWeight[3], compScore[3], grade[3]], divider=True)
+        dt.add_row(["T", "Telemetry", compWeight[0], compScore[0], "{}%".format(grade[0])])
+        dt.add_row(["R", "RAS", compWeight[1], compScore[1], "{}%".format(grade[1])])
+        dt.add_row(["H", "Health Check", compWeight[2], compScore[2], "{}%".format(grade[2])])
+        dt.add_row(["F", "FW Update", compWeight[3], compScore[3], "{}%".format(grade[3])], divider=True)
 
         compWeightTotal = sum(compWeight)
         compScoreTotal = sum(compScore)
@@ -582,7 +583,7 @@ class TestRunner:
         gt = round(gradeTotal, 2)
 
         dt.add_row(["", "Overall", 
-                   compWeightTotal, compScoreTotal, gt], divider=True)
+                   compWeightTotal, compScoreTotal, "{}%".format(gt)], divider=True)
         with open(self.test_result_file, 'a') as f:
             f.write("\n" + str(dt))
         print(dt)
