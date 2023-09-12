@@ -649,3 +649,32 @@ class FunctionalIfc:
                 "Message": message,
             }
         self.dut().test_info_logger.write(json.dumps(msg))
+
+    def ctam_getepc(self, expanded=1):
+        """
+        :Description:       Get Expanded Processor Collection
+
+        :param expanded:		Expand Param
+
+        :returns:	        JSON Data after running Redfish command
+        :rtype:             JSON Dict
+        """
+        # [TODO] need to figure out a way to grab all of them.
+        MyName = __name__ + "." + self.ctam_getepc.__qualname__
+        if expanded == 1:
+            ctam_getepc_uri = self.dut().uri_builder.format_uri(
+                redfish_str="{BaseURI}/Systems/{BaseboardId}/Processors/{ProcessorId}?$expand=*($levels=1)",
+                component_type="GPU",
+            )
+            response = self.dut().run_redfish_command(uri=ctam_getepc_uri)
+            data = response.dict
+        else:
+            ctam_getepc_uri = self.dut().uri_builder.format_uri(
+                redfish_str="{BaseURI}/UpdateService/SoftwareInventory",
+                component_type="GPU",
+            )
+            response = self.dut().run_redfish_command(uri=ctam_getepc_uri)
+            data = response.dict
+        msg = f"Command is : {ctam_getepc_uri} \nThe Response is : {data}"
+        self.test_run().add_log(LogSeverity.DEBUG, msg)
+        return data
