@@ -11,6 +11,7 @@ import os
 import json
 import subprocess
 import time
+import ast
 from datetime import datetime
 from typing import Optional, List
 from datetime import datetime
@@ -662,19 +663,13 @@ class FunctionalIfc:
         # [TODO] need to figure out a way to grab all of them.
         MyName = __name__ + "." + self.ctam_getepc.__qualname__
         if expanded == 1:
-            ctam_getepc_uri = self.dut().uri_builder.format_uri(
-                redfish_str="{BaseURI}/Systems/{BaseboardId}/Processors/{ProcessorId}?$expand=*($levels=1)",
-                component_type="GPU",
-            )
-            response = self.dut().run_redfish_command(uri=ctam_getepc_uri)
-            data = response.dict
-        else:
-            ctam_getepc_uri = self.dut().uri_builder.format_uri(
-                redfish_str="{BaseURI}/UpdateService/SoftwareInventory",
-                component_type="GPU",
-            )
-            response = self.dut().run_redfish_command(uri=ctam_getepc_uri)
-            data = response.dict
+            baseboard_ids = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{BaseboardIDs}", component_type="GPU"))
+            for id in baseboard_ids:
+                uri = "/Systems/" + id + "/Processors?$expand=*($levels=1)"
+                ctam_getepc_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
+                response = self.dut().run_redfish_command(uri=ctam_getepc_uri)
+                data = response.dict
+
         msg = f"Command is : {ctam_getepc_uri} \nThe Response is : {data}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return data
