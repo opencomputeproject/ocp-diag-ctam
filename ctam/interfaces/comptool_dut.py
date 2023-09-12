@@ -135,7 +135,7 @@ class CompToolDut(Dut):
         :type metadata: ty.Optional[dict], optional
 
         :return: response for requests
-        :rtype: response object
+        :rtype: response object or None in case of failure
         """
         try:
             response = None
@@ -152,34 +152,28 @@ class CompToolDut(Dut):
                 msg.update({"Method":"POST"})
                 #msg.update({"Method":"POST","Data":"{}".format(body),}) # FIXME: It floods the logs. Do we need to log the entire body? 
                 kwargs.update({"body": body})
-                response = self.redfish_ifc.post(**kwargs)
-                #response = self.redfish_ifc.post(path=uri, body=body, headers=headers)
+                response = self.redfish_ifc.post(**kwargs) # path=uri, body=body, headers=headers
             elif mode == "PATCH":
                 msg.update({"Mode":"PATCH","Data":"{}".format(body),})
                 kwargs.update({"body": body})
-                response = self.redfish_ifc.patch(**kwargs)
-                #response = self.redfish_ifc.patch(path=uri, body=body, headers=headers)
+                response = self.redfish_ifc.patch(**kwargs) # path=uri, body=body, headers=headers
             elif mode == "GET":
                 msg.update({"Method":"GET",})
-                response = self.redfish_ifc.get(**kwargs)
-                #response = self.redfish_ifc.get(path=uri, headers=headers)
+                response = self.redfish_ifc.get(**kwargs) # path=uri, headers=headers
             if response: # FIXME: Add error handling in case the request fails
                 msg.update({
                     "ResponseCode": response.status,
-                    "Response":response.text,
+                    "Response":response.dict, # FIXME: Throws error in some cases when response.dict is used and the response body is empty
                     })
             else:
                 msg.update({"Response":"Response is None please check the request you are trying to invoke."})
             # self.logger.write(json.dumps(msg))
-            
         except Exception as e:
             print("FATAL: Exception occurred while running redfish command. Please see below exception...")
             print(str(e))
-            print(traceback.format_exc())
         finally:
             self.logger.write(json.dumps(msg))
-            
-        return response
+            return response
 
     def check_uri_response(self, uri, response):
         if not self.test_uri_response_check:
@@ -264,6 +258,12 @@ class CompToolDut(Dut):
         return
     
     def kill_ssh_tunnel(self):
+        """
+        Kill SSH Tunneling to AMC
+
+        :return: None
+        :rtype: None
+        """
         # First, find all the PIDs associated with the binded port
         port_pid = ["lsof", "-t", "-i", ":{0}".format(self.BindedPort)] # ANother option is to add -sTCP:LISTEN
         process = subprocess.Popen(port_pid, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

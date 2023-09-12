@@ -655,3 +655,32 @@ class FunctionalIfc:
                 "Message": message,
             }
         self.dut().test_info_logger.write(json.dumps(msg))
+        
+    def ctam_verify_expanded(self, JSONData):
+        """
+        :Description:					Check if the Redfish API response is expanded correctly (level 1)
+        
+        :param JSONData:                Redfish response in json/dictionary format
+        :type JSONData:                 dictionary
+        
+        :returns:				    	result (Pass/Fail)
+        :rtype: 						Bool
+        """
+        result = True
+        for element in JSONData:
+            # Simple dictionary
+            if type(JSONData[element]) == type(dict()) and ("@odata.id" in JSONData[element]):
+                if "@odata.type" not in JSONData[element]:
+                    self.test_run().add_log(LogSeverity.ERROR, f"{JSONData[element]} is not expanded.")
+                    result = False
+                    break
+            # List of dictionaries
+            elif type(JSONData[element]) == type([]):
+                for dictionary in JSONData[element]:
+                    if type(dictionary) == type(dict()) and ("@odata.id" in dictionary):
+                        if "@odata.type" not in dictionary:
+                            self.test_run().add_log(LogSeverity.ERROR, f"{dictionary} is not expanded.")
+                            result = False
+                            break
+        return result
+            

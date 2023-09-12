@@ -75,12 +75,12 @@
       "value": ""
     },
     "PowerOffWaitTime": {
-      "description": "Off delay needed during FW Activation",
+      "description": "Off delay needed (in seconds) during FW Activation",
       "type": "int",
       "value": 60
     },
     "PowerOnWaitTime": {
-      "description": "Wait time during FW Activation post reset cycle",
+      "description": "Wait time (in seconds) during FW Activation post reset cycle",
       "type": "int",
       "value": 300
     },

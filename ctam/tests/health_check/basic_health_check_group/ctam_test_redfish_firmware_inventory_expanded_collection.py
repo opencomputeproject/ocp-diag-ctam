@@ -66,18 +66,28 @@ class CTAMTestRedfishFirmwareInventoryExpandedCollection(TestCase):
         """
         actual test verification
         """
+        result = True
+        
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            self.group.health_check_ifc.ctam_getfi(expanded=1)
-
-        step2 = self.test_run().add_step(f"{self.__class__.__name__} step2")  # type: ignore
-        with step2.scope():
-            debug_mode = self.dut().is_debug_mode()
-            msg = f"Debug mode is :{debug_mode} in {self.__class__.__name__}"
-            self.test_run().add_log(severity=LogSeverity.DEBUG, message=msg)  # type: ignore
+            JSONData = self.group.health_check_ifc.ctam_getfi(expanded=1)
+            if JSONData is None or "error" in JSONData:
+                step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Redfish FW Inventory Expanded Collection Read - Failed")
+                result = False
+            else:
+                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish FW Inventory Expanded Collection Read - Completed")
+                
+        if result:
+            step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
+            with step2.scope():
+                if self.group.health_check_ifc.ctam_verify_expanded(JSONData):
+                    step2.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish FW Inventory Expanded Collection Verification - Passed")
+                else:
+                    step2.add_log(LogSeverity.ERROR,f"{self.test_id} : Redfish FW Inventory Expanded Collection Verification - Failed")
+                    result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
-        self.result = TestResult.PASS
+        self.result = TestResult.PASS if result else TestResult.FAIL
         if self.result == TestResult.PASS:
             self.score = self.score_weight
 

@@ -96,8 +96,7 @@ class FWUpdateIfc(FunctionalIfc):
                 Package_Version = jsonhunt(
                     PLDMPkgJson,
                     "ComponentIdentifier",
-                    #str(hex(int(element["SoftwareId"], 16))),
-                    int(element["SoftwareId"], 16),
+                    str(hex(int(element["SoftwareId"], 16))),
                     "ComponentVersionString",
                 )
                 if Package_Version is None:
@@ -286,8 +285,7 @@ class FWUpdateIfc(FunctionalIfc):
                     ExpectedVersion = jsonhunt(
                         PLDMPkgJson,
                         "ComponentIdentifier",
-                        #str(hex(int(element["SoftwareId"], 16))),
-                        int(element["SoftwareId"], 16),
+                        str(hex(int(element["SoftwareId"], 16))),
                         "ComponentVersionString",
                     )
                 if (
