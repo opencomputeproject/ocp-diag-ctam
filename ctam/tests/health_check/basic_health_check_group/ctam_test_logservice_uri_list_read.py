@@ -65,22 +65,30 @@ class CTAMTestLogServicesURIListRead(TestCase):
         """
         actual test verification
         """
-        result = False
+        result = True
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if (logservice := self.group.health_check_ifc.ctam_get_logservice_uris()) == []:
+            if (logservice := self.group.health_check_ifc.ctam_get_all_logservice_uris()) == []:
                 step1.add_log(
                     LogSeverity.FATAL,
-                    f"{self.test_id} : Test case Failed - LogService list is empty",
+                    f"{self.test_id} : Redfish LogService URI list Read Failed - LogService list is empty",
                 )
                 result = False
             else:
                 pprint(logservice)
                 step1.add_log(
                     LogSeverity.INFO,
-                    f"{self.test_id} : Test case Passed.",
+                    f"{self.test_id} : Redfish LogService URI list Read Completed",
                 )
-                result = True
+   
+        if result:
+            step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
+            with step2.scope():
+                if self.group.health_check_ifc.ctam_verify_logservice_presence():
+                    step2.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish LogService URI list Verification - Passed")
+                else:
+                    step2.add_log(LogSeverity.ERROR,f"{self.test_id} : Redfish LogService URI list Verification - Failed")
+                    result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
         self.result = TestResult.PASS if result else TestResult.FAIL

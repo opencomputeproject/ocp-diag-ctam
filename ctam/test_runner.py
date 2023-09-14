@@ -650,6 +650,21 @@ class LoggingWriter(Writer):
                 return
 
         self.logger.info(buffer)
+        
+    def log(self, msg: str):
+        """
+        Called from the OCP framework for logging messages. This method is a wrapper
+        of the "write" method to add timestamp to a message.
+
+        :param msg: Message to be logged
+        :type msg: str
+        """
+        json_msg = {
+                    "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                    "Message": msg
+        }
+
+        self.write(json.dumps(json_msg))
 
 
 class JsonFormatter(logging.Formatter):

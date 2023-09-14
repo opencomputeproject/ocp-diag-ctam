@@ -93,13 +93,24 @@ class FunctionalIfc:
                 self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
             )
         elif image_type == "large":
-            json_fw_file_payload = os.path.join(
-                self.dut().cwd,
-                self.dut().package_config.get("GPU_FW_IMAGE_LARGE", {}).get("Path", ""),
-                self.dut()
-                .package_config.get("GPU_FW_IMAGE_LARGE", {})
-                .get("Package", ""),
-            )
+            if self.dut().package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {}).get("Package", "") != "":
+                json_fw_file_payload = os.path.join(
+                    self.dut().cwd,
+                    self.dut().package_config.get("GPU_FW_IMAGE_LARGE", {}).get("Path", ""),
+                    self.dut()
+                    .package_config.get("GPU_FW_IMAGE_LARGE", {})
+                    .get("Package", ""),
+                )
+            else:
+                golden_fwpkg_path = os.path.join(
+                    self.dut().cwd,
+                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+                )
+                JSONData = self.ctam_getus()
+                max_bundle_size = JSONData.get("MaxImageSizeBytes") # FIXME: Do we need a default?
+                json_fw_file_payload = PLDMFwpkg.make_large_package(golden_fwpkg_path, max_bundle_size)
+                
         elif image_type == "invalid_sign":
             if self.dut().package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {}).get("Package", "") != "":
                 json_fw_file_payload = os.path.join(
@@ -466,7 +477,7 @@ class FunctionalIfc:
         payload = { "DiagnosticDataType": DiagnosticDataType }
         if OEMDiagnosticDataType:
             payload["OEMDiagnosticDataType"] = "DiagnosticType=" + OEMDiagnosticDataType
-        response = self.dut().redfish_ifc.post(path=URL, body=payload)
+        response = self.dut().run_redfish_command(uri=URL, mode="POST", body=payload)
         JSONData = response.dict
 
         msg = "{0}: RedFish Input: {1} Result: {2}".format(MyName, payload, JSONData)
@@ -492,7 +503,7 @@ class FunctionalIfc:
                 self.dut().cwd, 
                 "workspace",
                 "{}_dump.tar.xz".format(dt))
-        response =  self.dut().redfish_ifc.get(path=URL)
+        response =  self.dut().run_redfish_command(uri=URL, timeout=60)
         try:
             with open(dump_tarball_path, 'wb') as fd:
                 fd.write(response.read)
@@ -530,10 +541,10 @@ class FunctionalIfc:
         if self.dut().is_debug_mode():
             self.test_run().add_log(LogSeverity.DEBUG, f"Task URI: {TaskURI}")
             
-        response = self.dut().redfish_ifc.get(TaskURI)
+        response = self.dut().run_redfish_command(TaskURI)
         JSONData = response.dict
         while JSONData["TaskState"] == "Running":
-            response = self.dut().redfish_ifc.get(TaskURI)
+            response = self.dut().run_redfish_command(TaskURI)
             JSONData = response.dict
             if self.dut().is_debug_mode():
                 self.test_run().add_log(LogSeverity.DEBUG,
@@ -650,6 +661,34 @@ class FunctionalIfc:
                 "Message": message,
             }
         self.dut().test_info_logger.write(json.dumps(msg))
+        
+    def ctam_verify_expanded(self, JSONData):
+        """
+        :Description:					Check if the Redfish API response is expanded correctly (level 1)
+        
+        :param JSONData:                Redfish response in json/dictionary format
+        :type JSONData:                 dictionary
+        
+        :returns:				    	result (Pass/Fail)
+        :rtype: 						Bool
+        """
+        result = True
+        for element in JSONData:
+            # Simple dictionary
+            if type(JSONData[element]) == type(dict()) and ("@odata.id" in JSONData[element]):
+                if "@odata.type" not in JSONData[element]:
+                    self.test_run().add_log(LogSeverity.ERROR, f"{JSONData[element]} is not expanded.")
+                    result = False
+                    break
+            # List of dictionaries
+            elif type(JSONData[element]) == type([]):
+                for dictionary in JSONData[element]:
+                    if type(dictionary) == type(dict()) and ("@odata.id" in dictionary):
+                        if "@odata.type" not in dictionary:
+                            self.test_run().add_log(LogSeverity.ERROR, f"{dictionary} is not expanded.")
+                            result = False
+                            break
+        return result
 
     def ctam_getepc(self, expanded=1):
         """
