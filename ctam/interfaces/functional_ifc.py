@@ -341,26 +341,34 @@ class FunctionalIfc:
 
     def ctam_getes(self, path = "Subscriptions"):
         """
-        :Description:       Get Event Service
+        :Description:       Get Event Service and child collection items.
         :returns:	        JSON Data after running Redfish command
         :rtype:             JSON Dict
         """
         MyName = __name__ + "." + self.ctam_getus.__qualname__
 
-        if path != "Subscriptions":
-            ctam_getes_uri = self.dut().uri_builder.format_uri(
-                redfish_str="{BaseURI}/EventService", component_type="GPU"
-            )
+        if path == "Subscriptions":
+            ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU")
+            response = self.dut().run_redfish_command(uri=ctam_getes_uri)
+            data = response.dict
+            members = data["Members"]
+            SubscriptionsList = []
+            if len(members) != 0:
+                for member in enumerate(members):
+                    memberId = member["@odata.id"].split('/')[-1].strip()
+                    ctam_getsid_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions/{memberId}", component_type="GPU")
+                    response = self.dut().run_redfish_command(uri=ctam_getsid_uri)
+                    SubscriptionsList.append(response.dict)
+            data = SubscriptionsList
         else:
-            ctam_getes_uri = self.dut().uri_builder.format_uri(
-                redfish_str="{BaseURI}/EventService/{path}", component_type="GPU"
-            )
+            ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService", component_type="GPU")
+            response = self.dut().run_redfish_command(uri=ctam_getes_uri)
+            data = response.dict
 
-        response = self.dut().run_redfish_command(uri=ctam_getes_uri)
-        data = response.dict
         msg = f"The Redfish Command URI is : {ctam_getes_uri} \nThe Response for this command is : {data}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return data
+
 
 
     def ctam_gettsks(self):
