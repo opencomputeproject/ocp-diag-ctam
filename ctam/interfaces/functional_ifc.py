@@ -345,7 +345,7 @@ class FunctionalIfc:
         :returns:	        JSON Data after running Redfish command
         :rtype:             JSON Dict
         """
-        MyName = __name__ + "." + self.ctam_getus.__qualname__
+        MyName = __name__ + "." + self.ctam_getes.__qualname__
 
         if path == "Subscriptions":
             ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU")
@@ -366,6 +366,26 @@ class FunctionalIfc:
             data = response.dict
 
         msg = f"The Redfish Command URI is : {ctam_getes_uri} \nThe Response for this command is : {data}"
+        self.test_run().add_log(LogSeverity.DEBUG, msg)
+        return data
+
+    def ctam_createes(self, destination, Context):
+        """
+        :Description:       Create a subscription
+        :returns:	        JSON Data after running Redfish command
+        :rtype:             JSON Dict
+        """
+        MyName = __name__ + "." + self.ctam_createes.__qualname__
+
+        ctam_uri = self.dut().uri_builder.format_uri(
+            redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU"
+        )
+
+        payload = {"Destination": {destination}, "RegistryPrefixes": ["ResourceEvent"], "Context": {Context}, "Protocol": "Redfish", "HttpHeaders": []}
+        response = self.dut().run_redfish_command(uri=ctam_uri, mode="POST", body=payload)
+
+        data = response.dict
+        msg = f"The Redfish Command URI is : {ctam_uri} \nThe Response for this command is : {data}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return data
 
