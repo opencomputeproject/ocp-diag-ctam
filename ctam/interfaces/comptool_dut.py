@@ -15,6 +15,7 @@ import subprocess
 import platform
 import json
 from datetime import datetime
+import traceback
 
 #import pandas as pd
 
@@ -109,11 +110,17 @@ class CompToolDut(Dut):
             username=self.__user_name,
             password=self.__user_pass,
             default_prefix=default_prefix,
+            timeout=30
         )
 
-        # self.redfish_ifc.login(auth="basic")   #TODO investigate 'session' token auth
+        if config["properties"].get("AuthenticationRequired", {}).get("value"):
+            self.redfish_auth = True
+            self.redfish_ifc.login(auth="basic")   #TODO investigate 'session' token auth
+            self.test_info_logger.log("Redfish login is successful.")
+        else:
+            self.redfish_auth = False
 
-    def run_redfish_command(self, uri, mode="GET", body=None, headers=None):
+    def run_redfish_command(self, uri, mode="GET", body=None, headers=None, timeout=None):
         """
         This method is for running redfish commands according to mode and log the ouput into
         a formatted log file and return the response
@@ -128,7 +135,7 @@ class CompToolDut(Dut):
         :type metadata: ty.Optional[dict], optional
 
         :return: response for requests
-        :rtype: response object
+        :rtype: response object or None in case of failure
         """
         try:
             response = None
@@ -137,29 +144,36 @@ class CompToolDut(Dut):
                     "TestName": self.current_test_name,
                     "URI": uri,
             }
+            kwargs = {"path": uri, "headers": headers}
+            if timeout is not None:
+                kwargs.update({"timeout": timeout})
+                
             if mode == "POST":
-                msg.update({"Method":"POST","Data":"{}".format(body),}) # FIXME: It floods the logs. Do we need to log the entire body? 
-                response = self.redfish_ifc.post(path=uri, body=body, headers=headers)
+                msg.update({"Method":"POST"})
+                #msg.update({"Method":"POST","Data":"{}".format(body),}) # FIXME: It floods the logs. Do we need to log the entire body? 
+                kwargs.update({"body": body})
+                response = self.redfish_ifc.post(**kwargs) # path=uri, body=body, headers=headers
             elif mode == "PATCH":
                 msg.update({"Mode":"PATCH","Data":"{}".format(body),})
-                response = self.redfish_ifc.patch(path=uri, body=body, headers=headers)
+                kwargs.update({"body": body})
+                response = self.redfish_ifc.patch(**kwargs) # path=uri, body=body, headers=headers
             elif mode == "GET":
                 msg.update({"Method":"GET",})
-                response = self.redfish_ifc.get(path=uri, headers=headers)
-            if response:
+                response = self.redfish_ifc.get(**kwargs) # path=uri, headers=headers
+            if response: # FIXME: Add error handling in case the request fails
                 msg.update({
                     "ResponseCode": response.status,
-                    "Response":response.dict,
+                    "Response":response.dict, # FIXME: Throws error in some cases when response.dict is used and the response body is empty
                     })
             else:
                 msg.update({"Response":"Response is None please check the request you are trying to invoke."})
             # self.logger.write(json.dumps(msg))
-            return response
         except Exception as e:
             print("FATAL: Exception occurred while running redfish command. Please see below exception...")
             print(str(e))
         finally:
             self.logger.write(json.dumps(msg))
+            return response
 
     def check_uri_response(self, uri, response):
         if not self.test_uri_response_check:
@@ -229,19 +243,27 @@ class CompToolDut(Dut):
                     bmc_ip = self.connection_ip_address,
                     amc_ip = amc_ip_address,
                     )
-            process = subprocess.Popen(ssh_cmd, shell=True)
-            process.wait()
-            if process.returncode != 0 or process.stdout != None:
-                print(f"Failed to bind port {port}. Trying the next one...") # FIXME: Use logging method
+            process = subprocess.Popen(ssh_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            stdout_data, stderr_data = process.communicate()
+            if process.returncode != 0 or stderr_data:
+                msg = f"Failed to bind port {port}.\nReturnCode: {process.returncode}\nError: {stderr_data}\nTrying the next one..."
+                self.test_info_logger.log(msg)
             else:
                 self.BindedPort = port
                 break
         if self.BindedPort is None:
-            raise Exception(f"Failed to bind port! Please make sure the host machine has port forwarding enabled and there is at least one port avaailable in {PortList}.")
-        print(f"Binded port {self.BindedPort}") # FIXME: Use logging method
+            raise Exception(f"Failed to bind port! Please make sure the host machine has port forwarding enabled and there is at least one port available in {PortList}.")
+        msg = f"Binded port {self.BindedPort}"
+        self.test_info_logger.log(msg)
         return
     
     def kill_ssh_tunnel(self):
+        """
+        Kill SSH Tunneling to AMC
+
+        :return: None
+        :rtype: None
+        """
         # First, find all the PIDs associated with the binded port
         port_pid = ["lsof", "-t", "-i", ":{0}".format(self.BindedPort)] # ANother option is to add -sTCP:LISTEN
         process = subprocess.Popen(port_pid, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -251,17 +273,21 @@ class CompToolDut(Dut):
             # Make sure to not kill this running process
             if int(this_pid) != my_pid:
                 kill_cmd = "kill {}".format(this_pid)
-                process = subprocess.Popen(kill_cmd, shell=True)
-                process.wait()
-                if process.returncode != 0 or process.stdout != None:
-                    print(f"WARNING: Couldn't close the port forwarding! {kill_cmd}") # FIXME: Use logging method
+                process = subprocess.Popen(kill_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                stdout_data, stderr_data = process.communicate()
+                if process.returncode != 0 or stderr_data:
+                    msg = f"WARNING: Couldn't close the port forwarding! {kill_cmd}\nReturnCode: {process.returncode}\nError: {stderr_data}"
+                    self.test_info_logger.log(msg)
                 else:
-                    print("SSH tunnel is killed successfully!") # FIXME: Use logging method
+                    self.test_info_logger.log("SSH tunnel is killed successfully!")
                     self.BindedPort = None # Just for sanity in case of multi-threading
                 
     def clean_up(self):
         if self.BindedPort:
             self.kill_ssh_tunnel()
+        if self.redfish_auth:
+            self.redfish_ifc.logout()
+            self.test_info_logger.log("Redfish logout is successful.")
 
     def check_ping_status(self, ip_address):
         p = '-n' if platform.system().lower()=='windows' else '-c'
