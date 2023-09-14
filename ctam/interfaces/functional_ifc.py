@@ -369,7 +369,7 @@ class FunctionalIfc:
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return data
 
-    def ctam_createes(self, destination, Context):
+    def ctam_createes(self, destination, RegistryPrefixes, Context, Protocol):
         """
         :Description:       Create a subscription
         :returns:	        JSON Data after running Redfish command
@@ -381,7 +381,7 @@ class FunctionalIfc:
             redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU"
         )
 
-        payload = {"Destination": {destination}, "RegistryPrefixes": ["ResourceEvent"], "Context": {Context}, "Protocol": "Redfish", "HttpHeaders": []}
+        payload = {"Destination": {destination}, "RegistryPrefixes": [{RegistryPrefixes}], "Context": {Context}, "Protocol": {Protocol}, "HttpHeaders": []}
         response = self.dut().run_redfish_command(uri=ctam_uri, mode="POST", body=payload)
 
         data = response.dict

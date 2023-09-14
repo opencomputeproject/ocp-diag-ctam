@@ -70,7 +70,11 @@ class CTAMTestRedfishEventServiceCreateSubscription(TestCase):
         
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            JSONData = self.group.health_check_ifc.ctam_createes()
+            JSONData = self.group.health_check_ifc.ctam_createes(
+                destination="https://172.17.0.202:8081/redfish/v1/RedfishEvents/EventReceiver/6",
+                RegistryPrefixes="ResourceEvent", 
+                Context="rm_server_6", 
+                Protocol="Redfish")
             if JSONData is None or "error" in JSONData:
                 step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Redfish Event Service Check - Failed")
                 result = False
