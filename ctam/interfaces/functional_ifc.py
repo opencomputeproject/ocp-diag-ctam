@@ -369,8 +369,6 @@ class FunctionalIfc:
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return data
 
-
-
     def ctam_gettsks(self):
         """
         :Description:       Get Task Service
@@ -725,3 +723,23 @@ class FunctionalIfc:
         msg = f"Command is : {ctam_getepc_uri} \nThe Response is : {data}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return data
+
+    def ctam_deles(self, subscriptionId):
+        """
+        :Description:       Get Event Service and child collection items.
+        :returns:	        JSON Data after running Redfish command
+        :rtype:             JSON Dict
+        """
+        MyName = __name__ + "." + self.ctam_getus.__qualname__
+
+        ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions/{subscriptionId}", component_type="GPU")
+        response = self.dut().run_redfish_command(uri=ctam_getes_uri)
+        status = response.status
+        if (status == 200 or status == 201):
+            self.test_run().add_log(LogSeverity.INFO, "Test JSON")
+            self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(ctam_getes_uri, status))
+            result = True
+        else:
+            self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(ctam_getes_uri, status))
+            result = False
+        return result
