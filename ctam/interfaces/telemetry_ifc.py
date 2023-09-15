@@ -265,7 +265,7 @@ class TelemetryIfc(FunctionalIfc):
                 result = False
         return result
     
-    def ctam_chassis_sensor_ids_metrics(self):
+    '''def ctam_chassis_sensor_ids_metrics(self):
         """
         :Description:				Read back the data of /redfish/v1/Chassis/{ChassisId}/Sensors/{SensorId}
 
@@ -286,7 +286,7 @@ class TelemetryIfc(FunctionalIfc):
                 else:
                     self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(URI, JSONData))
                     result = False
-        return result
+        return result'''
 
     def ctam_chassis_thermal_subsystem_metrics(self):
         """
@@ -533,11 +533,9 @@ class TelemetryIfc(FunctionalIfc):
             gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
             payload = {"IPv4StaticAddresses": [{"Address": "192.168.31.1", "Gateway":"192.168.31.2", "SubnetMask": "255.255.0.0"}]}
             header = {"Content-Type: application/json"}
-            response = False
-            status = "Failure"
             response = self.dut().run_redfish_command(gpu_uri, mode="PATCH", body=payload, headers=header)
-            if response == None:
-                status = "Success"
+            status = response.status
+            if status == 204:
                 self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(URI, status))
             else:
                 self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(URI, response))
@@ -668,19 +666,22 @@ class TelemetryIfc(FunctionalIfc):
                 result = False
         return result
 
-    def ctam_get_chassis_retimers_sensor_metrics(self):
+    def ctam_get_chassis_sensor_metrics(self, path="ChassisRetimerIDs"):
         """
-        :Description:				Read back the data of /redfish/v1/Chassis/{ChassisRetimerIDs}/Sensors
+        :Description:				Read back the data of /redfish/v1/Chassis/{path}/Sensors
 
-        :returns:				    Dictionary record under of all URIs under /redfish/v1/Chassis/{ChassisRetimerIDs}/Sensors
+        :returns:				    Dictionary record under of all URIs under /redfish/v1/Chassis/{path}/Sensors
         """
-        MyName = __name__ + "." + self.ctam_get_chassis_retimers_sensor_metrics.__qualname__
-        #chassis_retimer_sensor_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{RetimerSensorsIDs}", component_type="GPU"))
-
-        # Build the sensor name List:
+        MyName = __name__ + "." + self.ctam_get_chassis_sensor_metrics.__qualname__
         sensorNameList = []
 
-        chassis_retimer_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisRetimerIDs}", component_type="GPU"))
+        if path == "ChassisRetimerIDs":
+            chassis_retimer_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisRetimerIDs}", component_type="GPU"))
+        elif path == "ChassisIDs":
+            chassis_retimer_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisIDs}", component_type="GPU"))
+
+        reference_uri = r"/redfish/v1/Chassis/{path}/Sensors"
+
         retimerInstance = chassis_retimer_list[0]
         uri = "/Chassis/" + retimerInstance + "/Sensors"
         base_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
@@ -694,7 +695,7 @@ class TelemetryIfc(FunctionalIfc):
             sensorNameList.append(sensorName)
 
         result = True
-        reference_uri = r"/redfish/v1/Chassis/{ChassisRetimerIDs}/Sensors"
+        
         for retimerInstance, sensorInstance in product(chassis_retimer_list, sensorNameList):
             uri = "/Chassis/" + retimerInstance + "/Sensors/" + sensorInstance
             base_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
