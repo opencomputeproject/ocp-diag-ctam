@@ -381,7 +381,7 @@ class FunctionalIfc:
             redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU"
         )
 
-        payload = {"Destination": {destination}, "RegistryPrefixes": [{RegistryPrefixes}], "Context": {Context}, "Protocol": {Protocol}, "HttpHeaders": []}
+        payload = {"Destination": destination, "RegistryPrefixes": [RegistryPrefixes], "Context": Context, "Protocol": Protocol, "HttpHeaders": []}
         response = self.dut().run_redfish_command(uri=ctam_uri, mode="POST", body=payload)
 
         data = response.dict
