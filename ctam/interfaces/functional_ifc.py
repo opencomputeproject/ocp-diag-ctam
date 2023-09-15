@@ -354,9 +354,10 @@ class FunctionalIfc:
             members = data["Members"]
             SubscriptionsList = []
             if len(members) != 0:
-                for member in enumerate(members):
+                for index, member in enumerate(members):
                     memberId = member["@odata.id"].split('/')[-1].strip()
-                    ctam_getsid_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions/{memberId}", component_type="GPU")
+                    ctam_getsid_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU")
+                    ctam_getsid_uri = ctam_getsid_uri + "/" + memberId
                     response = self.dut().run_redfish_command(uri=ctam_getsid_uri)
                     SubscriptionsList.append(response.dict)
             data = SubscriptionsList
@@ -754,7 +755,7 @@ class FunctionalIfc:
 
         ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU")
         ctam_getes_uri = ctam_getes_uri + "/" + subscriptionId
-        response = self.dut().run_redfish_command(uri=ctam_getes_uri)
+        response = self.dut().run_redfish_command(uri=ctam_getes_uri, mode="DELETE")
         status = response.status
         if (status == 200 or status == 201):
             self.test_run().add_log(LogSeverity.INFO, "Test JSON")
