@@ -160,6 +160,9 @@ class CompToolDut(Dut):
             elif mode == "GET":
                 msg.update({"Method":"GET",})
                 response = self.redfish_ifc.get(**kwargs) # path=uri, headers=headers
+            elif mode == "DELETE":
+                msg.update({"Method":"DELETE",})
+                response = self.redfish_ifc.delete(**kwargs) # path=uri, headers=headers
             if response: # FIXME: Add error handling in case the request fails
                 msg.update({
                     "ResponseCode": response.status,

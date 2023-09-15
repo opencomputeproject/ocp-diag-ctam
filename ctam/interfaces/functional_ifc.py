@@ -752,7 +752,8 @@ class FunctionalIfc:
         """
         MyName = __name__ + "." + self.ctam_getus.__qualname__
 
-        ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions/{subscriptionId}", component_type="GPU")
+        ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU")
+        ctam_getes_uri = ctam_getes_uri + "/" + subscriptionId
         response = self.dut().run_redfish_command(uri=ctam_getes_uri)
         status = response.status
         if (status == 200 or status == 201):
