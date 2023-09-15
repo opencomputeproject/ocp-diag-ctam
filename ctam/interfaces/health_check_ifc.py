@@ -78,7 +78,7 @@ class HealthCheckIfc(FunctionalIfc):
         self.write_test_info("LogServices URI list: {}".format(self.logservice_uri_list))
         return self.logservice_uri_list
     
-    def ctam_verify_logservice_presence(self, resource_collection_list=["Systems", "Managers", "Chassis"]):
+    def ctam_verify_logservice_presence(self, resource_collection_list=["Systems", "Managers"]):
         """
         :Description:	                    Verify if "LogService" URIs is present under the specified resourcse collection.
 
@@ -232,7 +232,7 @@ class HealthCheckIfc(FunctionalIfc):
 
         return SelfTestReport_Status
     
-    def ctam_get_all_logdump_uris(self, resource_collection_list=["Systems", "Managers", "Chassis"]):
+    def ctam_get_all_logdump_uris(self, resource_collection_list=["Systems", "Managers"]):
         """
         :Description:	                    Look for Dump URIs under all LogServices URIs of specific resourcse collection.
         
@@ -252,7 +252,7 @@ class HealthCheckIfc(FunctionalIfc):
         self.write_test_info("Dump URI list: {}".format(self.dumplog_uri_list))
         return self.dumplog_uri_list
     
-    def ctam_verify_logdump_presence(self, resource_collection_list=["Systems", "Managers", "Chassis"]):
+    def ctam_verify_logdump_presence(self, resource_collection_list=["Systems", "Managers"]):
         """
         :Description:	                    Verify if the Dump URI is present under all LogServices URI of specified resourcse collection.
         
