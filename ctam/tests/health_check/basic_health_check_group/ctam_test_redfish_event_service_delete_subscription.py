@@ -4,7 +4,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Redfish Event Service Delete Subscriptions
-:Test ID:		H80
+:Test ID:		H81
 :Group Name:	fw_update
 :Score Weight:	10
 
@@ -70,7 +70,7 @@ class CTAMTestRedfishEventServiceDeleteSubscription(TestCase):
         
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            result = self.group.health_check_ifc.ctam_deles(subscriptionId="1003449396")
+            result = self.group.health_check_ifc.ctam_deles()
             if result is False:
                 step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Redfish Event Service Delete Subscriptions Check - Failed")
             else:

@@ -745,16 +745,18 @@ class FunctionalIfc:
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return data
 
-    def ctam_deles(self, subscriptionId):
+    def ctam_deles(self):
         """
         :Description:       Get Event Service and child collection items.
         :returns:	        JSON Data after running Redfish command
         :rtype:             JSON Dict
         """
-        MyName = __name__ + "." + self.ctam_getus.__qualname__
+        # List all subscritions then grabbing one of them and delete
 
+        MyName = __name__ + "." + self.ctam_deles.__qualname__
         ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU")
-        ctam_getes_uri = ctam_getes_uri + "/" + subscriptionId
+        subscriptionList = self.ctam_getes("Subscriptions")
+        ctam_getes_uri = ctam_getes_uri + "/" + subscriptionList[-1]
         response = self.dut().run_redfish_command(uri=ctam_getes_uri, mode="DELETE")
         status = response.status
         if (status == 200 or status == 201):
