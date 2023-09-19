@@ -402,55 +402,6 @@ class TelemetryIfc(FunctionalIfc):
                     result = False
         return result
     
-    def ctam_system_fpga_ids(self, path=""):
-        """
-        :Description:				Read back the data of /redfish/v1/Systems/{BaseboardId}/Processors/{FpgaId}
-
-        """
-        MyName = __name__ + "." + self.ctam_system_fpga_ids.__qualname__
-        systems_instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{BaseboardIDs}", component_type="GPU"))
-        gpu_dram_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemFpgaIDs}", component_type="GPU"))
-        
-        result = True
-        for uri in systems_instances:
-            for id in gpu_dram_id:
-                URI = "/Systems/" + uri + "/Processors/" + id + "/" + path
-                gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
-                response = self.dut().run_redfish_command(gpu_uri)
-                JSONData = response.dict
-                status = response.status
-                if status == 200 or status == 201:
-                    self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(URI, JSONData))
-                else:
-                    self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(URI, JSONData))
-                    result = False
-        return result
-    
-    def ctam_system_fpga_ports(self, path=""):
-        """
-        :Description:				Read back the data of /redfish/v1/Systems/{BaseboardId}/Processors/{FpgaId}/Ports/{PortId}
-
-        """
-        MyName = __name__ + "." + self.ctam_system_fpga_ports.__qualname__
-        systems_instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{BaseboardIDs}", component_type="GPU"))
-        gpu_dram_id = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemFpgaIDs}", component_type="GPU"))
-        fpga_ports = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{SystemFpgaPortIDs}", component_type="GPU"))
-        result = True
-        for uri in systems_instances:
-            for id in gpu_dram_id:
-                for ports in fpga_ports:
-                    URI = "/Systems/" + uri + "/Processors/" + id + "/Ports/" + ports + path
-                    gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
-                    response = self.dut().run_redfish_command(gpu_uri)
-                    JSONData = response.dict
-                    status = response.status
-                    if status == 200 or status == 201:
-                        self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(URI, JSONData))
-                    else:
-                        self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(URI, JSONData))
-                        result = False
-        return result
-    
     def ctam_managers_read(self):
         """
         :Description:				Read back the data of redfish/v1/Managers/{mgr_instance}
