@@ -9,6 +9,7 @@ LICENSE file in the root directory of this source tree.
 import time
 import json
 import os
+import ast
 from typing import Optional, List
 from interfaces.functional_ifc import FunctionalIfc
 
@@ -139,10 +140,12 @@ class HealthCheckIfc(FunctionalIfc):
         """
         MyName = __name__ + "." + self.trigger_self_test_dump_collection.__qualname__
         StartTime = time.time()
-
-        selftest_dump_collection_uri = self.dut().uri_builder.format_uri(
-            redfish_str="{BaseURI}{SystemURI}", component_type="BMC"
-        )
+        instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{BaseboardIDs}", component_type="GPU"))
+        for instance in instances:
+            uri = "/Systems/" + instance
+            selftest_dump_collection_uri = self.dut().uri_builder.format_uri(
+                redfish_str="{BaseURI}" + uri, component_type="GPU"
+            )
         JSONData = self.RedfishTriggerDumpCollection(
             "OEM",
             selftest_dump_collection_uri,
@@ -197,6 +200,7 @@ class HealthCheckIfc(FunctionalIfc):
         MyName = __name__ + "." + self.download_self_test_dump.__qualname__
         
         if self.selftest_dump_entry_uri:
+            self.selftest_dump_entry_uri = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}" + "{}".format(self.selftest_dump_entry_uri), component_type="GPU")
             self.selftest_dump_path  = self.RedfishDownloadDump(self.selftest_dump_entry_uri)
             msg = "Self test Dump location: {}".format(self.selftest_dump_path)
             self.test_run().add_log(LogSeverity.DEBUG, msg)

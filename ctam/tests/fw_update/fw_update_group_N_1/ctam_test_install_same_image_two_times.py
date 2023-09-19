@@ -90,7 +90,7 @@ class CTAMTestInstallSameImageTwoTimes(TestCase):
                         )
                     else:
                         step2.add_log(
-                            LogSeverity.INFO,
+                            LogSeverity.FATAL,
                             f"{self.test_id} : FW Update Staged Failed",
                         )
                         result = False
@@ -104,7 +104,7 @@ class CTAMTestInstallSameImageTwoTimes(TestCase):
                     )
                 else:
                     step3.add_log(
-                        LogSeverity.ERROR,
+                        LogSeverity.FATAL,
                         f"{self.test_id} : FW Update Activation Failed",
                     )
                     result = False
@@ -119,7 +119,7 @@ class CTAMTestInstallSameImageTwoTimes(TestCase):
                     )
                 else:
                     step4.add_log(
-                        LogSeverity.ERROR,
+                        LogSeverity.FATAL,
                         f"{self.test_id} : Update Verification Failed",
                     )
                     result = False
