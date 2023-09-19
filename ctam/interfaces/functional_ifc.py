@@ -359,7 +359,7 @@ class FunctionalIfc:
                     ctam_getsid_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU")
                     ctam_getsid_uri = ctam_getsid_uri + "/" + memberId
                     response = self.dut().run_redfish_command(uri=ctam_getsid_uri)
-                    SubscriptionsList.append(response.dict)
+                    SubscriptionsList.append(memberId)
             data = SubscriptionsList
         else:
             ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService", component_type="GPU")
@@ -756,6 +756,7 @@ class FunctionalIfc:
         MyName = __name__ + "." + self.ctam_deles.__qualname__
         ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU")
         subscriptionList = self.ctam_getes("Subscriptions")
+        self.test_run().add_log(LogSeverity.INFO, "subscriptionList is {}\n".format(subscriptionList))
         ctam_getes_uri = ctam_getes_uri + "/" + subscriptionList[-1]
         response = self.dut().run_redfish_command(uri=ctam_getes_uri, mode="DELETE")
         status = response.status

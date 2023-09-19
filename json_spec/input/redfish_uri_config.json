@@ -1,35 +1,36 @@
 {
-	"GPU":{
-		"GPUMC":"",
-		"BaseURI":"",
-		"ChassisGPUs":"<GPUs/OAMs under /redfish/v1/Chassis/>",
-		"ChassisIDs":"<Chassis/UBB under /redfish/v1/Chassis/>",
-		"BaseboardIDs":"<UBB under /redfish/v1/Systems/>",
-		"SystemGPUIDs":"<GPUs under /redfish/v1/Systems/{BaseboardID}/Processors/>",
-		"SensorIDs":"<Sensors under /redfish/v1/Chassis/{ChassisId}/Sensors/>",
-		"SystemGPUPortIDs":"<GPU Ports under /redfish/v1/Systems/{BaseboardId}/Processors/{GpuId}/Ports/>",
-		"GPUDramIDs":"<GPU DRAMs under /redfish/v1/Systems/{BaseboardId}/Memory/>",
-		"SystemFpgaIDs":"<FPGAs under /redfish/v1/Systems/{BaseboardId}/Processors/>",
-		"ChassisFpgaIDs":"<FPGAs under /redfish/v1/Chassis/>",
-		"ChassisSensorID":"<Sensors under /redfish/v1/Chassis/{ChassisFpgaIDs}/Sensors/>",
-		"ChassisRetimersIDs":"<Retimers under /redfish/v1/Chassis/>",
-		"SystemFpgaPortIDs":"<FPGA Ports under /redfish/v1/Systems/{BaseboardId}/Processors/{FpgaId}/Ports/>",
-		"ManagerIDs":"<Primary Managers under /redfish/v1/Managers/>",
-		"GPUResetURI":"",
-		"GracefulRestart":"",
-		"GPUCheckURI":"",
-		"GPULargeFWMessage":"",
-		"GPUPushUriTargetsSuccessMessage":"",
-		"HttpPushUriTargets":"",
-		"specific_targets":""
-	},
-	"BMC":{
-		"BaseURI":"",
-		"SystemURI":"",
-		"BMCFWInventory":"",
-		"SystemResetURI":"",
-		"GracefulRestart":"",
-		"ForceRestart":""
-	}
+    "GPU": {
+        "GPUMC": "",
+        "BaseURI": "",
+        "ChassisGPUs": "<GPUs/OAMs under /redfish/v1/Chassis/>",
+        "ChassisIDs": "<Chassis/UBB under /redfish/v1/Chassis/>",
+        "ChassisErotIDs": "<Chassis/UBB under /redfish/v1/Chassis/Retimers>",
+        "ChassisRetimerIDs": "<Chassis/UBB under /redfish/v1/Chassis/Retimers>",
+        "BaseboardIDs": "<UBB under /redfish/v1/Systems/>",
+        "SystemGPUIDs": "<GPUs under /redfish/v1/Systems/{BaseboardID}/Processors/>",
+        "SystemGPUPortIDs": "<GPU Ports under /redfish/v1/Systems/{BaseboardId}/Processors/{GpuId}/Ports/>",
+        "GPUDramIDs": "<GPU DRAMs under /redfish/v1/Systems/{BaseboardId}/Memory/>",
+        "SystemFpgaIDs": "<FPGAs under /redfish/v1/Systems/{BaseboardId}/Processors/>",
+        "ChassisFpgaIDs": "<FPGAs under /redfish/v1/Chassis/>",
+        "ChassisSensorID": "<Sensors under /redfish/v1/Chassis/{ChassisFpgaIDs}/Sensors/>",
+        "ChassisRetimersIDs": "<Retimers under /redfish/v1/Chassis/>",
+        "SystemFpgaPortIDs": "<FPGA Ports under /redfish/v1/Systems/{BaseboardId}/Processors/{FpgaId}/Ports/>",
+        "ManagerIDs": "<Primary Managers under /redfish/v1/Managers/>",
+        "GPUResetURI": "",
+        "GracefulRestart": "",
+        "GPUCheckURI": "",
+        "GPUPortIDs": "['0', '1', '2', '3', '4', '5', '6', '7']",
+        "GPULargeFWMessage": "",
+        "GPUPushUriTargetsSuccessMessage": "",
+        "HttpPushUriTargets": "",
+        "specific_targets": ""
+    },
+    "BMC": {
+        "BaseURI": "",
+        "SystemURI": "",
+        "BMCFWInventory": "",
+        "SystemResetURI": "",
+        "GracefulRestart": "",
+        "ForceRestart": ""
+    }
 }
-
