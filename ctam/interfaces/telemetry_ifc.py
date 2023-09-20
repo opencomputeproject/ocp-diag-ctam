@@ -108,7 +108,7 @@ class TelemetryIfc(FunctionalIfc):
             msg = "Checking for redfish uri for Accelerator Compliance, Result : {}".format( response_check)            
             self.write_test_info(msg)
             status = response.status
-            if (status == 200 or status == 201) and response_check:
+            if (status == 200 or status == 201):
                 self.test_run().add_log(LogSeverity.INFO, "Test JSON")
                 self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(uri, json.dumps(JSONData, indent=4)))
             else:
@@ -580,11 +580,11 @@ class TelemetryIfc(FunctionalIfc):
             msg = "Checking for redfish uri for Accelerator Compliance, Result : {}".format( response_check)            
             self.write_test_info(msg)
             status = response.status
-            if (status == 200 or status == 201) and response_check:
+            if (status == 200 or status == 201):
                 self.test_run().add_log(LogSeverity.INFO, "Test JSON")
                 self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(uri, json.dumps(JSONData, indent=4)))
             else:
-                self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(uri, JSONData))
+                self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}/nstatus is {}".format(uri, JSONData, status))
                 result = False
         return result
     
@@ -609,7 +609,7 @@ class TelemetryIfc(FunctionalIfc):
             msg = "Checking for redfish uri for Accelerator Compliance, Result : {}".format( response_check)            
             self.write_test_info(msg)
             status = response.status
-            if (status == 200 or status == 201) and response_check:
+            if (status == 200 or status == 201):
                 self.test_run().add_log(LogSeverity.INFO, "Test JSON")
                 self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(uri, json.dumps(JSONData, indent=4)))
             else:
@@ -617,7 +617,7 @@ class TelemetryIfc(FunctionalIfc):
                 result = False
         return result
 
-    def ctam_get_chassis_sensor_metrics(self, path="ChassisRetimerIDs"):
+    def ctam_get_chassis_sensor_metrics(self, path="ChassisRetimersIDs"):
         """
         :Description:				Read back the data of /redfish/v1/Chassis/{path}/Sensors
 
@@ -626,43 +626,43 @@ class TelemetryIfc(FunctionalIfc):
         MyName = __name__ + "." + self.ctam_get_chassis_sensor_metrics.__qualname__
         sensorNameList = []
 
-        if path == "ChassisRetimerIDs":
-            chassis_retimer_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisRetimerIDs}", component_type="GPU"))
+        if path == "ChassisRetimersIDs":
+            outer_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisRetimersIDs}", component_type="GPU"))
         elif path == "ChassisIDs":
-            chassis_retimer_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisIDs}", component_type="GPU"))
+            outer_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisIDs}", component_type="GPU"))
 
         reference_uri = r"/redfish/v1/Chassis/{path}/Sensors"
-
-        retimerInstance = chassis_retimer_list[0]
-        uri = "/Chassis/" + retimerInstance + "/Sensors"
-        base_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
-        chassis_uri = base_uri + uri
-        response = self.dut().run_redfish_command(uri=chassis_uri)
-        JSONData = response.dict
-        sensorMembers = JSONData["Members"]
-        
-        for index, sensorIdRecord in enumerate(sensorMembers):
-            sensorName = sensorIdRecord["@odata.id"].split('/')[-1].strip()
-            sensorNameList.append(sensorName)
-
         result = True
-        
-        for retimerInstance, sensorInstance in product(chassis_retimer_list, sensorNameList):
-            uri = "/Chassis/" + retimerInstance + "/Sensors/" + sensorInstance
+
+        for outler_list_instance in outer_list:
+            uri = "/Chassis/" + outler_list_instance + "/Sensors"
+            self.test_run().add_log(LogSeverity.INFO, "Outler Loop is {}".format(outler_list_instance))
             base_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
             chassis_uri = base_uri + uri
             response = self.dut().run_redfish_command(uri=chassis_uri)
             JSONData = response.dict
-            response_check = self.dut().check_uri_response(reference_uri, JSONData)
-            msg = "Checking for redfish uri for Accelerator Compliance, Result : {}".format( response_check)            
-            self.write_test_info(msg)
-            status = response.status
-            if (status == 200 or status == 201) and response_check:
-                self.test_run().add_log(LogSeverity.INFO, "Test JSON")
-                self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(uri, json.dumps(JSONData, indent=4)))
-            else:
-                self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(uri, JSONData))
-                result = False
+            sensorMembers = JSONData["Members"]
+
+            for sensorIdRecord in sensorMembers:
+                sensorName = sensorIdRecord["@odata.id"].split('/')[-1].strip()
+                #sensorNameList.append(sensorName)
+                #for sensorInstance in sensorNameList:
+                uri = "/Chassis/" + outler_list_instance + "/Sensors/" + sensorName
+                base_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
+                chassis_uri = base_uri + uri
+                response = self.dut().run_redfish_command(uri=chassis_uri)
+                JSONData = response.dict
+                response_check = self.dut().check_uri_response(reference_uri, JSONData)
+                msg = "Checking for redfish uri for Accelerator Compliance, Result : {}".format( response_check)            
+                self.write_test_info(msg)
+                status = response.status
+                if (status == 200 or status == 201):
+                    self.test_run().add_log(LogSeverity.INFO, "Test JSON")
+                    self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(uri, json.dumps(JSONData, indent=4)))
+                else:
+                    self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(uri, JSONData))
+                    result = False
+                    return result
         return result
 
     def ctam_get_chassis_retimers_ThermalSubsystem_metrics(self):
@@ -685,7 +685,7 @@ class TelemetryIfc(FunctionalIfc):
             msg = "Checking for redfish uri for Accelerator Compliance, Result : {}".format( response_check)            
             self.write_test_info(msg)
             status = response.status
-            if (status == 200 or status == 201) and response_check:
+            if (status == 200 or status == 201):
                 self.test_run().add_log(LogSeverity.INFO, "Test JSON")
                 self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(uri, json.dumps(JSONData, indent=4)))
             else:
@@ -713,7 +713,7 @@ class TelemetryIfc(FunctionalIfc):
             msg = "Checking for redfish uri for Accelerator Compliance, Result : {}".format( response_check)            
             self.write_test_info(msg)
             status = response.status
-            if (status == 200 or status == 201) and response_check:
+            if (status == 200 or status == 201):
                 self.test_run().add_log(LogSeverity.INFO, "Test JSON")
                 self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(uri, json.dumps(JSONData, indent=4)))
             else:
