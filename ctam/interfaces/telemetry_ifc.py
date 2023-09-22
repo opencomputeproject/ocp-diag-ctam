@@ -196,6 +196,13 @@ class TelemetryIfc(FunctionalIfc):
             JSONData = response.dict
             for metric_property in JSONData["MetricValues"]:
                 mr_json[metric_property["MetricProperty"]] = metric_property["MetricValue"]
+        if self.dut().console_log:
+            t = PrettyTable(["MetricProperty", "MetricValue"])
+            for k, v in mr_json.items():
+                t.add_row([k, v])
+            t.align["MetricProperty"] = "r"
+            print(t)
+        self.write_test_info("{}".format(mr_json))
         return mr_json
 
     def ctam_chassis_ids_metrics(self, path=None):
