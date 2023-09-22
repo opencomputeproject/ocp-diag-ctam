@@ -22,6 +22,10 @@ from interfaces.functional_ifc import FunctionalIfc
 from test_hierarchy import TestHierarchy
 
 from prettytable import PrettyTable
+import threading, time
+from queue import Queue
+from alive_progress import alive_bar
+
 import ocptv.output as tv
 from ocptv.output import (
     DiagnosisType,
@@ -82,6 +86,7 @@ class TestRunner:
         self.test_groups = []
         self.group_sequence = []
         self.test_result_data = []
+        self.total_cases = 0
 
         with open(dut_info_json_file) as dut_info_json:
             self.dut_config = json.load(dut_info_json)
@@ -287,7 +292,17 @@ class TestRunner:
         """
         Public API used to kick of the test suite
         """
+        # create thread to run update_report()
+        q = Queue()
+        t1 = threading.Thread(target=self.update_report, args=(q,))
+        t2 = threading.Thread(target=self.progress_bar, args=(q,))
+        
         if self.test_cases:
+            self.total_cases = len(self.test_cases)
+            # print("length=", self.total_cases)
+            if self.console_log is False:
+                t1.start()
+                t2.start()
             for test in self.test_cases:
                 (
                     group_instance,
@@ -310,12 +325,18 @@ class TestRunner:
 
                 self._run_group_test_cases(group_instance, test_case_instances)
         elif self.test_sequence:
+            self.total_cases = len(self.test_sequence)
+            #print("length seq=", self.total_cases)
+            
+            if self.console_log is False:
+                t1.start()
+                t2.start()
             for test in self.test_sequence:
                 (
                     group_instance,
                     test_case_instances,
                 ) = self.test_hierarchy.instantiate_obj_for_testcase(test)
-
+                
                 group_inc_tags = group_instance.tags
                 # group_exc_tags = group_instance.exclude_tags
                 valid = self._is_enabled(
@@ -338,6 +359,11 @@ class TestRunner:
                     group_instance,
                     test_case_instances,
                 ) = self.test_hierarchy.instantiate_obj_for_group(group)
+                #print(len(test_case_instances))
+                self.total_cases = len(test_case_instances)
+                if self.console_log is False:
+                    t1.start()
+                    t2.start()
                 group_inc_tags = group_instance.tags
                 # group_exc_tags = group_instance.exclude_tags
 
@@ -361,6 +387,11 @@ class TestRunner:
                     group_instance,
                     test_case_instances,
                 ) = self.test_hierarchy.instantiate_obj_for_group(group)
+                print("total gr seq cases=", len(test_case_instances))
+                self.total_cases = len(test_case_instances)
+                if self.console_log is False:
+                    t1.start()
+                    t2.start()
                 group_inc_tags = group_instance.tags
                 # group_exc_tags = group_instance.exclude_tags
 
@@ -397,6 +428,12 @@ class TestRunner:
                                        TestCase.max_compliance_score,"{}%".format(gtotal)))
         self.generate_test_report()
         self.generate_domain_test_report()
+        time.sleep(2)
+        #print("closing thread")
+        t1.join()
+        #time.sleep(2)
+        t2.join()
+        
         
     def _run_group_test_cases(self, group_instance, test_case_instances):
         """
@@ -443,6 +480,7 @@ class TestRunner:
                         self.cmd_output_dir, self.console_log, file_name, "log", self.debug_mode
                     )
                     self.comp_tool_dut.logger = logger
+                    execution_starttime = round(time.perf_counter(), 2)
                     test_result = test_instance.run()
                     if (
                         test_result == TestResult.FAIL
@@ -458,8 +496,10 @@ class TestRunner:
                 finally:
                     # attempt test cleanup even if test exception raised
                     test_instance.teardown()
+                    execution_endtime = round(time.perf_counter(), 2)
                     msg = {
                         "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                        "ExecutionTime": execution_endtime - execution_starttime,
                         "TestID": test_instance.test_id,
                         "TestName": test_instance.test_name,
                         "TestCaseScoreWeight":test_instance.score_weight,
@@ -510,7 +550,7 @@ class TestRunner:
         It will have TestID, TestName, Test Score, Test Result, Test Weight and total
 
         """
-        print(self.test_result_data)
+        #print(self.test_result_data)
         t = PrettyTable(["TestID", "TestName", "TestScoreWeight", "TestScore", "TestResult"])
         t.title = "Test Result"
         t.add_rows(self.test_result_data[:len(self.test_result_data) - 1:])
@@ -587,6 +627,39 @@ class TestRunner:
         with open(self.test_result_file, 'a') as f:
             f.write("\n" + str(dt))
         print(dt)
+
+    def update_report(self, out_q):
+        """
+        updates the current value of executed number of test cases and passes it to progress_bar()
+        param: queue object
+        """
+        current = 0
+        while current < self.total_cases:
+            temp2 = current
+            current = len(self.test_result_data)
+            if current == temp2 + 1:
+                # print("current value=", current)
+                out_q.put(current)
+
+
+    def progress_bar(self, in_q):
+        """
+        prints a progress bar in the console displaying the percentage of test cases completed.
+        param: queue object
+        """
+        # print("total cases in progress_bar=", self.total_cases)
+
+        with alive_bar(self.total_cases, title= "Progress:") as bar:
+            count = 0
+            while count < self.total_cases:
+                temp = count
+                count = in_q.get()
+
+                if count == temp + 1:
+                    bar()
+                        
+                if count == self.total_cases:
+                    break
 
 
 class LoggingWriter(Writer):
