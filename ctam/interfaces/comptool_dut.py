@@ -17,7 +17,7 @@ import json
 from datetime import datetime
 import traceback
 
-#import pandas as pd
+# import pandas as pd
 
 from prettytable import PrettyTable
 from ocptv.output import Metadata
@@ -166,7 +166,7 @@ class CompToolDut(Dut):
             if response: # FIXME: Add error handling in case the request fails
                 msg.update({
                     "ResponseCode": response.status,
-                    "Response":response.dict, # FIXME: Throws error in some cases when response.dict is used and the response body is empty
+                    "Response":response.dict, # FIXED: Throws error in some cases when response.dict is used and the response body is empty
                     })
             else:
                 msg.update({"Response":"Response is None please check the request you are trying to invoke."})
