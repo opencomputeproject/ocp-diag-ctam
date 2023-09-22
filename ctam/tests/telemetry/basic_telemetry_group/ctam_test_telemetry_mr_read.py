@@ -70,7 +70,6 @@ class CTAMTestTelemetryMRRead(TestCase):
                 for k, v in res.items():
                     t.add_row([k, v])
                 t.align["MetricProperty"] = "r"
-                print(t)
                 msg = '"Extraction Complete", extra={"additional_detail": {"Matric Values": res}}'
                 self.test_run().add_log(LogSeverity.INFO, msg)
             else:
