@@ -294,20 +294,14 @@ class TestRunner:
         """
         Public API used to kick of the test suite
         """
-        # create thread to run update_report()
         if self.progress_bar:
-            q = Queue()
-            t1 = threading.Thread(target=self.update_report, args=(q,))
-            t2 = threading.Thread(target=self.display_progress_bar, args=(q,))
-            # t1.start()
-            # t2.start()
-            self.total_cases = 0
+            progress_thread = threading.Thread(target=self.display_progress_bar)
+
         if self.test_cases:
-            self.total_cases = len(self.test_cases)
-            # print("length=", self.total_cases)
-            if self.progress_bar is True and self.console_log is False:
-                t1.start()
-                t2.start()
+            if self.progress_bar and self.console_log is False:
+                    self.total_cases = len(self.test_cases)
+                    progress_thread.start()
+
             for test in self.test_cases:
                 (
                     group_instance,
@@ -330,12 +324,10 @@ class TestRunner:
 
                 self._run_group_test_cases(group_instance, test_case_instances)
         elif self.test_sequence:
-            self.total_cases = len(self.test_sequence)
-            #print("length seq=", self.total_cases)
-            
-            if self.progress_bar is True and self.console_log is False:
-                t1.start()
-                t2.start()
+            if self.progress_bar and self.console_log is False:
+                    self.total_cases = len(self.test_sequence)
+                    progress_thread.start()
+                    
             for test in self.test_sequence:
                 (
                     group_instance,
@@ -364,11 +356,9 @@ class TestRunner:
                     group_instance,
                     test_case_instances,
                 ) = self.test_hierarchy.instantiate_obj_for_group(group)
-                #print(len(test_case_instances))
-                self.total_cases = len(test_case_instances)
-                if self.progress_bar is True and self.console_log is False:
-                    t1.start()
-                    t2.start()
+                if self.progress_bar and self.console_log is False:
+                    self.total_cases = len(test_case_instances)
+                    progress_thread.start()
                 group_inc_tags = group_instance.tags
                 # group_exc_tags = group_instance.exclude_tags
 
@@ -387,16 +377,21 @@ class TestRunner:
 
                 self._run_group_test_cases(group_instance, test_case_instances)
         elif self.group_sequence:
+            # get total cases in group sequence from test hierarchy
+            tc_group = []
+            for g in self.group_sequence:
+                tc_group.append(self.test_hierarchy.get_total_group_cases(g))
+
+            self.total_cases = sum(tc_group)
+            if self.progress_bar and self.console_log is False:
+                progress_thread.start()
+
             for group in self.group_sequence:
                 (
                     group_instance,
                     test_case_instances,
                 ) = self.test_hierarchy.instantiate_obj_for_group(group)
-                print("total gr seq cases=", len(test_case_instances))
-                self.total_cases = len(test_case_instances)
-                if self.progress_bar is True and self.console_log is False:
-                    t1.start()
-                    t2.start()
+
                 group_inc_tags = group_instance.tags
                 # group_exc_tags = group_instance.exclude_tags
 
@@ -434,11 +429,8 @@ class TestRunner:
         self.generate_test_report()
         self.generate_domain_test_report()
         time.sleep(2)
-        if self.progress_bar is True:
-            #print("closing thread")
-            t1.join()
-            #time.sleep(2)
-            t2.join()
+        if self.progress_bar and self.console_log is False:
+            progress_thread.join()
         
         
     def _run_group_test_cases(self, group_instance, test_case_instances):
@@ -648,7 +640,7 @@ class TestRunner:
                 out_q.put(current)
 
 
-    def display_progress_bar(self, in_q):
+    def display_progress_bar(self):
         """
         prints a progress bar in the console displaying the percentage of test cases completed.
         param: queue object
@@ -659,7 +651,8 @@ class TestRunner:
             count = 0
             while count < self.total_cases:
                 temp = count
-                count = in_q.get()
+                #count = in_q.get()
+                count = len(self.test_result_data)
 
                 if count == temp + 1:
                     bar()
