@@ -14,6 +14,7 @@ import platform
 import traceback
 import logging
 import sys
+#from unittest import runner
 from ocptv.output import LogSeverity, StdoutWriter, Writer
 from datetime import datetime
 from tests.test_case import TestCase
@@ -124,6 +125,7 @@ class TestRunner:
 
         self.debug_mode = runner_config["debug_mode"]
         self.console_log = runner_config["console_log"]
+        self.progress_bar = runner_config["progress_bar"]
 
         # end result is that either test_cases[] or test_groups[] will have values but not both
         # if passed via the command line, then there will only be 1 testcase or 1 testgroup in the list
@@ -293,14 +295,17 @@ class TestRunner:
         Public API used to kick of the test suite
         """
         # create thread to run update_report()
-        q = Queue()
-        t1 = threading.Thread(target=self.update_report, args=(q,))
-        t2 = threading.Thread(target=self.progress_bar, args=(q,))
-        
+        if self.progress_bar:
+            q = Queue()
+            t1 = threading.Thread(target=self.update_report, args=(q,))
+            t2 = threading.Thread(target=self.display_progress_bar, args=(q,))
+            # t1.start()
+            # t2.start()
+            self.total_cases = 0
         if self.test_cases:
             self.total_cases = len(self.test_cases)
             # print("length=", self.total_cases)
-            if self.console_log is False:
+            if self.progress_bar is True and self.console_log is False:
                 t1.start()
                 t2.start()
             for test in self.test_cases:
@@ -328,7 +333,7 @@ class TestRunner:
             self.total_cases = len(self.test_sequence)
             #print("length seq=", self.total_cases)
             
-            if self.console_log is False:
+            if self.progress_bar is True and self.console_log is False:
                 t1.start()
                 t2.start()
             for test in self.test_sequence:
@@ -361,7 +366,7 @@ class TestRunner:
                 ) = self.test_hierarchy.instantiate_obj_for_group(group)
                 #print(len(test_case_instances))
                 self.total_cases = len(test_case_instances)
-                if self.console_log is False:
+                if self.progress_bar is True and self.console_log is False:
                     t1.start()
                     t2.start()
                 group_inc_tags = group_instance.tags
@@ -389,7 +394,7 @@ class TestRunner:
                 ) = self.test_hierarchy.instantiate_obj_for_group(group)
                 print("total gr seq cases=", len(test_case_instances))
                 self.total_cases = len(test_case_instances)
-                if self.console_log is False:
+                if self.progress_bar is True and self.console_log is False:
                     t1.start()
                     t2.start()
                 group_inc_tags = group_instance.tags
@@ -429,10 +434,11 @@ class TestRunner:
         self.generate_test_report()
         self.generate_domain_test_report()
         time.sleep(2)
-        #print("closing thread")
-        t1.join()
-        #time.sleep(2)
-        t2.join()
+        if self.progress_bar is True:
+            #print("closing thread")
+            t1.join()
+            #time.sleep(2)
+            t2.join()
         
         
     def _run_group_test_cases(self, group_instance, test_case_instances):
@@ -477,7 +483,7 @@ class TestRunner:
                     file_name = "RedfishCommandDetails_{}_{}".format(test_instance.test_id,
                                                                         test_instance.test_name)
                     logger = LoggingWriter(
-                        self.cmd_output_dir, self.console_log, file_name, "log", self.debug_mode
+                        self.cmd_output_dir, self.console_log, file_name, "json", self.debug_mode
                     )
                     self.comp_tool_dut.logger = logger
                     execution_starttime = round(time.perf_counter(), 2)
@@ -642,7 +648,7 @@ class TestRunner:
                 out_q.put(current)
 
 
-    def progress_bar(self, in_q):
+    def display_progress_bar(self, in_q):
         """
         prints a progress bar in the console displaying the percentage of test cases completed.
         param: queue object

@@ -6,6 +6,7 @@
     "output_override_directory": "",
     "debug_mode": true,
     "console_log": true,
+    "progress_bar":  false,
     "include_tags": [],
     "exclude_tags": [],
     "test_cases": [],

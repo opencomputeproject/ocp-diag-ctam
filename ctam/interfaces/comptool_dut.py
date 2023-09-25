@@ -162,19 +162,29 @@ class CompToolDut(Dut):
                 response = self.redfish_ifc.get(**kwargs) # path=uri, headers=headers
             elif mode == "DELETE":
                 msg.update({"Method":"DELETE",})
-                response = self.redfish_ifc.delete(**kwargs) # path=uri, headers=headers
-            if response: # FIXME: Add error handling in case the request fails
+                response = self.redfish_ifc.delete(**kwargs) # path=uri, headers=headers   
+                
+            if response.status in range (200,204) and response.text: # FIXME: Add error handling in case the request fails
                 msg.update({
                     "ResponseCode": response.status,
                     "Response":response.dict, # FIXED: Throws error in some cases when response.dict is used and the response body is empty
+                    }) 
+            elif response.status in range (200,204):
+                msg.update({
+                    "ResponseCode": response.status,
+                    "Response":"Success but no response body",
                     })
-            else:
-                msg.update({"Response":"Response is None please check the request you are trying to invoke."})
-            # self.logger.write(json.dumps(msg))
+            elif response.status > 300: 
+                msg.update({
+                    "ResponseCode": response.status,
+                    "Response":"Unexpected Response",
+                    })
         except Exception as e:
-            print("FATAL: Exception occurred while running redfish command. Please see below exception...")
-            print(str(e))
-        finally:
+            msg.update({
+            "ResponseCode": None,
+            "Response":"FATAL: Exception occurred while running redfish command. Please see below exception...",
+            })
+        finally:                         
             self.logger.write(json.dumps(msg))
             return response
 

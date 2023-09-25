@@ -339,7 +339,7 @@ class FunctionalIfc:
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return data
 
-    def ctam_getes(self, path = "Subscriptions"):
+    def ctam_getes(self, path=None):
         """
         :Description:       Get Event Service and child collection items.
         :returns:	        JSON Data after running Redfish command

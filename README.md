@@ -50,18 +50,32 @@ This project is part of [OCPTV](https://github.com/opencomputeproject/ocp-diag-c
 8. To run test cases with sequence
     ```
     cd ctam
-    python ctam.py -w ..\example_workspace -test_seq "<test case name or id>" <test case name or id>
+    python ctam.py -w ..\example_workspace -test_seq <test case name or id> <test case name or id>
     ```
     Logs will be created under `example_workspace\TestRuns`
 9. To run groups with sequence
     ```
     cd ctam
-    python ctam.py -w ..\example_workspace -group_seq "<group name or id>" <group name or id>
+    python ctam.py -w ..\example_workspace -group_seq <group name or id> <group name or id>
     ```
     Logs will be created under `example_workspace\TestRuns`
 10. Choose test cases to run by using tags and specifying the tags to include/exclude in test_runner.json 
 11. Choose test sequence in test_runner.json if you want to run it from test runner config.
 
+
+## Log Files created
+
+1. OCPTV Log file - All logs in OCPTV defined logging format. 
+2. Test_Score_<>.json - All test cases result + Final score. 
+3. Test_Report_<>.log - Tabulated report of test run
+4. Test_Info_<>.json - Optional log file used by test interfaces (for debug)
+5. RedfishCommandDetails/RedfishCommandDetails_<Test_ID>_ <Test_Name>_<>.json - Redfish Commands used & return values (for debug)
+
+## Test Runner Knobs
+
+1. debug_mode - True/False (for debug logs)
+2. console_log - True/False (for console logs)
+3. progress_bar - True/False (for progress bar idicator)
 
 ## Developer notes
 ### VS Code

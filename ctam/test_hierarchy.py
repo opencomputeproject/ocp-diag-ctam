@@ -228,7 +228,7 @@ class TestHierarchy:
         """
 
         def print_group_info(group_name, group_info):
-            print(f'Group ID: {group_info["group_attributes"]["group_id"]}      Test Group Name: {group_name}')
+            print(f'\nGroup ID: {group_info["group_attributes"]["group_id"]}      Test Group Name: {group_name}')
             for testcase in group_info["test_cases"]:
                 print(
                     f'    Test Case ID: {testcase["attributes"]["test_id"]}      Test Case Name: {testcase["testcase_name"]}'
