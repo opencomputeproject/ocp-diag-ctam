@@ -32,7 +32,7 @@ from tests.fw_update.fw_update_group_N._fw_update_group_N import (
 
 class CTAMTestNegativeUnsignedImageUpdate(TestCase):
     """
-    Verify values of Software Inventory Collection are present
+    Test case which attempts an unsigned image update
 
     :param TestCase: super class for all test cases
     :type TestCase:
