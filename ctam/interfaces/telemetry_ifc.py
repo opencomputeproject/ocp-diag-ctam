@@ -10,6 +10,7 @@ from typing import Optional, List
 from interfaces.functional_ifc import FunctionalIfc
 import ast
 from datetime import datetime
+from prettytable import PrettyTable
 from ocptv.output import LogSeverity
 from utils.json_utils import *
 from itertools import product
@@ -196,7 +197,7 @@ class TelemetryIfc(FunctionalIfc):
             JSONData = response.dict
             for metric_property in JSONData["MetricValues"]:
                 mr_json[metric_property["MetricProperty"]] = metric_property["MetricValue"]
-        if self.dut().console_log:
+        if self.dut().is_console_log:
             t = PrettyTable(["MetricProperty", "MetricValue"])
             for k, v in mr_json.items():
                 t.add_row([k, v])

@@ -44,6 +44,7 @@ class CompToolDut(Dut):
         redfish_uri_config,
         net_rc,
         debugMode: bool,
+        console_log: bool,
         logger,
         test_info_logger,
         test_uri_response_check,
@@ -63,6 +64,7 @@ class CompToolDut(Dut):
         :type metadata: ty.Optional[Metadata], optional
         """
         self._debugMode: bool = debugMode
+        self._console_log: bool = console_log
         self.package_config = package_config
         self.dut_config = config["properties"]
         self.redfish_uri_config = redfish_uri_config
@@ -239,6 +241,11 @@ class CompToolDut(Dut):
         :rtype: _type_
         """
         return self._debugMode
+    
+    @property
+    def is_console_log(self) -> bool:
+
+        return self._console_log
     
     def setup_ssh_tunnel(self, amc_ip_address):
         """
