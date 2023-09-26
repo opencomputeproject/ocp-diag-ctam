@@ -294,143 +294,148 @@ class TestRunner:
         """
         Public API used to kick of the test suite
         """
-        if self.progress_bar:
-            progress_thread = threading.Thread(target=self.display_progress_bar)
+        try:
+            if self.progress_bar:
+                progress_thread = threading.Thread(target=self.display_progress_bar)
+                progress_thread.daemon = True
 
-        if self.test_cases:
-            if self.progress_bar and self.console_log is False:
-                    self.total_cases = len(self.test_cases)
-                    progress_thread.start()
-
-            for test in self.test_cases:
-                (
-                    group_instance,
-                    test_case_instances,
-                ) = self.test_hierarchy.instantiate_obj_for_testcase(test)
-
-                group_inc_tags = group_instance.tags
-                # group_exc_tags = group_instance.exclude_tags
-                valid = self._is_enabled(
-                    self.include_tags_set,
-                    group_inc_tags,
-                    self.exclude_tags_set,
-                    # group_exc_tags,
-                )
-                if not valid:
-                    print(
-                        f"Group1 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
-                    )
-                    continue
-
-                self._run_group_test_cases(group_instance, test_case_instances)
-        elif self.test_sequence:
-            if self.progress_bar and self.console_log is False:
-                    self.total_cases = len(self.test_sequence)
-                    progress_thread.start()
-                    
-            for test in self.test_sequence:
-                (
-                    group_instance,
-                    test_case_instances,
-                ) = self.test_hierarchy.instantiate_obj_for_testcase(test)
-                
-                group_inc_tags = group_instance.tags
-                # group_exc_tags = group_instance.exclude_tags
-                valid = self._is_enabled(
-                    self.include_tags_set,
-                    group_inc_tags,
-                    self.exclude_tags_set,
-                    # group_exc_tags,
-                )
-                if not valid:
-                    print(
-                        f"Group1 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
-                    )
-                    continue
-
-                self._run_group_test_cases(group_instance, test_case_instances)
-
-        elif self.test_groups:
-            for group in self.test_groups:
-                (
-                    group_instance,
-                    test_case_instances,
-                ) = self.test_hierarchy.instantiate_obj_for_group(group)
+            if self.test_cases:
                 if self.progress_bar and self.console_log is False:
-                    self.total_cases = len(test_case_instances)
+                        self.total_cases = len(self.test_cases)
+                        progress_thread.start()
+
+                for test in self.test_cases:
+                    (
+                        group_instance,
+                        test_case_instances,
+                    ) = self.test_hierarchy.instantiate_obj_for_testcase(test)
+
+                    group_inc_tags = group_instance.tags
+                    # group_exc_tags = group_instance.exclude_tags
+                    valid = self._is_enabled(
+                        self.include_tags_set,
+                        group_inc_tags,
+                        self.exclude_tags_set,
+                        # group_exc_tags,
+                    )
+                    if not valid:
+                        print(
+                            f"Group1 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
+                        )
+                        continue
+
+                    self._run_group_test_cases(group_instance, test_case_instances)
+            elif self.test_sequence:
+                if self.progress_bar and self.console_log is False:
+                        self.total_cases = len(self.test_sequence)
+                        progress_thread.start()
+                        
+                for test in self.test_sequence:
+                    (
+                        group_instance,
+                        test_case_instances,
+                    ) = self.test_hierarchy.instantiate_obj_for_testcase(test)
+                    
+                    group_inc_tags = group_instance.tags
+                    # group_exc_tags = group_instance.exclude_tags
+                    valid = self._is_enabled(
+                        self.include_tags_set,
+                        group_inc_tags,
+                        self.exclude_tags_set,
+                        # group_exc_tags,
+                    )
+                    if not valid:
+                        print(
+                            f"Group1 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
+                        )
+                        continue
+
+                    self._run_group_test_cases(group_instance, test_case_instances)
+
+            elif self.test_groups:
+                for group in self.test_groups:
+                    (
+                        group_instance,
+                        test_case_instances,
+                    ) = self.test_hierarchy.instantiate_obj_for_group(group)
+                    if self.progress_bar and self.console_log is False:
+                        self.total_cases = len(test_case_instances)
+                        progress_thread.start()
+                    group_inc_tags = group_instance.tags
+                    # group_exc_tags = group_instance.exclude_tags
+
+                    valid = self._is_enabled(
+                        self.include_tags_set,
+                        group_inc_tags,
+                        self.exclude_tags_set,
+                        # group_exc_tags,
+                    )
+
+                    if not valid:
+                        print(
+                            f"Group2 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
+                        )
+                        continue
+
+                    self._run_group_test_cases(group_instance, test_case_instances)
+            elif self.group_sequence:
+                # get total cases in group sequence from test hierarchy
+                tc_group = []
+                for g in self.group_sequence:
+                    tc_group.append(self.test_hierarchy.get_total_group_cases(g))
+
+                self.total_cases = sum(tc_group)
+                if self.progress_bar and self.console_log is False:
                     progress_thread.start()
-                group_inc_tags = group_instance.tags
-                # group_exc_tags = group_instance.exclude_tags
 
-                valid = self._is_enabled(
-                    self.include_tags_set,
-                    group_inc_tags,
-                    self.exclude_tags_set,
-                    # group_exc_tags,
-                )
+                for group in self.group_sequence:
+                    (
+                        group_instance,
+                        test_case_instances,
+                    ) = self.test_hierarchy.instantiate_obj_for_group(group)
 
-                if not valid:
-                    print(
-                        f"Group2 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
+                    group_inc_tags = group_instance.tags
+                    # group_exc_tags = group_instance.exclude_tags
+
+                    valid = self._is_enabled(
+                        self.include_tags_set,
+                        group_inc_tags,
+                        self.exclude_tags_set,
+                        # group_exc_tags,
                     )
-                    continue
 
-                self._run_group_test_cases(group_instance, test_case_instances)
-        elif self.group_sequence:
-            # get total cases in group sequence from test hierarchy
-            tc_group = []
-            for g in self.group_sequence:
-                tc_group.append(self.test_hierarchy.get_total_group_cases(g))
+                    if not valid:
+                        print(
+                            f"Group2 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
+                        )
+                        continue
 
-            self.total_cases = sum(tc_group)
+                    self._run_group_test_cases(group_instance, test_case_instances)
+            grade = (
+                    TestCase.total_compliance_score / TestCase.max_compliance_score * 100
+                    if TestCase.max_compliance_score != 0
+                    else 0
+                )
+            
+            gtotal = round(grade, 2)
+
+            msg = {
+                    "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                    "TotalScore": TestCase.total_compliance_score,
+                    "MaxComplianceScore": TestCase.max_compliance_score,
+                    "Grade": "{}%".format(gtotal),
+                    }
+            self.score_logger.write(json.dumps(msg))
+            self.test_result_data.append(("Total Score", "", TestCase.total_compliance_score, 
+                                        TestCase.max_compliance_score,"{}%".format(gtotal)))
+            self.generate_test_report()
+            self.generate_domain_test_report()
+            time.sleep(2)
             if self.progress_bar and self.console_log is False:
-                progress_thread.start()
-
-            for group in self.group_sequence:
-                (
-                    group_instance,
-                    test_case_instances,
-                ) = self.test_hierarchy.instantiate_obj_for_group(group)
-
-                group_inc_tags = group_instance.tags
-                # group_exc_tags = group_instance.exclude_tags
-
-                valid = self._is_enabled(
-                    self.include_tags_set,
-                    group_inc_tags,
-                    self.exclude_tags_set,
-                    # group_exc_tags,
-                )
-
-                if not valid:
-                    print(
-                        f"Group2 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
-                    )
-                    continue
-
-                self._run_group_test_cases(group_instance, test_case_instances)
-        grade = (
-                TestCase.total_compliance_score / TestCase.max_compliance_score * 100
-                if TestCase.max_compliance_score != 0
-                else 0
-            )
-        
-        gtotal = round(grade, 2)
-
-        msg = {
-                "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
-                "TotalScore": TestCase.total_compliance_score,
-                "MaxComplianceScore": TestCase.max_compliance_score,
-                "Grade": "{}%".format(gtotal),
-                }
-        self.score_logger.write(json.dumps(msg))
-        self.test_result_data.append(("Total Score", "", TestCase.total_compliance_score, 
-                                       TestCase.max_compliance_score,"{}%".format(gtotal)))
-        self.generate_test_report()
-        self.generate_domain_test_report()
-        time.sleep(2)
-        if self.progress_bar and self.console_log is False:
-            progress_thread.join()
+                while progress_thread.is_alive():
+                    progress_thread.join(10)
+        except KeyboardInterrupt:
+            sys.exit(1)
         
         
     def _run_group_test_cases(self, group_instance, test_case_instances):
@@ -643,11 +648,11 @@ class TestRunner:
     def display_progress_bar(self):
         """
         prints a progress bar in the console displaying the percentage of test cases completed.
-        param: queue object
         """
         # print("total cases in progress_bar=", self.total_cases)
 
-        with alive_bar(self.total_cases, title= "Progress:") as bar:
+
+        with alive_bar(self.total_cases, title= "Progress:", spinner="arrow") as bar:
             count = 0
             while count < self.total_cases:
                 temp = count
@@ -656,7 +661,7 @@ class TestRunner:
 
                 if count == temp + 1:
                     bar()
-                        
+                            
                 if count == self.total_cases:
                     break
 
