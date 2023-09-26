@@ -15,6 +15,7 @@
 		"GPUResetURI":"",
 		"GracefulRestart":"",
 		"GPUCheckURI":"",
+		"SystemURI":"",
 		"GPULargeFWMessage":"",
 		"GPUPushUriTargetsSuccessMessage":"",
 		"HttpPushUriTargets":"",
@@ -23,7 +24,6 @@
 	},
 	"BMC":{
 		"BaseURI":"",
-		"SystemURI":"",
 		"BMCFWInventory":"",
 		"SystemResetURI":"",
 		"GracefulRestart":"",
