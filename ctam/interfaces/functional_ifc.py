@@ -92,7 +92,7 @@ class FunctionalIfc:
                 self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
             )
         elif image_type == "large":
-            if self.dut().package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {}).get("Package", "") != "":
+            if self.dut().package_config.get("GPU_FW_IMAGE_LARGE", {}).get("Package", "") != "":
                 json_fw_file_payload = os.path.join(
                     self.dut().cwd,
                     self.dut().package_config.get("GPU_FW_IMAGE_LARGE", {}).get("Path", ""),
@@ -129,13 +129,21 @@ class FunctionalIfc:
                 )
                 json_fw_file_payload = FwpkgSignature.clear_signature_in_pkg(golden_fwpkg_path)
             
-        elif image_type == "invalid_uuid":
+        elif image_type == "invalid_pkg_uuid":
             golden_fwpkg_path = os.path.join(
                 self.dut().cwd,
                 self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
                 self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
             )
             json_fw_file_payload = PLDMFwpkg.corrupt_package_UUID(golden_fwpkg_path)
+            
+        elif image_type == "invalid_device_uuid":
+            golden_fwpkg_path = os.path.join(
+                self.dut().cwd,
+                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+            )
+            json_fw_file_payload = PLDMFwpkg.corrupt_device_record_uuid_in_pkg(golden_fwpkg_path)
         
         elif image_type == "empty_metadata":
             if corrupted_component_id is None:
@@ -182,15 +190,23 @@ class FunctionalIfc:
             )
 
         elif image_type == "unsigned":
-            json_fw_file_payload = os.path.join(
-                self.dut().cwd,
-                self.dut()
-                .package_config.get("GPU_FW_IMAGE_UNSIGNED", {})
-                .get("Path", ""),
-                self.dut()
-                .package_config.get("GPU_FW_IMAGE_UNSIGNED", {})
-                .get("Package", ""),
-            )
+            if self.dut().package_config.get("GPU_FW_IMAGE_UNSIGNED", {}).get("Package", "") != "":
+                json_fw_file_payload = os.path.join(
+                    self.dut().cwd,
+                    self.dut()
+                    .package_config.get("GPU_FW_IMAGE_UNSIGNED", {})
+                    .get("Path", ""),
+                    self.dut()
+                    .package_config.get("GPU_FW_IMAGE_UNSIGNED", {})
+                    .get("Package", ""),
+                )
+            else:
+                golden_fwpkg_path = os.path.join(
+                    self.dut().cwd,
+                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+                )
+                json_fw_file_payload = FwpkgSignature.clear_signature_in_pkg(golden_fwpkg_path)
         elif image_type == "corrupt":
             json_fw_file_payload = os.path.join(
                 self.dut().cwd,
@@ -682,5 +698,28 @@ class FunctionalIfc:
                             self.test_run().add_log(LogSeverity.ERROR, f"{dictionary} is not expanded.")
                             result = False
                             break
+        return result
+    
+    def ctam_redfish_GET_status_ok(self, uri):
+        """
+        :Description:   Check if the Redfish API response status is OK
+        
+        :param uri:     Redfish uri
+        :type uri:      str
+        
+        :returns:       result (Pass/Fail)
+        :rtype:         bool
+        """
+        result = True
+        response = self.dut().run_redfish_command(uri=uri)
+        JSONData = response.dict
+        status = response.status
+        if status == 200 or status == 201:
+            self.test_run().add_log(LogSeverity.INFO, "GET request Passed: {} : {}".format(uri, JSONData))
+        else:
+            self.test_run().add_log(LogSeverity.FATAL, "GET request Failed: {} : {}".format(uri, JSONData))
+            result = False
+        return result
+        
         return result
             

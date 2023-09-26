@@ -75,7 +75,7 @@ class HealthCheckIfc(FunctionalIfc):
                 )
                 self.logservice_uri_dict[resource_collection] = logservice_uri_list
                 self.logservice_uri_list.extend(logservice_uri_list)
-        self.write_test_info("LogServices URI list: {}".format(self.logservice_uri_list))
+        self.write_test_info("LogServices URI list: {}".format(self.logservice_uri_dict))
         return self.logservice_uri_list
     
     def ctam_verify_logservice_presence(self, resource_collection_list=["Systems", "Managers", "Chassis"]):
@@ -98,25 +98,11 @@ class HealthCheckIfc(FunctionalIfc):
                    self.test_run().add_log(LogSeverity.ERROR, f"Checking existing URI list - LogServices is not found in {resource_collection}")
                    result = False
         return result
-    
-    def ctam_get_logservice_uris(self):
-        if self.logservice_uri_list == []:
-            self.ctam_redfish_uri_deep_hunt(
-               "/redfish/v1/Systems", "LogServices", self.logservice_uri_list, uri_analyzed=[]
-            )
-            self.ctam_redfish_uri_deep_hunt(
-                "/redfish/v1/Managers", "LogServices", self.logservice_uri_list, uri_analyzed=[]
-            )
-            self.ctam_redfish_uri_deep_hunt(
-               "/redfish/v1/Chassis", "LogServices", self.logservice_uri_list, uri_analyzed=[]
-            )
-        self.write_test_info("{}".format(self.logservice_uri_list))
-        return self.logservice_uri_list
 
     def ctam_clear_log_dump(self):
         result = True
         if self.dumplog_uri_list == []: # FIXME: Should we use the dict instead?
-            self.dumplog_uri_list = self.ctam_get_logdump_uris() # FIXME: Should we use the ctam_get_all_logdump_uris instead?
+            self.dumplog_uri_list = self.ctam_get_all_logdump_uris()
             if self.dumplog_uri_list == []:
                 self.write_test_info("LogServices Dump URI list is empty. Nothing to clear!")
                 result = False
@@ -125,7 +111,7 @@ class HealthCheckIfc(FunctionalIfc):
             print(clear_dump_uri)
             uri = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}" + "{}".format(clear_dump_uri), component_type="GPU")
             response = self.dut().run_redfish_command(uri=uri, mode="POST")
-            if response is None or response.status != 200:
+            if response is None or response.status != 204:
                 result = False
         self.write_test_info("Clearing Log Dump Action Successful: {}".format(result))
         return result
@@ -141,7 +127,7 @@ class HealthCheckIfc(FunctionalIfc):
         StartTime = time.time()
 
         selftest_dump_collection_uri = self.dut().uri_builder.format_uri(
-            redfish_str="{BaseURI}{SystemURI}", component_type="BMC"
+            redfish_str="{BaseURI}{SystemURI}", component_type="GPU"
         )
         JSONData = self.RedfishTriggerDumpCollection(
             "OEM",
@@ -249,7 +235,7 @@ class HealthCheckIfc(FunctionalIfc):
                 self.ctam_redfish_uri_hunt(uri, "Dump", dumplog_uri_list)
             self.dumplog_uri_dict[resource] = dumplog_uri_list
             self.dumplog_uri_list.extend(dumplog_uri_list)
-        self.write_test_info("Dump URI list: {}".format(self.dumplog_uri_list))
+        self.write_test_info("Dump URI list: {}".format(self.dumplog_uri_dict))
         return self.dumplog_uri_list
     
     def ctam_verify_logdump_presence(self, resource_collection_list=["Systems", "Managers", "Chassis"]):
@@ -272,12 +258,3 @@ class HealthCheckIfc(FunctionalIfc):
                     self.test_run().add_log(LogSeverity.ERROR, f"Checking existing URI list - Dump is not found in {resource_collection}")
                     result = False
         return result
-            
-    
-    def ctam_get_logdump_uris(self):
-        if self.logservice_uri_list == []:
-            self.logservice_uri_list = self.ctam_get_logservice_uris()
-        for uri in self.logservice_uri_list:
-            self.ctam_redfish_uri_hunt(uri, "Dump", self.dumplog_uri_list)
-        self.write_test_info("{}".format(self.dumplog_uri_list))
-        return self.dumplog_uri_list

@@ -15,7 +15,6 @@ import subprocess
 import platform
 import json
 from datetime import datetime
-import traceback
 
 #import pandas as pd
 
@@ -163,14 +162,13 @@ class CompToolDut(Dut):
             if response: # FIXME: Add error handling in case the request fails
                 msg.update({
                     "ResponseCode": response.status,
-                    "Response":response.dict, # FIXME: Throws error in some cases when response.dict is used and the response body is empty
+                    "Response":response.text, # FIXME: Throws error in some cases when response.dict is used and the response body is empty
                     })
             else:
                 msg.update({"Response":"Response is None please check the request you are trying to invoke."})
             # self.logger.write(json.dumps(msg))
         except Exception as e:
-            print("FATAL: Exception occurred while running redfish command. Please see below exception...")
-            print(str(e))
+            self.test_info_logger.log(f"FATAL: Exception occurred while running redfish command: {e}")
         finally:
             self.logger.write(json.dumps(msg))
             return response
@@ -310,7 +308,7 @@ class CompToolDut(Dut):
             able_to_get_system_details = True
             t = PrettyTable(["Component", "Value"])
             system_detail_uri = self.uri_builder.format_uri(redfish_str="{BaseURI}{SystemURI}",
-                                                                component_type="BMC")
+                                                                component_type="GPU")
             bmc_fw_inv_uri = self.uri_builder.format_uri(redfish_str="{BaseURI}{BMCFWInventory}/",
                                                                 component_type="BMC")
             system_details = self.run_redfish_command(system_detail_uri).dict
