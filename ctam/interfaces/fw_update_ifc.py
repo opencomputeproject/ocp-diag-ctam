@@ -63,7 +63,7 @@ class FWUpdateIfc(FunctionalIfc):
         :rtype:             dict
         """
         if not self._PLDMComponentVersions.get(image_type):
-            self.test_run().add_log(f"Populating FW Versions for image_type = {image_type}")
+            self.test_run().add_log(severity=LogSeverity.INFO, message=f"Populating FW Versions for image_type = {image_type}")
             self._PLDMComponentVersions[image_type] = self.ctam_get_version_from_bundle(image_type)
         return self._PLDMComponentVersions[image_type]
 
