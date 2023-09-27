@@ -75,7 +75,7 @@ class CTAMTestLogServicesURIListRead(TestCase):
                 )
                 result = False
             else:
-                pprint(logservice)
+                #pprint(logservice)
                 step1.add_log(
                     LogSeverity.INFO,
                     f"{self.test_id} : Redfish LogService URI list Read Completed",

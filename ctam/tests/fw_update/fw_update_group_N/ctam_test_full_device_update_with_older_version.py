@@ -108,10 +108,6 @@ class CTAMTestFullDeviceUpdateWithOlderVersion(TestCase):
                         LogSeverity.ERROR,
                         f"{self.test_id} : FW Update Activation Failed",
                     )
-                    step3.add_log(
-                        LogSeverity.ERROR,
-                        f"{self.test_id} : FW Update Activation Failed",
-                    )
                     result = False
 
         if result:
@@ -123,10 +119,6 @@ class CTAMTestFullDeviceUpdateWithOlderVersion(TestCase):
                         f"{self.test_id} : Update Verification Completed",
                     )
                 else:
-                    step4.add_log(
-                        LogSeverity.ERROR,
-                        f"{self.test_id} : Update Verification Failed",
-                    )
                     step4.add_log(
                         LogSeverity.ERROR,
                         f"{self.test_id} : Update Verification Failed",

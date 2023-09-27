@@ -148,7 +148,8 @@ class FWUpdateIfc(FunctionalIfc):
 
         JSONFWFilePayload = self.get_JSONFWFilePayload_file(image_type=image_type, corrupted_component_id=corrupted_component_id)
 
-        print(JSONFWFilePayload)
+        if self.dut().is_debug_mode():
+            print(JSONFWFilePayload)
         uri = self.dut().uri_builder.format_uri(
             redfish_str="{BaseURI}/UpdateService", component_type="GPU"
         )
@@ -234,7 +235,7 @@ class FWUpdateIfc(FunctionalIfc):
         else:
             if image_type == "large":
                 GPULargeFWMessage = "{GPULargeFWMessage}".format(**self.dut().redfish_uri_config.get("GPU"))
-                if GPULargeFWMessage in JSONData["error"]["message"]:
+                if GPULargeFWMessage in JSONData["error"]:
                     StageFWOOB_Status = True
                 else:
                     StageFWOOB_Status = False
@@ -347,7 +348,7 @@ class FWUpdateIfc(FunctionalIfc):
 
         JSONData = response.dict
 
-        print(json.dumps(JSONData, indent=4))
+        #print(json.dumps(JSONData, indent=4))
 
         if jsondeephunt(JSONData, "Message") == "The request completed successfully.":
             JSONData = self.ctam_getus()

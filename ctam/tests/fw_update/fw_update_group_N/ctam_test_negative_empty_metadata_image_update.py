@@ -41,7 +41,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
     test_name: str = "CTAM Test Negative Empty Metadata Image Update"
     test_id: str = "F26"
     score_weight: int = 10
-    tags: List[str] = []
+    tags: List[str] = ["Negative"]
 
     def __init__(self, group: FWUpdateTestGroupN):
         """

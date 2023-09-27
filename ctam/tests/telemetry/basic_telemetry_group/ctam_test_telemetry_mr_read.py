@@ -66,11 +66,6 @@ class CTAMTestTelemetryMRRead(TestCase):
         step2 = self.test_run().add_step((f"{self.__class__.__name__} run(), step2"))  # type: ignore
         with step2.scope():
             if res != "":
-                t = PrettyTable(["MetricProperty", "MetricValue"])
-                for k, v in res.items():
-                    t.add_row([k, v])
-                t.align["MetricProperty"] = "r"
-                print(t)
                 msg = '"Extraction Complete", extra={"additional_detail": {"Matric Values": res}}'
                 self.test_run().add_log(LogSeverity.INFO, msg)
             else:

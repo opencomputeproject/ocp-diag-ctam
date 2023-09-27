@@ -218,6 +218,15 @@ class TestHierarchy:
                 for attribute, value in testcase["attributes"].items():
                     print(f"        {attribute}: {value}")
 
+    def get_total_group_cases(self, group):
+        """
+        searches for group in test_groups and returns the number of test cases in that group
+        """
+        for group_name, group_info in self.test_groups.items():
+            if group_info["group_attributes"].get("group_id") == group or \
+                group == group_info["group_attributes"].get("group_name"):
+                return len(group_info["test_cases"])
+
     def print_test_groups_test_cases(self, group_name=None):
         """
         Print test cases associated for a single test group
@@ -228,7 +237,7 @@ class TestHierarchy:
         """
 
         def print_group_info(group_name, group_info):
-            print(f'Group ID: {group_info["group_attributes"]["group_id"]}      Test Group Name: {group_name}')
+            print(f'\nGroup ID: {group_info["group_attributes"]["group_id"]}      Test Group Name: {group_name}')
             for testcase in group_info["test_cases"]:
                 print(
                     f'    Test Case ID: {testcase["attributes"]["test_id"]}      Test Case Name: {testcase["testcase_name"]}'

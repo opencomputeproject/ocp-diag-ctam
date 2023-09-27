@@ -23,7 +23,7 @@ from ocptv.output import (
     TestResult,
     TestStatus,
 )
-from tests.health_check.basic_health_check_group.basic_health_check_test_group import (
+from tests.ras.basic_ras_test_group import (
     BasicRasTestGroup,
 )
 
@@ -43,7 +43,7 @@ class CTAMTestCollectCrashdumpOEMSelfTest(TestCase):
 
     # exclude_tags: List[str] = ["NotCheck"]
 
-    def __init__(self, group: BasicHealthCheckTestGroup):
+    def __init__(self, group: BasicRasTestGroup):
         """
         _summary_
         """

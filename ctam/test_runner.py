@@ -14,6 +14,7 @@ import platform
 import traceback
 import logging
 import sys
+#from unittest import runner
 from ocptv.output import LogSeverity, StdoutWriter, Writer
 from datetime import datetime
 from tests.test_case import TestCase
@@ -22,6 +23,10 @@ from interfaces.functional_ifc import FunctionalIfc
 from test_hierarchy import TestHierarchy
 
 from prettytable import PrettyTable
+import threading, time
+from queue import Queue
+from alive_progress import alive_bar
+
 import ocptv.output as tv
 from ocptv.output import (
     DiagnosisType,
@@ -82,6 +87,7 @@ class TestRunner:
         self.test_groups = []
         self.group_sequence = []
         self.test_result_data = []
+        self.total_cases = 0
 
         with open(dut_info_json_file) as dut_info_json:
             self.dut_config = json.load(dut_info_json)
@@ -119,6 +125,7 @@ class TestRunner:
 
         self.debug_mode = runner_config["debug_mode"]
         self.console_log = runner_config["console_log"]
+        self.progress_bar = runner_config["progress_bar"]
 
         # end result is that either test_cases[] or test_groups[] will have values but not both
         # if passed via the command line, then there will only be 1 testcase or 1 testgroup in the list
@@ -230,7 +237,7 @@ class TestRunner:
         self.score_logger = LoggingWriter(
             self.output_dir, self.console_log, "TestScore_"+testrun_name, "json", self.debug_mode
         )
-
+        self.test_result_file = os.path.join(self.output_dir, "TestReport_{}.log".format(self.dt))
         self.test_uri_response_check = None
         if self.response_check_name:
             self.test_uri_response_check = os.path.join(self.cwd, "workspace", self.response_check_name)
@@ -242,6 +249,7 @@ class TestRunner:
             redfish_uri_config=self.redfish_uri_config,
             net_rc=self.net_rc,
             debugMode=self.debug_mode,
+            console_log=self.console_log,
             logger=dut_logger,
             test_info_logger=test_info_logger,
             test_uri_response_check=self.test_uri_response_check
@@ -287,112 +295,149 @@ class TestRunner:
         """
         Public API used to kick of the test suite
         """
-        if self.test_cases:
-            for test in self.test_cases:
-                (
-                    group_instance,
-                    test_case_instances,
-                ) = self.test_hierarchy.instantiate_obj_for_testcase(test)
+        try:
+            if self.progress_bar:
+                progress_thread = threading.Thread(target=self.display_progress_bar)
+                progress_thread.daemon = True
 
-                group_inc_tags = group_instance.tags
-                # group_exc_tags = group_instance.exclude_tags
-                valid = self._is_enabled(
-                    self.include_tags_set,
-                    group_inc_tags,
-                    self.exclude_tags_set,
-                    # group_exc_tags,
-                )
-                if not valid:
-                    print(
-                        f"Group1 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
+            if self.test_cases:
+                if self.progress_bar and self.console_log is False:
+                        self.total_cases = len(self.test_cases)
+                        progress_thread.start()
+
+                for test in self.test_cases:
+                    (
+                        group_instance,
+                        test_case_instances,
+                    ) = self.test_hierarchy.instantiate_obj_for_testcase(test)
+
+                    group_inc_tags = group_instance.tags
+                    # group_exc_tags = group_instance.exclude_tags
+                    valid = self._is_enabled(
+                        self.include_tags_set,
+                        group_inc_tags,
+                        self.exclude_tags_set,
+                        # group_exc_tags,
                     )
-                    continue
+                    if not valid:
+                        print(
+                            f"Group1 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
+                        )
+                        continue
 
-                self._run_group_test_cases(group_instance, test_case_instances)
-        elif self.test_sequence:
-            for test in self.test_sequence:
-                (
-                    group_instance,
-                    test_case_instances,
-                ) = self.test_hierarchy.instantiate_obj_for_testcase(test)
-
-                group_inc_tags = group_instance.tags
-                # group_exc_tags = group_instance.exclude_tags
-                valid = self._is_enabled(
-                    self.include_tags_set,
-                    group_inc_tags,
-                    self.exclude_tags_set,
-                    # group_exc_tags,
-                )
-                if not valid:
-                    print(
-                        f"Group1 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
+                    self._run_group_test_cases(group_instance, test_case_instances)
+            elif self.test_sequence:
+                if self.progress_bar and self.console_log is False:
+                        self.total_cases = len(self.test_sequence)
+                        progress_thread.start()
+                        
+                for test in self.test_sequence:
+                    (
+                        group_instance,
+                        test_case_instances,
+                    ) = self.test_hierarchy.instantiate_obj_for_testcase(test)
+                    
+                    group_inc_tags = group_instance.tags
+                    # group_exc_tags = group_instance.exclude_tags
+                    valid = self._is_enabled(
+                        self.include_tags_set,
+                        group_inc_tags,
+                        self.exclude_tags_set,
+                        # group_exc_tags,
                     )
-                    continue
+                    if not valid:
+                        print(
+                            f"Group1 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
+                        )
+                        continue
 
-                self._run_group_test_cases(group_instance, test_case_instances)
+                    self._run_group_test_cases(group_instance, test_case_instances)
 
-        elif self.test_groups:
-            for group in self.test_groups:
-                (
-                    group_instance,
-                    test_case_instances,
-                ) = self.test_hierarchy.instantiate_obj_for_group(group)
-                group_inc_tags = group_instance.tags
-                # group_exc_tags = group_instance.exclude_tags
+            elif self.test_groups:
+                for group in self.test_groups:
+                    (
+                        group_instance,
+                        test_case_instances,
+                    ) = self.test_hierarchy.instantiate_obj_for_group(group)
+                    if self.progress_bar and self.console_log is False:
+                        self.total_cases = len(test_case_instances)
+                        progress_thread.start()
+                    group_inc_tags = group_instance.tags
+                    # group_exc_tags = group_instance.exclude_tags
 
-                valid = self._is_enabled(
-                    self.include_tags_set,
-                    group_inc_tags,
-                    self.exclude_tags_set,
-                    # group_exc_tags,
-                )
-
-                if not valid:
-                    print(
-                        f"Group2 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
+                    valid = self._is_enabled(
+                        self.include_tags_set,
+                        group_inc_tags,
+                        self.exclude_tags_set,
+                        # group_exc_tags,
                     )
-                    continue
 
-                self._run_group_test_cases(group_instance, test_case_instances)
-        elif self.group_sequence:
-            for group in self.group_sequence:
-                (
-                    group_instance,
-                    test_case_instances,
-                ) = self.test_hierarchy.instantiate_obj_for_group(group)
-                group_inc_tags = group_instance.tags
-                # group_exc_tags = group_instance.exclude_tags
+                    if not valid:
+                        print(
+                            f"Group2 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
+                        )
+                        continue
 
-                valid = self._is_enabled(
-                    self.include_tags_set,
-                    group_inc_tags,
-                    self.exclude_tags_set,
-                    # group_exc_tags,
-                )
+                    self._run_group_test_cases(group_instance, test_case_instances)
+            elif self.group_sequence:
+                # get total cases in group sequence from test hierarchy
+                tc_group = []
+                for g in self.group_sequence:
+                    tc_group.append(self.test_hierarchy.get_total_group_cases(g))
 
-                if not valid:
-                    print(
-                        f"Group2 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
+                self.total_cases = sum(tc_group)
+                if self.progress_bar and self.console_log is False:
+                    progress_thread.start()
+
+                for group in self.group_sequence:
+                    (
+                        group_instance,
+                        test_case_instances,
+                    ) = self.test_hierarchy.instantiate_obj_for_group(group)
+
+                    group_inc_tags = group_instance.tags
+                    # group_exc_tags = group_instance.exclude_tags
+
+                    valid = self._is_enabled(
+                        self.include_tags_set,
+                        group_inc_tags,
+                        self.exclude_tags_set,
+                        # group_exc_tags,
                     )
-                    continue
 
-                self._run_group_test_cases(group_instance, test_case_instances)
-        grade = (
-                TestCase.total_compliance_score / TestCase.max_compliance_score * 100
-                if TestCase.max_compliance_score != 0
-                else 0
-            )
-        msg = {
-                "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
-                "TotalScore": TestCase.total_compliance_score,
-                "MaxComplianceScore": TestCase.max_compliance_score,
-                "Grade": "{}%".format(grade),
-                }
-        self.score_logger.write(json.dumps(msg))
-        self.test_result_data.append(("Total Score",TestCase.total_compliance_score, 
-                                       TestCase.max_compliance_score,"{}%".format(grade)))
-        self.generate_test_report()
+                    if not valid:
+                        print(
+                            f"Group2 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
+                        )
+                        continue
+
+                    self._run_group_test_cases(group_instance, test_case_instances)
+            grade = (
+                    TestCase.total_compliance_score / TestCase.max_compliance_score * 100
+                    if TestCase.max_compliance_score != 0
+                    else 0
+                )
+            
+            gtotal = round(grade, 2)
+
+            msg = {
+                    "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                    "TotalScore": TestCase.total_compliance_score,
+                    "MaxComplianceScore": TestCase.max_compliance_score,
+                    "Grade": "{}%".format(gtotal),
+                    }
+            self.score_logger.write(json.dumps(msg))
+            self.test_result_data.append(("Total Score", "", TestCase.total_compliance_score, 
+                                        TestCase.max_compliance_score,"{}%".format(gtotal)))
+            self.generate_test_report()
+            self.generate_domain_test_report()
+            time.sleep(2)
+            if self.progress_bar and self.console_log is False:
+                while progress_thread.is_alive():
+                    progress_thread.join(10)
+        except KeyboardInterrupt:
+            sys.exit(1)
+        
         
     def _run_group_test_cases(self, group_instance, test_case_instances):
         """
@@ -436,9 +481,10 @@ class TestRunner:
                     file_name = "RedfishCommandDetails_{}_{}".format(test_instance.test_id,
                                                                         test_instance.test_name)
                     logger = LoggingWriter(
-                        self.cmd_output_dir, self.console_log, file_name, "log", self.debug_mode
+                        self.cmd_output_dir, self.console_log, file_name, "json", self.debug_mode
                     )
                     self.comp_tool_dut.logger = logger
+                    execution_starttime = time.perf_counter()
                     test_result = test_instance.run()
                     if (
                         test_result == TestResult.FAIL
@@ -454,16 +500,21 @@ class TestRunner:
                 finally:
                     # attempt test cleanup even if test exception raised
                     test_instance.teardown()
+                    execution_endtime = time.perf_counter()
+                    execution_time = round(execution_endtime - execution_starttime, 3)
                     msg = {
                         "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                        "ExecutionTime": execution_time,
                         "TestID": test_instance.test_id,
                         "TestName": test_instance.test_name,
+                        "TestCaseScoreWeight":test_instance.score_weight,
                         "TestCaseScore": test_instance.score,
                         "TestCaseResult": TestResult(test_instance.result).name
                     }
                     self.test_result_data.append((test_instance.test_id,
                                                    test_instance.test_name,
-                                                   test_instance.score,
+                                                   test_instance.score_weight,
+                                                   test_instance.score,                                              
                                                    TestResult(test_instance.result).name))
                     self.score_logger.write(json.dumps(msg))
 
@@ -473,7 +524,9 @@ class TestRunner:
                 else 0
             )
 
-            msg = f"Compliance Run completed. Total Score = {TestCase.total_compliance_score:0.2f} out of {TestCase.max_compliance_score:0.2f}, Grade = {grade:0.2f}%"
+            grt = round(grade, 2)
+
+            msg = f"Compliance Run completed. Total Score = {TestCase.total_compliance_score:0.2f} out of {TestCase.max_compliance_score:0.2f}, Grade = {grt:0.2f}%"
             self.active_run.add_log(severity=LogSeverity.INFO, message=msg)
            
             group_status = TestStatus.COMPLETE
@@ -491,24 +544,129 @@ class TestRunner:
             # attempt group cleanup even if test exception raised
             group_instance.teardown()
             self._end(group_status, group_result)
+
     def get_system_details(self):
         self._start()
         pass
 
     def generate_test_report(self):
-        print(self.test_result_data)
-        t = PrettyTable(["TestID", "TestName", "TestScore", "TestResult"])
+        """
+        This method is used for creating a tabula format for test result.
+        It will have TestID, TestName, Test Score, Test Result, Test Weight and total
+
+        """
+        #print(self.test_result_data)
+        t = PrettyTable(["TestID", "TestName", "TestScoreWeight", "TestScore", "TestResult"])
         t.title = "Test Result"
         t.add_rows(self.test_result_data[:len(self.test_result_data) - 1:])
-        t.add_row(["", "", "", ""], divider=True)
-        t.add_row(["", "Compliance Score", 
+        t.add_row(["", "", "", "", ""], divider=True)
+        t.add_row(["", "","Compliance Score",
                    "Total Test Score", "Grade"], divider=True)
         t.add_row(self.test_result_data[-1], divider=True)
         t.align["TestName"] = "l"
-        test_result_file = os.path.join(self.output_dir, "TestReport_{}.log".format(self.dt))
-        with open(test_result_file, 'w') as f:
+        
+        with open(self.test_result_file, 'a') as f:
             f.write(str(t))
         print(t)
+
+    def generate_domain_test_report(self):
+        """
+        This method is used for creating a tabula format for test result for Domain level.
+        It will have DomainID, Domain, TComplianceWeight, ComplianceScore, Grade and total
+
+        """
+        dt = PrettyTable(["DomainID", "Domain", "ComplianceWeight", "ComplianceScore", "Grade"])
+        dt.title = "Domain-wise Test Report"
+
+        compScore = [0, 0, 0, 0]
+        compWeight = [0, 0, 0, 0]
+
+        for i in range(len(self.test_result_data)-1):
+            testID = self.test_result_data[i][0]
+            testWeight = self.test_result_data[i][2]
+            testScore = self.test_result_data[i][3]
+
+            # check for telemetry cases
+            if testID.startswith("T"):
+                compWeight[0] += testWeight
+                compScore[0] += testScore
+
+            # check for RAS cases
+            elif testID.startswith("R"):
+                compWeight[1] += testWeight   
+                compScore[1] += testScore
+
+            # check for health check cases
+            elif testID.startswith("H"):
+                compWeight[2] += testWeight    
+                compScore[2] += testScore
+
+            # check for fw update cases
+            elif testID.startswith("F"):
+                compWeight[3] += testWeight    
+                compScore[3] += testScore
+
+        grade = [0, 0, 0, 0]
+        for j in range(len(compScore)):
+            if compWeight[j] != 0:
+                grade[j] = compScore[j]/compWeight[j]*100
+                grade[j] = round(grade[j], 2)
+
+        dt.add_row(["T", "Telemetry", compWeight[0], compScore[0], "{}%".format(grade[0])])
+        dt.add_row(["R", "RAS", compWeight[1], compScore[1], "{}%".format(grade[1])])
+        dt.add_row(["H", "Health Check", compWeight[2], compScore[2], "{}%".format(grade[2])])
+        dt.add_row(["F", "FW Update", compWeight[3], compScore[3], "{}%".format(grade[3])], divider=True)
+
+        compWeightTotal = sum(compWeight)
+        compScoreTotal = sum(compScore)
+        gradeTotal = (
+                compScoreTotal/ compWeightTotal * 100
+                if compWeightTotal != 0
+                else 0
+            )
+        
+        gt = round(gradeTotal, 2)
+
+        dt.add_row(["", "Overall", 
+                   compWeightTotal, compScoreTotal, "{}%".format(gt)], divider=True)
+        with open(self.test_result_file, 'a') as f:
+            f.write("\n" + str(dt))
+        print(dt)
+
+    def update_report(self, out_q):
+        """
+        updates the current value of executed number of test cases and passes it to progress_bar()
+        param: queue object
+        """
+        current = 0
+        while current < self.total_cases:
+            temp2 = current
+            current = len(self.test_result_data)
+            if current == temp2 + 1:
+                # print("current value=", current)
+                out_q.put(current)
+
+
+    def display_progress_bar(self):
+        """
+        prints a progress bar in the console displaying the percentage of test cases completed.
+        """
+        # print("total cases in progress_bar=", self.total_cases)
+
+
+        with alive_bar(self.total_cases, title= "Progress:", spinner="arrow") as bar:
+            count = 0
+            while count < self.total_cases:
+                temp = count
+                #count = in_q.get()
+                count = len(self.test_result_data)
+
+                if count == temp + 1:
+                    bar()
+                            
+                if count == self.total_cases:
+                    break
+
 
 class LoggingWriter(Writer):
     """

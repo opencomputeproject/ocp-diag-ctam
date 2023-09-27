@@ -39,7 +39,7 @@ class CTAMTestFullDeviceUpdate(TestCase):
     test_name: str = "CTAM Test Full Device Update"
     test_id: str = "F1"
     score_weight: int = 10
-    tags: List[str] = []
+    tags: List[str] = ["Compliance"]
 
     def __init__(self, group: FWUpdateTestGroupNMinus1):
         """
