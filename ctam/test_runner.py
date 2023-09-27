@@ -249,6 +249,7 @@ class TestRunner:
             redfish_uri_config=self.redfish_uri_config,
             net_rc=self.net_rc,
             debugMode=self.debug_mode,
+            console_log=self.console_log,
             logger=dut_logger,
             test_info_logger=test_info_logger,
             test_uri_response_check=self.test_uri_response_check
@@ -483,7 +484,7 @@ class TestRunner:
                         self.cmd_output_dir, self.console_log, file_name, "json", self.debug_mode
                     )
                     self.comp_tool_dut.logger = logger
-                    execution_starttime = round(time.perf_counter(), 2)
+                    execution_starttime = time.perf_counter()
                     test_result = test_instance.run()
                     if (
                         test_result == TestResult.FAIL
@@ -499,10 +500,11 @@ class TestRunner:
                 finally:
                     # attempt test cleanup even if test exception raised
                     test_instance.teardown()
-                    execution_endtime = round(time.perf_counter(), 2)
+                    execution_endtime = time.perf_counter()
+                    execution_time = round(execution_endtime - execution_starttime, 3)
                     msg = {
                         "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
-                        "ExecutionTime": execution_endtime - execution_starttime,
+                        "ExecutionTime": execution_time,
                         "TestID": test_instance.test_id,
                         "TestName": test_instance.test_name,
                         "TestCaseScoreWeight":test_instance.score_weight,
