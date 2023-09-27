@@ -398,8 +398,6 @@ class TelemetryIfc(FunctionalIfc):
             else:
                 self.test_run().add_log(LogSeverity.FATAL, "Chassis with ID Fails: {} : {}".format(URI, response))
                 result = False
-            else: # response is "" i.e. empty string in case of success
-                self.test_run().add_log(LogSeverity.INFO, "Manager with ID Pass: {} : {}".format(URI, response))
         return result
 
     # def ctam_baseboard_gpu_processor_instance(self): # return /redfish/v1/Systems/{BaseboardId} it will give baseboard id

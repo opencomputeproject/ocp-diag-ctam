@@ -8,6 +8,7 @@
 #  pip install -r pip-requirements.txt
 ##
 
+alive-progress
 ocptv
 prettytable
 redfish
