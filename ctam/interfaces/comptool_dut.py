@@ -16,7 +16,7 @@ import platform
 import json
 from datetime import datetime
 
-#import pandas as pd
+# import pandas as pd
 
 from prettytable import PrettyTable
 from ocptv.output import Metadata
@@ -43,6 +43,7 @@ class CompToolDut(Dut):
         redfish_uri_config,
         net_rc,
         debugMode: bool,
+        console_log: bool,
         logger,
         test_info_logger,
         test_uri_response_check,
@@ -62,6 +63,7 @@ class CompToolDut(Dut):
         :type metadata: ty.Optional[Metadata], optional
         """
         self._debugMode: bool = debugMode
+        self._console_log: bool = console_log
         self.package_config = package_config
         self.dut_config = config["properties"]
         self.redfish_uri_config = redfish_uri_config
@@ -159,17 +161,31 @@ class CompToolDut(Dut):
             elif mode == "GET":
                 msg.update({"Method":"GET",})
                 response = self.redfish_ifc.get(**kwargs) # path=uri, headers=headers
-            if response: # FIXME: Add error handling in case the request fails
+            elif mode == "DELETE":
+                msg.update({"Method":"DELETE",})
+                response = self.redfish_ifc.delete(**kwargs) # path=uri, headers=headers   
+                
+            if response.status in range (200,204) and response.text: # FIXME: Add error handling in case the request fails
                 msg.update({
                     "ResponseCode": response.status,
-                    "Response":response.text, # FIXME: Throws error in some cases when response.dict is used and the response body is empty
+                    "Response":response.dict, # FIXED: Throws error in some cases when response.dict is used and the response body is empty
+                    }) 
+            elif response.status in range (200,204):
+                msg.update({
+                    "ResponseCode": response.status,
+                    "Response":"Success but no response body",
                     })
-            else:
-                msg.update({"Response":"Response is None please check the request you are trying to invoke."})
-            # self.logger.write(json.dumps(msg))
+            elif response.status > 300: 
+                msg.update({
+                    "ResponseCode": response.status,
+                    "Response":"Unexpected Response",
+                    })
         except Exception as e:
-            self.test_info_logger.log(f"FATAL: Exception occurred while running redfish command: {e}")
-        finally:
+            msg.update({
+            "ResponseCode": None,
+            "Response":"FATAL: Exception occurred while running redfish command. Please see below exception...",
+            })
+        finally:                         
             self.logger.write(json.dumps(msg))
             return response
 
@@ -193,14 +209,15 @@ class CompToolDut(Dut):
             for d in data:
                 if uri in d["URI"]:
                     attributes = d["Response"]
-            for i in attributes.split("\n"):
-                if "." not in i:
-                    if i not in response:
-                        result = False
-                else:
-                    nested_data = get_val_from_str(i, response)
-                    if not nested_data:
-                        result = False
+            if attributes:
+                for i in attributes.split("\n"):
+                    if "." not in i:
+                        if i not in response:
+                            result = False
+                    else:
+                        nested_data = get_val_from_str(i, response)
+                        if not nested_data:
+                            result = False
             return result
         except Exception as e:
             msg = {
@@ -223,6 +240,11 @@ class CompToolDut(Dut):
         :rtype: _type_
         """
         return self._debugMode
+    
+    @property
+    def is_console_log(self) -> bool:
+
+        return self._console_log
     
     def setup_ssh_tunnel(self, amc_ip_address):
         """

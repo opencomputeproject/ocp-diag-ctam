@@ -32,7 +32,7 @@ from tests.fw_update.fw_update_group_N._fw_update_group_N import (
 
 class CTAMTestNegativeUnsignedImageUpdate(TestCase):
     """
-    Verify values of Software Inventory Collection are present
+    Test case which attempts an unsigned image update
 
     :param TestCase: super class for all test cases
     :type TestCase:
@@ -41,7 +41,7 @@ class CTAMTestNegativeUnsignedImageUpdate(TestCase):
     test_name: str = "CTAM Test Negative Unsigned Image Update"
     test_id: str = "F18"
     score_weight: int = 10
-    tags: List[str] = []
+    tags: List[str] = ["Negative"]
 
     def __init__(self, group: FWUpdateTestGroupN):
         """

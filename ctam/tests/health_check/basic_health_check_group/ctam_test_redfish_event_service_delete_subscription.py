@@ -1,17 +1,17 @@
 """
 Copyright (c) Microsoft Corporation
-This source code is licensed under the MIT license found in the 
+This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Telemetry Systems FPGA Ports
-:Test ID:		T32
-:Group Name:	telemetry
+:Test Name:		CTAM Test Redfish Event Service Delete Subscriptions
+:Test ID:		H81
+:Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Basic telemetry test case to discover & print the list of Systems FPGA Ports.
+:Description:	This test attempts to delete event subscriptions
 
-:Usage 1:		python ctam.py -w ..\workspace -t T32
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Systems FPGA Ports"
+:Usage 1:		python ctam.py -w ..\workspace -t H81
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Event Service Delete Subscriptions"
 
 """
 from typing import Optional, List
@@ -23,18 +23,27 @@ from ocptv.output import (
     TestResult,
     TestStatus,
 )
-from tests.telemetry.basic_telemetry_group.basic_telemetry_group import (
-    BasicTelemetryTestGroup
+from tests.health_check.basic_health_check_group.basic_health_check_test_group import (
+    BasicHealthCheckTestGroup,
 )
 
-class CTAMTestTelemetrySystemsFPGAPorts(TestCase):
-    
-    test_name: str = "CTAM Test Telemetry Systems FPGA Ports"
-    test_id: str = "T32"
-    score_weight: int = 10
-    tags: List[str] = []
 
-    def __init__(self, group: BasicTelemetryTestGroup):
+class CTAMTestRedfishEventServiceDeleteSubscription(TestCase):
+    """
+    Delete all/Specific Event Service Subscription
+
+    :param TestCase: super class for all test cases
+    :type TestCase:
+    """
+
+    test_name: str = "CTAM Test Redfish Event Service Delete Subscriptions"
+    test_id: str = "H81"
+    score_weight: int = 10
+    tags: List[str] = ["HCheck"]
+
+    # exclude_tags: List[str] = ["NotCheck"]
+
+    def __init__(self, group: BasicHealthCheckTestGroup):
         """
         _summary_
         """
@@ -58,13 +67,14 @@ class CTAMTestTelemetrySystemsFPGAPorts(TestCase):
         actual test verification
         """
         result = True
-        step1 = self.test_run().add_step((f"{self.__class__.__name__} run(), step1"))  # type: ignore
+        
+        step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if self.group.telemetry_ifc.ctam_system_fpga_ids(path="Ports"):
-                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Passed")
+            result = self.group.health_check_ifc.ctam_deles()
+            if result is False:
+                step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Redfish Event Service Delete Subscriptions Check - Failed")
             else:
-                step1.add_log(LogSeverity.FATAL, f"{self.test_id} : Failed")
-                result = False
+                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish Event Service Delete Subscriptions Check - Completed")
 
         # ensure setting of self.result and self.score prior to calling super().run()
         self.result = TestResult.PASS if result else TestResult.FAIL

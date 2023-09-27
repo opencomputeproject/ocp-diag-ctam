@@ -9,6 +9,7 @@ LICENSE file in the root directory of this source tree.
 import time
 import json
 import os
+import ast
 from typing import Optional, List
 from interfaces.functional_ifc import FunctionalIfc
 
@@ -78,7 +79,7 @@ class HealthCheckIfc(FunctionalIfc):
         self.write_test_info("LogServices URI list: {}".format(self.logservice_uri_dict))
         return self.logservice_uri_list
     
-    def ctam_verify_logservice_presence(self, resource_collection_list=["Systems", "Managers", "Chassis"]):
+    def ctam_verify_logservice_presence(self, resource_collection_list=["Systems", "Managers"]):
         """
         :Description:	                    Verify if "LogService" URIs is present under the specified resourcse collection.
 
@@ -108,12 +109,15 @@ class HealthCheckIfc(FunctionalIfc):
                 result = False
         for dumplog_uri in self.dumplog_uri_list:
             clear_dump_uri = dumplog_uri + "/Actions/LogService.ClearLog"
-            print(clear_dump_uri)
+            #print(clear_dump_uri)
             uri = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}" + "{}".format(clear_dump_uri), component_type="GPU")
             response = self.dut().run_redfish_command(uri=uri, mode="POST")
             if response is None or response.status != 204:
                 result = False
-        self.write_test_info("Clearing Log Dump Action Successful: {}".format(result))
+                self.write_test_info("Clearing Log Dump Action Unsuccessful")
+            else:
+                result = True
+                self.write_test_info("Clearing Log Dump Action Successful")
         return result
     
     def trigger_self_test_dump_collection(self):
@@ -125,51 +129,53 @@ class HealthCheckIfc(FunctionalIfc):
         """
         MyName = __name__ + "." + self.trigger_self_test_dump_collection.__qualname__
         StartTime = time.time()
-
-        selftest_dump_collection_uri = self.dut().uri_builder.format_uri(
-            redfish_str="{BaseURI}{SystemURI}", component_type="GPU"
-        )
-        JSONData = self.RedfishTriggerDumpCollection(
-            "OEM",
-            selftest_dump_collection_uri,
-            "SelfTest"
-        )
-        if self.dut().is_debug_mode():
-            self.test_run().add_log(LogSeverity.DEBUG, f"{MyName}  {JSONData}")
-            
-        # Now Wait for TaskService/Tasks/$ID TaskState to reflect completed.
-        if "error" not in JSONData:
-            TaskID = JSONData["Id"]
-            
+        instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{BaseboardIDs}", component_type="GPU"))
+        for instance in instances:
+            uri = "/Systems/" + instance
+            selftest_dump_collection_uri = self.dut().uri_builder.format_uri(
+                redfish_str="{BaseURI}" + uri, component_type="GPU"
+            )
+            JSONData = self.RedfishTriggerDumpCollection(
+                "OEM",
+                selftest_dump_collection_uri,
+                "SelfTest"
+            )
             if self.dut().is_debug_mode():
-                self.test_run().add_log(LogSeverity.DEBUG, f"Self-test Dump Collection Task ID = {TaskID}")
-            DeployTime = time.time()
-            Task_Completed, JSONData = self.ctam_monitor_task(TaskID)
-            EndTime = time.time()
-            if Task_Completed:
-                for http_header in JSONData['Payload']['HttpHeaders']:
-                    if 'Location' in  http_header:
-                        self.selftest_dump_entry_uri=http_header.split(': ')[1]
-                        if self.dut().is_debug_mode():
-                            self.test_run().add_log(LogSeverity.DEBUG, 
-                                "Self-test Dump Location = {}".format(self.selftest_dump_entry_uri)
-                            )
-                if self.selftest_dump_entry_uri:
-                    SelfTestDump_Status = True
+                self.test_run().add_log(LogSeverity.DEBUG, f"{MyName}  {JSONData}")
+                
+            # Now Wait for TaskService/Tasks/$ID TaskState to reflect completed.
+            if "error" not in JSONData:
+                TaskID = JSONData["Id"]
+                
+                if self.dut().is_debug_mode():
+                    self.test_run().add_log(LogSeverity.DEBUG, f"Self-test Dump Collection Task ID = {TaskID}")
+                DeployTime = time.time()
+                Task_Completed, JSONData = self.ctam_monitor_task(TaskID)
+                EndTime = time.time()
+                if Task_Completed:
+                    for http_header in JSONData['Payload']['HttpHeaders']:
+                        if 'Location' in  http_header:
+                            self.selftest_dump_entry_uri=http_header.split(': ')[1]
+                            if self.dut().is_debug_mode():
+                                self.test_run().add_log(LogSeverity.DEBUG, 
+                                    "Self-test Dump Location = {}".format(self.selftest_dump_entry_uri)
+                                )
+                    if self.selftest_dump_entry_uri:
+                        SelfTestDump_Status = True
+                    else:
+                        SelfTestDump_Status = False
                 else:
                     SelfTestDump_Status = False
+                msg= "{0}: Self-test Dump Trigger Time: {1} Self-test Dump Collection Time: {2} \n Redfish Outcome: {3}".format(
+                    MyName,
+                    DeployTime - StartTime,
+                    EndTime - StartTime,
+                    json.dumps(JSONData, indent=4),
+                )
+                self.test_run().add_log(LogSeverity.DEBUG, msg)
+                
             else:
                 SelfTestDump_Status = False
-            msg= "{0}: Self-test Dump Trigger Time: {1} Self-test Dump Collection Time: {2} \n Redfish Outcome: {3}".format(
-                MyName,
-                DeployTime - StartTime,
-                EndTime - StartTime,
-                json.dumps(JSONData, indent=4),
-            )
-            self.test_run().add_log(LogSeverity.DEBUG, msg)
-            
-        else:
-            SelfTestDump_Status = False
         
         return SelfTestDump_Status
     
@@ -183,6 +189,7 @@ class HealthCheckIfc(FunctionalIfc):
         MyName = __name__ + "." + self.download_self_test_dump.__qualname__
         
         if self.selftest_dump_entry_uri:
+            self.selftest_dump_entry_uri = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}" + "{}".format(self.selftest_dump_entry_uri), component_type="GPU")
             self.selftest_dump_path  = self.RedfishDownloadDump(self.selftest_dump_entry_uri)
             msg = "Self test Dump location: {}".format(self.selftest_dump_path)
             self.test_run().add_log(LogSeverity.DEBUG, msg)
@@ -218,7 +225,7 @@ class HealthCheckIfc(FunctionalIfc):
 
         return SelfTestReport_Status
     
-    def ctam_get_all_logdump_uris(self, resource_collection_list=["Systems", "Managers", "Chassis"]):
+    def ctam_get_all_logdump_uris(self, resource_collection_list=["Systems", "Managers"]):
         """
         :Description:	                    Look for Dump URIs under all LogServices URIs of specific resourcse collection.
         
@@ -238,7 +245,7 @@ class HealthCheckIfc(FunctionalIfc):
         self.write_test_info("Dump URI list: {}".format(self.dumplog_uri_dict))
         return self.dumplog_uri_list
     
-    def ctam_verify_logdump_presence(self, resource_collection_list=["Systems", "Managers", "Chassis"]):
+    def ctam_verify_logdump_presence(self, resource_collection_list=["Systems", "Managers"]):
         """
         :Description:	                    Verify if the Dump URI is present under all LogServices URI of specified resourcse collection.
         

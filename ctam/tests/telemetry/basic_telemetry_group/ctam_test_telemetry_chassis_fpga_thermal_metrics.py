@@ -1,17 +1,17 @@
 """
 Copyright (c) Microsoft Corporation
-This source code is licensed under the MIT license found in the
+This source code is licensed under the MIT license found in the 
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Redfish Event Service
-:Test ID:		H8
-:Group Name:	fw_update
+:Test Name:		CTAM Test Telemetry Chassis Fpga Thermal Metrics
+:Test ID:		T47
+:Group Name:	telemetry
 :Score Weight:	10
 
-:Description:	This test attempts to get event service
+:Description:	Basic telemetry test case to discover & print the thermal sensors under chassis Fpga.
 
-:Usage 1:		python ctam.py -w ..\workspace -t H8
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Event Service"
+:Usage 1:		python ctam.py -w ..\workspace -t T47
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Chassis Fpga Thermal Metrics"
 
 """
 from typing import Optional, List
@@ -23,27 +23,18 @@ from ocptv.output import (
     TestResult,
     TestStatus,
 )
-from tests.health_check.basic_health_check_group.basic_health_check_test_group import (
-    BasicHealthCheckTestGroup,
+from tests.telemetry.basic_telemetry_group.basic_telemetry_group import (
+    BasicTelemetryTestGroup
 )
 
-
-class CTAMTestRedfishEventService(TestCase):
-    """
-    Verify the output of Event Service
-
-    :param TestCase: super class for all test cases
-    :type TestCase:
-    """
-
-    test_name: str = "CTAM Test Redfish Event Service"
-    test_id: str = "H8"
+class CTAMTestTelemetryChassisFpgaThermalMetrics(TestCase):
+    
+    test_name: str = "CTAM Test Telemetry Chassis Fpga Thermal Metrics"
+    test_id: str = "T47"
     score_weight: int = 10
-    tags: List[str] = ["HCheck"]
+    tags: List[str] = []
 
-    # exclude_tags: List[str] = ["NotCheck"]
-
-    def __init__(self, group: BasicHealthCheckTestGroup):
+    def __init__(self, group: BasicTelemetryTestGroup):
         """
         _summary_
         """
@@ -66,16 +57,15 @@ class CTAMTestRedfishEventService(TestCase):
         """
         actual test verification
         """
-        result = True
         
-        step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
+        result = True
+        step1 = self.test_run().add_step((f"{self.__class__.__name__} run(), step1"))  # type: ignore
         with step1.scope():
-            JSONData = self.group.health_check_ifc.ctam_getes()
-            if JSONData is None or len(JSONData) == 0:
-                step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Redfish Event Service Check - Failed")
-                result = False
+            if self.group.telemetry_ifc.ctam_get_chassis_fpga_Thermal_metrics():
+                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Passed")
             else:
-                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish Event Service Check - Completed")
+                step1.add_log(LogSeverity.FATAL, f"{self.test_id} : Failed")
+                result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
         self.result = TestResult.PASS if result else TestResult.FAIL

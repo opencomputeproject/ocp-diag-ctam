@@ -4,14 +4,14 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Redfish Event Service
-:Test ID:		H8
+:Test ID:		H83
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test attempts to get event service
+:Description:	This test attempts to create event service subscription
 
-:Usage 1:		python ctam.py -w ..\workspace -t H8
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Event Service"
+:Usage 1:		python ctam.py -w ..\workspace -t H83
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Event Service Create Subscription"
 
 """
 from typing import Optional, List
@@ -28,7 +28,7 @@ from tests.health_check.basic_health_check_group.basic_health_check_test_group i
 )
 
 
-class CTAMTestRedfishEventService(TestCase):
+class CTAMTestRedfishEventServiceCreateSubscription(TestCase):
     """
     Verify the output of Event Service
 
@@ -36,8 +36,8 @@ class CTAMTestRedfishEventService(TestCase):
     :type TestCase:
     """
 
-    test_name: str = "CTAM Test Redfish Event Service"
-    test_id: str = "H8"
+    test_name: str = "CTAM Test Redfish Event Service Create Subscription"
+    test_id: str = "H83"
     score_weight: int = 10
     tags: List[str] = ["HCheck"]
 
@@ -70,8 +70,12 @@ class CTAMTestRedfishEventService(TestCase):
         
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            JSONData = self.group.health_check_ifc.ctam_getes()
-            if JSONData is None or len(JSONData) == 0:
+            JSONData = self.group.health_check_ifc.ctam_createes(
+                destination="https://172.17.0.202:8081/redfish/v1/RedfishEvents/EventReceiver/5",
+                RegistryPrefixes="ResourceEvent", 
+                Context="rm_server_5", 
+                Protocol="Redfish")
+            if JSONData is None or "error" in JSONData:
                 step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Redfish Event Service Check - Failed")
                 result = False
             else:

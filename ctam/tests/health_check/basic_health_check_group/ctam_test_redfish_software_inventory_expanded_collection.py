@@ -3,15 +3,15 @@ Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Redfish Event Service
-:Test ID:		H8
+:Test Name:		CTAM Test Redfish Software Inventory Expanded Collection
+:Test ID:		H11
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test attempts to get event service
+:Description:	This test attempts to get the expanded Software inventory from update service
 
-:Usage 1:		python ctam.py -w ..\workspace -t H8
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Event Service"
+:Usage 1:		python ctam.py -w ..\workspace -t H11
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Software Inventory Expanded Collection"
 
 """
 from typing import Optional, List
@@ -28,16 +28,16 @@ from tests.health_check.basic_health_check_group.basic_health_check_test_group i
 )
 
 
-class CTAMTestRedfishEventService(TestCase):
+class CTAMTestRedfishSoftwareInventoryExpandedCollection(TestCase):
     """
-    Verify the output of Event Service
+    Verify values of Software Inventory Expanded Collection are present
 
     :param TestCase: super class for all test cases
     :type TestCase:
     """
 
-    test_name: str = "CTAM Test Redfish Event Service"
-    test_id: str = "H8"
+    test_name: str = "CTAM Test Redfish Software Inventory Expanded Collection"
+    test_id: str = "H11"
     score_weight: int = 10
     tags: List[str] = ["HCheck"]
 
@@ -66,19 +66,18 @@ class CTAMTestRedfishEventService(TestCase):
         """
         actual test verification
         """
-        result = True
-        
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            JSONData = self.group.health_check_ifc.ctam_getes()
-            if JSONData is None or len(JSONData) == 0:
-                step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Redfish Event Service Check - Failed")
-                result = False
-            else:
-                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish Event Service Check - Completed")
+            self.group.health_check_ifc.ctam_getsi(expanded=1)
+
+        step2 = self.test_run().add_step(f"{self.__class__.__name__} step2")  # type: ignore
+        with step2.scope():
+            debug_mode = self.dut().is_debug_mode()
+            msg = f"Debug mode is :{debug_mode} in {self.__class__.__name__}"
+            self.test_run().add_log(severity=LogSeverity.DEBUG, message=msg)  # type: ignore
 
         # ensure setting of self.result and self.score prior to calling super().run()
-        self.result = TestResult.PASS if result else TestResult.FAIL
+        self.result = TestResult.PASS
         if self.result == TestResult.PASS:
             self.score = self.score_weight
 

@@ -11,6 +11,7 @@ import os
 import json
 import subprocess
 import time
+import ast
 from datetime import datetime
 from typing import Optional, List
 from datetime import datetime
@@ -354,24 +355,56 @@ class FunctionalIfc:
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return data
 
-    def ctam_getes(self):
+    def ctam_getes(self, path=None):
         """
-        :Description:       Get Event Service
+        :Description:       Get Event Service and child collection items.
         :returns:	        JSON Data after running Redfish command
         :rtype:             JSON Dict
         """
-        MyName = __name__ + "." + self.ctam_getus.__qualname__
+        MyName = __name__ + "." + self.ctam_getes.__qualname__
 
-        ctam_getes_uri = self.dut().uri_builder.format_uri(
-            redfish_str="{BaseURI}/EventService", component_type="GPU"
-        )
+        if path == "Subscriptions":
+            ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU")
+            response = self.dut().run_redfish_command(uri=ctam_getes_uri)
+            data = response.dict
+            members = data["Members"]
+            SubscriptionsList = []
+            if len(members) != 0:
+                for index, member in enumerate(members):
+                    memberId = member["@odata.id"].split('/')[-1].strip()
+                    ctam_getsid_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU")
+                    ctam_getsid_uri = ctam_getsid_uri + "/" + memberId
+                    response = self.dut().run_redfish_command(uri=ctam_getsid_uri)
+                    SubscriptionsList.append(memberId)
+            data = SubscriptionsList
+        else:
+            ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService", component_type="GPU")
+            response = self.dut().run_redfish_command(uri=ctam_getes_uri)
+            data = response.dict
 
-        response = self.dut().run_redfish_command(uri=ctam_getes_uri)
-        data = response.dict
         msg = f"The Redfish Command URI is : {ctam_getes_uri} \nThe Response for this command is : {data}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return data
 
+    def ctam_createes(self, destination, RegistryPrefixes, Context, Protocol):
+        """
+        :Description:       Create a subscription
+        :returns:	        JSON Data after running Redfish command
+        :rtype:             JSON Dict
+        """
+        MyName = __name__ + "." + self.ctam_createes.__qualname__
+
+        ctam_uri = self.dut().uri_builder.format_uri(
+            redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU"
+        )
+
+        payload = {"Destination": destination, "RegistryPrefixes": [RegistryPrefixes], "Context": Context, "Protocol": Protocol, "HttpHeaders": []}
+        response = self.dut().run_redfish_command(uri=ctam_uri, mode="POST", body=payload)
+
+        data = response.dict
+        msg = f"The Redfish Command URI is : {ctam_uri} \nThe Response for this command is : {data}"
+        self.test_run().add_log(LogSeverity.DEBUG, msg)
+        return data
 
     def ctam_gettsks(self):
         """
@@ -532,7 +565,12 @@ class FunctionalIfc:
             dump.extractall(DumpPath) # This will create a directory if it's not present already.
             dump.close()
             os.remove(dump_tarball_path) # Delete the tarball as it's not needed anymore
-            return DumpPath
+            folder_size = sum(os.path.getsize(os.path.join(dirpath, filename)) for dirpath, dirnames, filenames in os.walk(DumpPath) for filename in filenames)
+            if folder_size > 0:
+                return DumpPath
+            else:
+                print("Downloaded folder size is 0 KB.")
+                return None
         except Exception as e:
             print(str(e))
             return None
@@ -699,7 +737,53 @@ class FunctionalIfc:
                             result = False
                             break
         return result
-    
+    def ctam_getepc(self, expanded=1):
+        """
+        :Description:       Get Expanded Processor Collection
+
+        :param expanded:		Expand Param
+
+        :returns:	        JSON Data after running Redfish command
+        :rtype:             JSON Dict
+        """
+        # [TODO] need to figure out a way to grab all of them.
+        MyName = __name__ + "." + self.ctam_getepc.__qualname__
+        if expanded == 1:
+            baseboard_ids = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{BaseboardIDs}", component_type="GPU"))
+            for id in baseboard_ids:
+                uri = "/Systems/" + id + "/Processors?$expand=*($levels=1)"
+                ctam_getepc_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + uri, component_type="GPU")
+                response = self.dut().run_redfish_command(uri=ctam_getepc_uri)
+                data = response.dict
+
+        msg = f"Command is : {ctam_getepc_uri} \nThe Response is : {data}"
+        self.test_run().add_log(LogSeverity.DEBUG, msg)
+        return data
+
+    def ctam_deles(self):
+        """
+        :Description:       Get Event Service and child collection items.
+        :returns:	        JSON Data after running Redfish command
+        :rtype:             JSON Dict
+        """
+        # List all subscritions then grabbing one of them and delete
+
+        MyName = __name__ + "." + self.ctam_deles.__qualname__
+        ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU")
+        subscriptionList = self.ctam_getes("Subscriptions")
+        self.test_run().add_log(LogSeverity.INFO, "subscriptionList is {}\n".format(subscriptionList))
+        ctam_getes_uri = ctam_getes_uri + "/" + subscriptionList[-1]
+        response = self.dut().run_redfish_command(uri=ctam_getes_uri, mode="DELETE")
+        status = response.status
+        if (status == 200 or status == 201):
+            self.test_run().add_log(LogSeverity.INFO, "Test JSON")
+            self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(ctam_getes_uri, status))
+            result = True
+        else:
+            self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(ctam_getes_uri, status))
+            result = False
+        return result
+
     def ctam_redfish_GET_status_ok(self, uri):
         """
         :Description:   Check if the Redfish API response status is OK
@@ -720,6 +804,3 @@ class FunctionalIfc:
             self.test_run().add_log(LogSeverity.FATAL, "GET request Failed: {} : {}".format(uri, JSONData))
             result = False
         return result
-        
-        return result
-            
