@@ -69,68 +69,68 @@ class CTAMTestNegativeUpdateWithIllegalTargets(TestCase):
         result = True
 
         component_list = self.group.fw_update_ifc.ctam_build_updatable_device_list(illegal=1)
-        for device in component_list:
-            step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1_{device}")  # type: ignore
-            with step1.scope():
-                if self.group.fw_update_ifc.ctam_selectpartiallist(
-                    count=1, 
-                    illegal=1, 
-                    specific_targets=[device],
-                    excluded_targets=self.exclude_targets
-                ):
-                    step1.add_log(LogSeverity.INFO, f"{self.test_id} : Single Device Selected")
-                else:
-                    step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Single Device Selection Failed")
-                    result = False
+        step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
+        with step1.scope():
+            if self.group.fw_update_ifc.ctam_selectpartiallist(
+                count=1, 
+                illegal=1, 
+                specific_targets=component_list,
+                excluded_targets=self.exclude_targets
+            ):
+                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Single Device Selected")
+            else:
+                step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Single Device Selection Failed")
+                result = False
             
-            if result:
-                step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2_{device}")  # type: ignore
-                with step2.scope():
-                    if not self.group.fw_update_ifc.ctam_fw_update_precheck():
-                        step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
-                    else:
-                        step2.add_log(
-                            LogSeverity.INFO, f"{self.test_id} : FW Update Not Required, going ahead nevertheless"
-                        )
+        if result:
+            step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
+            with step2.scope():
+                if not self.group.fw_update_ifc.ctam_fw_update_precheck():
+                    step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
+                else:
+                    step2.add_log(
+                        LogSeverity.INFO, f"{self.test_id} : FW Update Not Required, going ahead nevertheless"
+                    )
 
-            if result:
-                step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3_{device}")  # type: ignore
-                with step3.scope():
-                    if self.group.fw_update_ifc.ctam_stage_fw(partial=1):
-                        step3.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
-                    else:
-                        step3.add_log(
-                            LogSeverity.ERROR, f"{self.test_id} : FW Update Stage Failed"
-                        )
-                        result = False
+        if result:
+            step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
+            with step3.scope():
+                if self.group.fw_update_ifc.ctam_stage_fw(partial=1):
+                    step3.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
+                else:
+                    step3.add_log(
+                        LogSeverity.ERROR, f"{self.test_id} : FW Update Stage Failed"
+                    )
+                    result = False
 
-            if result:
-                step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4_{device}")  # type: ignore
-                with step4.scope():
-                    if self.group.fw_update_ifc.ctam_activate_ac():
-                        step4.add_log(
-                            LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
-                        )
-                    else:
-                        step4.add_log(
-                            LogSeverity.ERROR,
-                            f"{self.test_id} : FW Update Activation Failed",
-                        )
-                        result = False
+        if result:
+            step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")  # type: ignore
+            with step4.scope():
+                if self.group.fw_update_ifc.ctam_activate_ac():
+                    step4.add_log(
+                        LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
+                    )
+                else:
+                    step4.add_log(
+                        LogSeverity.ERROR,
+                        f"{self.test_id} : FW Update Activation Failed",
+                    )
+                    result = False
 
-            if result:
-                step5 = self.test_run().add_step(f"{self.__class__.__name__} run(), step5_{device}")
-                with step5.scope():
-                    if self.group.fw_update_ifc.ctam_fw_update_verify(image_type="negate"):
-                        step5.add_log(
-                            LogSeverity.INFO,
-                            f"{self.test_id} : Update Verification Completed",
-                        )
-                    else:
-                        step5.add_log(
-                            LogSeverity.INFO, f"{self.test_id} : Update Verification Failed"
-                        )
-                        result = False
+        if result:
+            step5 = self.test_run().add_step(f"{self.__class__.__name__} run(), step5")
+            with step5.scope():
+                if self.group.fw_update_ifc.ctam_fw_update_verify(image_type="negate"):
+                    step5.add_log(
+                        LogSeverity.INFO,
+                        f"{self.test_id} : Update Verification Completed",
+                    )
+                else:
+                    step5.add_log(
+                        LogSeverity.INFO, f"{self.test_id} : Update Verification Failed"
+                    )
+                    result = False
+          
             
         # ensure setting of self.result and self.score prior to calling super().run()
         self.result = TestResult.PASS if result else TestResult.FAIL
