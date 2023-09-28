@@ -2,12 +2,18 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-import os
 import argparse
+import os
 import sys
+import traceback
+from pathlib import Path
+
+# until the folder structure gets fixed to a more pip/setuptools oriented format
+# we need to manually adjust the path so that running the main script's imports work
+sys.path.append(str(Path(__file__).resolve().parent))
+
 from test_hierarchy import TestHierarchy
 from test_runner import TestRunner
-import traceback
 
 
 def parse_args():
@@ -28,13 +34,13 @@ def parse_args():
         "-test_seq",
         "--testcase_sequence",
         help="Runs no of test cases with given sequence",
-        nargs='+',
+        nargs="+",
     )
     parser.add_argument(
         "-group_seq",
         "--group_sequence",
         help="Runs no of groups with given sequence",
-        nargs='+',
+        nargs="+",
     )
     parser.add_argument("-s", "--Suite", help="Run full ACT Suite", action="store_true")
 
@@ -45,9 +51,7 @@ def parse_args():
         type=str,
     )
 
-    parser.add_argument(
-        "-d", "--Discovery", help="Perform System Discovery", action="store_true"
-    )
+    parser.add_argument("-d", "--Discovery", help="Perform System Discovery", action="store_true")
 
     parser.add_argument(
         "-w",
@@ -66,14 +70,12 @@ def parse_args():
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def main():
     args = parse_args()
 
     try:
         # builds hierarchy of test groups and associated test cases
-        test_hierarchy = TestHierarchy(
-            os.path.join(os.getcwd(), "tests"), os.path.join(os.getcwd(), "interfaces")
-        )
+        test_hierarchy = TestHierarchy(os.path.join(os.getcwd(), "tests"), os.path.join(os.getcwd(), "interfaces"))
 
         if args.list:
             test_hierarchy.print_test_groups_test_cases(args.group)
@@ -91,9 +93,7 @@ if __name__ == "__main__":
         ]
 
         missing_files = [
-            file
-            for file in required_workspace_files
-            if not os.path.isfile(os.path.join(args.workspace, file))
+            file for file in required_workspace_files if not os.path.isfile(os.path.join(args.workspace, file))
         ]
 
         if missing_files:
@@ -174,3 +174,7 @@ if __name__ == "__main__":
         exception_details = traceback.format_exc()
         print(f"Test Run Failed: {exception_details}")
         exit(1)
+
+
+if __name__ == "__main__":
+    main()
