@@ -15,7 +15,6 @@ import subprocess
 import platform
 import json
 from datetime import datetime
-import traceback
 
 # import pandas as pd
 
@@ -331,7 +330,7 @@ class CompToolDut(Dut):
             able_to_get_system_details = True
             t = PrettyTable(["Component", "Value"])
             system_detail_uri = self.uri_builder.format_uri(redfish_str="{BaseURI}{SystemURI}",
-                                                                component_type="BMC")
+                                                                component_type="GPU")
             bmc_fw_inv_uri = self.uri_builder.format_uri(redfish_str="{BaseURI}{BMCFWInventory}/",
                                                                 component_type="BMC")
             system_details = self.run_redfish_command(system_detail_uri).dict

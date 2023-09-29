@@ -3,16 +3,16 @@ Copyright (c) NVIDIA CORPORATION
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Negative Invalid UUID Image Update
-:Test ID:		F27
+:Test Name:		CTAM Test Negative Invalid Device UUID Image Update
+:Test ID:		F28
 :Group Name:	fw_update
 :Score Weight:	10
 
 :Description:	This test case is a Negative Test. It'll make a copy of the default FW image provided in package_info.json 
-                and corrput the UUID of the PLDM bundle. Then it'll attempt firmware update with the fwpkg containing corrupted UUID. 
+                and corrput the UUID in all FirmwareDeviceIDRecords. Then it'll attempt firmware update with the fwpkg containing corrupted device UUIDs. 
 
-:Usage 1:		python ctam.py -w ..\workspace -t F27
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Invalid UUID Image Update"
+:Usage 1:		python ctam.py -w ..\workspace -t F28
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Invalid Device UUID Image Update"
 
 """
 
@@ -30,7 +30,7 @@ from tests.fw_update.fw_update_group_N._fw_update_group_N import (
 )
 
 
-class CTAMTestNegativeInvalidUUIDImageUpdate(TestCase):
+class CTAMTestNegativeInvalidDeviceUUIDImageUpdate(TestCase):
     """
     Verify values of Software Inventory Collection are present
 
@@ -38,10 +38,10 @@ class CTAMTestNegativeInvalidUUIDImageUpdate(TestCase):
     :type TestCase:
     """
 
-    test_name: str = "CTAM Test Negative Invalid UUID Image Update"
-    test_id: str = "F27"
+    test_name: str = "CTAM Test Negative Invalid Device UUID Image Update"
+    test_id: str = "F28"
     score_weight: int = 10
-    tags: List[str] = ["Negative"]
+    tags: List[str] = []
 
     def __init__(self, group: FWUpdateTestGroupN):
         """
@@ -70,7 +70,7 @@ class CTAMTestNegativeInvalidUUIDImageUpdate(TestCase):
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
             if self.group.fw_update_ifc.ctam_stage_fw(
-                partial=1, image_type="invalid_uuid"
+                partial=1, image_type="invalid_device_uuid"
             ):
                 step1.add_log(
                     LogSeverity.INFO,

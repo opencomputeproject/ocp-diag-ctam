@@ -288,7 +288,6 @@ class TestRunner:
         :type run_result: str
         """
         self.active_run.end(status=run_status, result=run_result)
-        self.comp_tool_dut.clean_up()
         tv.config(writer=StdoutWriter())
 
     def run(self):
@@ -412,6 +411,8 @@ class TestRunner:
                         continue
 
                     self._run_group_test_cases(group_instance, test_case_instances)
+            if self.comp_tool_dut:
+                self.comp_tool_dut.clean_up()
             grade = (
                     TestCase.total_compliance_score / TestCase.max_compliance_score * 100
                     if TestCase.max_compliance_score != 0

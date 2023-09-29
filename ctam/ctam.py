@@ -75,7 +75,9 @@ def main():
 
     try:
         # builds hierarchy of test groups and associated test cases
-        test_hierarchy = TestHierarchy(os.path.join(os.getcwd(), "tests"), os.path.join(os.getcwd(), "interfaces"))
+        test_root_dir =  os.path.join(os.path.dirname(__file__), "tests")
+        ifc_dir = os.path.join(os.path.dirname(__file__), "interfaces")
+        test_hierarchy = TestHierarchy(test_root_dir, ifc_dir)
 
         if args.list:
             test_hierarchy.print_test_groups_test_cases(args.group)
