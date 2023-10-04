@@ -178,12 +178,17 @@ class CompToolDut(Dut):
             elif response.status > 300: 
                 msg.update({
                     "ResponseCode": response.status,
-                    "Response":"Unexpected Response",
+                    "Response":f"Unexpected Response: {response.text}",
+                    })
+            else:
+                msg.update({
+                    "ResponseCode": f"Unexpected status: {response.status}",
+                    "Response": response.text,
                     })
         except Exception as e:
             msg.update({
             "ResponseCode": None,
-            "Response":"FATAL: Exception occurred while running redfish command. Please see below exception...",
+            "Response":f"FATAL: Exception occurred while running redfish command - {e}",
             })
         finally:                         
             self.logger.write(json.dumps(msg))
