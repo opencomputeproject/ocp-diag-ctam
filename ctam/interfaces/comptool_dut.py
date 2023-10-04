@@ -14,6 +14,7 @@ import netrc
 import subprocess
 import platform
 import json
+import time
 from datetime import datetime
 
 # import pandas as pd
@@ -122,7 +123,7 @@ class CompToolDut(Dut):
 
     def run_redfish_command(self, uri, mode="GET", body=None, headers=None, timeout=None):
         """
-        This method is for running redfish commands according to mode and log the ouput into
+        This method is for running redfish commands according to mode and log the output into
         a formatted log file and return the response
         
         :param uri: uri for redfish connection
@@ -138,6 +139,7 @@ class CompToolDut(Dut):
         :rtype: response object or None in case of failure
         """
         try:
+            start_time = time.time()
             response = None
             msg = {
                     "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
@@ -163,7 +165,17 @@ class CompToolDut(Dut):
             elif mode == "DELETE":
                 msg.update({"Method":"DELETE",})
                 response = self.redfish_ifc.delete(**kwargs) # path=uri, headers=headers   
-                
+            
+            end_time = time.time()
+            time_difference_seconds = end_time - start_time
+            time_difference = datetime.utcfromtimestamp(time_difference_seconds) - datetime.utcfromtimestamp(0)
+            hours, remainder = divmod(time_difference.seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            milliseconds = int(time_difference.microseconds / 1000)
+            formatted_time = "{:02d}H:{:02d}M:{:02d}S:{:03d}MS".format(hours, minutes, seconds, milliseconds)
+            
+            msg.update({"ResponseTime": "{}".format(formatted_time)})
+
             if response.status in range (200,204) and response.text: # FIXME: Add error handling in case the request fails
                 msg.update({
                     "ResponseCode": response.status,
@@ -184,6 +196,7 @@ class CompToolDut(Dut):
                     "ResponseCode": f"Unexpected status: {response.status}",
                     "Response": response.text,
                     })
+            # msg.update({"TimeTaken": time_taken})
         except Exception as e:
             msg.update({
             "ResponseCode": None,
