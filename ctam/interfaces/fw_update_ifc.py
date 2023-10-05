@@ -36,6 +36,7 @@ class FWUpdateIfc(FunctionalIfc):
     
     def __init__(self):
         super().__init__()
+        self.included_targets = []
         self.PostInstallVersionDetails = {}
         self.PreInstallVersionDetails = {}
         self._PLDMComponentVersions = {} # { image_type: {SoftwareID: ComponentVersionString}}
@@ -119,7 +120,7 @@ class FWUpdateIfc(FunctionalIfc):
                         or element["@odata.id"] in self.included_targets
                     ):
                         VersionsDifferent = False
-                        msg += "Update Capable to {Package_Version}"
+                        msg += f"Update Capable to {Package_Version}"
 
                     else:
                         msg += "Update Not Needed."

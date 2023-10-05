@@ -171,7 +171,7 @@ def main():
             )
 
         status_code, exit_string = runner.run()
-        log_directory = runner.output_dir
+        log_directory = os.path.relpath(runner.output_dir, os.getcwd())
         return status_code, log_directory, exit_string
 
     except (NotImplementedError, Exception) as e:
