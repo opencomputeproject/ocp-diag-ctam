@@ -178,8 +178,8 @@ def main():
         exception_details = traceback.format_exc()
         print(f"Test Run Failed: {exception_details}")
         return 1, None, f"Test failed due to exception: {e}"
-        
 
+      
 if __name__ == "__main__":
     status_code, log_directory, exit_string = main() 
     print("Test exited with status code: {} - {}".format("FAIL" if status_code else "PASS", exit_string))
