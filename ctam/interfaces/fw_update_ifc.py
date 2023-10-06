@@ -36,6 +36,7 @@ class FWUpdateIfc(FunctionalIfc):
     
     def __init__(self):
         super().__init__()
+        self.included_targets = []
         self.PostInstallVersionDetails = {}
         self.PreInstallVersionDetails = {}
         self._PLDMComponentVersions = {} # { image_type: {SoftwareID: ComponentVersionString}}
@@ -93,40 +94,44 @@ class FWUpdateIfc(FunctionalIfc):
     def ctam_fw_update_precheck(self, image_type="default"):
         """
         :Description:				Check Firmware before installation
-        :param image_type:		Type of the Firmware image
+        :param image_type:		    Type of the Firmware image
 
         :returns:				    VersionsDifferent
         :rtype: 					Bool
         """
         MyName = __name__ + "." + self.ctam_fw_update_precheck.__qualname__
         VersionsDifferent = True
-        self.included_targets = []
 
         self.ctam_get_fw_version(PostInstall=0)
         for element in self.PreInstallDetails:
-            if str(element["Updateable"]) == "True":
-                Package_Version = self.PLDMComponentVersions(image_type=image_type).get(element["SoftwareId"])
-                if Package_Version is None:
-                        msg = "{} : {} : {} : Not in the PLDM bundle".format(
-                            element["Id"],
-                            element["SoftwareId"],
-                            element["Version"]
-                        )
-                        self.test_run().add_log(LogSeverity.DEBUG, msg)
-                elif element["Version"] != Package_Version and (
-                    self.included_targets == []
-                    or element["@odata.id"] in self.included_targets
-                ):
-                    VersionsDifferent = False
-                    msg = f"Pre Install Details: {element['Id']} : {element['SoftwareId']} : {element['Version']} : Update Capable to {Package_Version}"
-                    self.test_run().add_log(LogSeverity.DEBUG, msg)
+            # Check ONLY the ones which are part of HttpPushURITargets
+            if (
+                self.included_targets == []
+                or element["@odata.id"] in self.included_targets
+            ):
+                msg = f"Pre Install Details: {element['Id']} : {element['SoftwareId']} : {element['Version']} : "
+                if str(element["Updateable"]) == "True":
+                    Package_Version = self.PLDMComponentVersions(image_type=image_type).get(element["SoftwareId"])
+                    if Package_Version is None:
+                        msg += "Not in the PLDM bundle"
+                    
+                    elif element["Version"] != Package_Version and (
+                        self.included_targets == []
+                        or element["@odata.id"] in self.included_targets
+                    ):
+                        VersionsDifferent = False
+                        msg += f"Update Capable to {Package_Version}"
 
-                elif (
-                    self.included_targets == []
-                    or element["@odata.id"] in self.included_targets
-                ):
-                    msg = f"Pre Install Details: {element['Id']} : {element['SoftwareId']} : {element['Version']} : Update Not Needed."
-                    self.test_run().add_log(LogSeverity.DEBUG, msg)
+                    else:
+                        msg += "Update Not Needed."
+                else:
+                    msg += "Not Updateable."
+                self.test_run().add_log(LogSeverity.DEBUG, msg)
+                    
+            else:
+                # Not in HttpPushURITargets
+                pass
+            
         return VersionsDifferent
 
     def ctam_stage_fw(
@@ -279,55 +284,43 @@ class FWUpdateIfc(FunctionalIfc):
 
         # Verify version of components currently reporting in FW inventory
         for element in self.PostInstallDetails:
-            if str(element["Updateable"]) == "True":
-                if image_type == "negate" \
-                    or (image_type == "corrupt_component" and element["SoftwareId"] == corrupted_component_id):
-                    # FW version should be same as from pre-update
-                    ExpectedVersion = self.PreInstallVersionDetails[element["Id"]]
-                    msg = "negative test case, expected version = {}".format(
-                        ExpectedVersion
-                    )
-                    self.test_run().add_log(LogSeverity.DEBUG, msg)
-                    
-                else:
-                    # FW version should be updated per PLDM bundle
-                    ExpectedVersion = self.PLDMComponentVersions(image_type=image_type).get(element["SoftwareId"])
-                if (
-                    self.included_targets == []
-                    or element["@odata.id"] in self.included_targets
-                ):
-                    if ExpectedVersion is None:
-                        # Either not present in PLDM bundle or not present in PreInstallVersionDetails
-                        msg = "{} : {} : {} : Not in the PLDM bundle".format(
-                            element["Id"],
-                            element["SoftwareId"],
-                            element["Version"]
-                        )
-                        self.test_run().add_log(LogSeverity.DEBUG, msg)
-                    elif element["Version"] != ExpectedVersion:
-                        # Positive Cases.
-                        Update_Verified = False
-                        msg = "{} : {} : {} : Update Failed : Expected {}".format(
-                            element["Id"],
-                            element["SoftwareId"],
-                            element["Version"],
-                            ExpectedVersion,
-                        )
-                        self.test_run().add_log(LogSeverity.DEBUG, msg)
+            negative_case = (
+                image_type == "negate" 
+                or (image_type == "corrupt_component" and element["SoftwareId"] == corrupted_component_id)
+                or str(element["Updateable"]) == "False"
+                or (self.included_targets != []
+                    and element["@odata.id"] not in self.included_targets)
+            )
+            if negative_case:
+                # FW version should be same as from pre-update
+                ExpectedVersion = self.PreInstallVersionDetails[element["Id"]]
+                msg = "negative test case, expected version = {}".format(
+                    ExpectedVersion
+                )
+                self.test_run().add_log(LogSeverity.DEBUG, msg)
+                
+            else:
+                # FW version should be updated per PLDM bundle
+                ExpectedVersion = self.PLDMComponentVersions(image_type=image_type).get(element["SoftwareId"])
+            
+            msg = f"Post Install Details: {element['Id']} : {element['SoftwareId']} : {element['Version']} : "
+            if ExpectedVersion is None:
+                # Either not present in PLDM bundle or not present in PreInstallVersionDetails
+                msg += "Not in the PLDM bundle"
+            
+            elif element["Version"] != ExpectedVersion:
+                # Both positive and negative test case
+                Update_Verified = False
+                msg += f"Update Failed : Expected {ExpectedVersion}"
 
-                    elif image_type == "negate":
-                        # Negative test case, but expected.
-                        msg = "{} : {} : {} : Update Interrupted".format(
-                            element["Id"], element["SoftwareId"], element["Version"]
-                        )
-                        self.test_run().add_log(LogSeverity.DEBUG, msg)
-                    
-                    else:
-                        # Positive test case but a failure
-                        msg = "{} : {} : {} : Update Successful".format(
-                            element["Id"], element["SoftwareId"], element["Version"]
-                        )
-                        self.test_run().add_log(LogSeverity.DEBUG, msg)
+            elif negative_case:
+                # Negative test case, but expected.
+                msg += "Update Interrupted as Expected"
+            
+            else:
+                msg += "Update Successful"
+                
+            self.test_run().add_log(LogSeverity.DEBUG, msg)
 
         return Update_Verified
 
@@ -548,6 +541,8 @@ class FWUpdateIfc(FunctionalIfc):
         FWInventory = self.ctam_getfi(expanded=1)
         Updateable_SoftwareIds = []
         jsonhuntall(FWInventory, "Updateable", True, "SoftwareId", Updateable_SoftwareIds)
+        Updateable_SoftwareIds = list(set(Updateable_SoftwareIds)) # Remove duplicates
+        Updateable_SoftwareIds[:] = (SwId for SwId in Updateable_SoftwareIds if SwId != "") # FIXME: Temporary: Remove empty Software IDs
         
         # Then get the PLDM bundle json
         PLDMPkgJson_file = self.get_PLDMPkgJson_file(image_type=image_type)

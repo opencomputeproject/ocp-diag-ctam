@@ -84,8 +84,7 @@ class CompToolDut(Dut):
         )
         
         if not self.check_ping_status(self.connection_ip_address): # FIXME: Use logging method
-            print("[FATAL] Unable to ping the ip address. Please check the IP is valid or not.")
-            sys.exit(1)
+            raise Exception("[FATAL] Unable to ping the ip address. Please check the IP is valid or not.")
         
         # Set up SSH Tunneling if requested
         self.BindedPort = None
@@ -178,12 +177,17 @@ class CompToolDut(Dut):
             elif response.status > 300: 
                 msg.update({
                     "ResponseCode": response.status,
-                    "Response":"Unexpected Response",
+                    "Response":f"Unexpected Response: {response.text}",
+                    })
+            else:
+                msg.update({
+                    "ResponseCode": f"Unexpected status: {response.status}",
+                    "Response": response.text,
                     })
         except Exception as e:
             msg.update({
             "ResponseCode": None,
-            "Response":"FATAL: Exception occurred while running redfish command. Please see below exception...",
+            "Response":f"FATAL: Exception occurred while running redfish command - {e}",
             })
         finally:                         
             self.logger.write(json.dumps(msg))

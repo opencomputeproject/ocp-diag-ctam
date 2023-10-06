@@ -23,8 +23,8 @@ from ocptv.output import (
     TestResult,
     TestStatus,
 )
-from tests.health_check.basic_health_check_group.basic_health_check_test_group import (
-    BasicHealthCheckTestGroup,
+from tests.health_check.long_health_check_group.long_health_check_test_group import (
+    LongHealthCheckTestGroup,
 )
 
 
@@ -41,7 +41,7 @@ class CTAMVerifySelfTestReport(TestCase):
     score_weight: int = 10
     tags: List[str] = ["HCheck"]
 
-    def __init__(self, group: BasicHealthCheckTestGroup):
+    def __init__(self, group: LongHealthCheckTestGroup):
         """
         _summary_
         """
