@@ -62,7 +62,7 @@ class PLDMFwpkg:
         
         pldm_parser = PLDMUnpack(corrupted_package_path)
         if result := pldm_parser.parse_pldm_package():
-            result = pldm_parser.corrupt_component_metadata_in_pkg(corrupted_package_path, component_id, metadata_size)
+            result = pldm_parser.corrupt_component_metadata_in_pkg(component_id, metadata_size)
             
         if not result:
             print(f"Error in corrupting the package.")
@@ -159,7 +159,7 @@ class FwpkgSignature:
     """
     Methods related to PLDM fwpkg signature
     """
-    NUM_BYTES_FROM_END = 1024
+    PKG_SIGNATURE_STRUCT_BYTES = 1024
     HeaderV2 = 2
     HeaderV3 = 3
     
@@ -175,7 +175,7 @@ class FwpkgSignature:
         """
         try:
             with open(package_path, 'rb') as infile:
-                infile.seek(-FwpkgSignature.NUM_BYTES_FROM_END, os.SEEK_END)
+                infile.seek(-FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES, os.SEEK_END)
                 infile.seek(4, 1)
                 major_version = infile.read(1)
                 minor_version = infile.read(1)
@@ -198,7 +198,7 @@ class FwpkgSignature:
         """
         try:
             with open(fwpkg_path, 'r+b') as file:
-                file.seek(-FwpkgSignature.NUM_BYTES_FROM_END + skip_byte, os.SEEK_END)
+                file.seek(-FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES + skip_byte, os.SEEK_END)
                 file.write(bytes([value]))
             return True
         except Exception as e:
@@ -251,7 +251,7 @@ class FwpkgSignature:
         
         try:
             with open(corrupted_package_path, 'r+b') as file:
-                file.seek(-FwpkgSignature.NUM_BYTES_FROM_END, os.SEEK_END)
+                file.seek(-FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES, os.SEEK_END)
                 file.write(bytearray(4)) # 4 bytes long Magic
         except Exception as e:
             print(f"Error in corrupting the package: {e}")
@@ -276,8 +276,8 @@ class FwpkgSignature:
         corrupted_package_path = shutil.copy(golden_fwpkg_path, corrupted_package)
         try:
             with open(corrupted_package_path, 'r+b') as file:
-                file.seek(-FwpkgSignature.NUM_BYTES_FROM_END, os.SEEK_END)
-                file.write(bytearray(FwpkgSignature.NUM_BYTES_FROM_END))
+                file.seek(-FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES, os.SEEK_END)
+                file.write(bytearray(FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES))
         except Exception as e:
             print(f"Error in corrupting the package: {e}")
             # delete the package

@@ -128,7 +128,7 @@ class FunctionalIfc:
                     self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
                     self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
                 )
-                json_fw_file_payload = FwpkgSignature.clear_signature_in_pkg(golden_fwpkg_path)
+                json_fw_file_payload = FwpkgSignature.invalidate_signature_in_pkg(golden_fwpkg_path)
             
         elif image_type == "invalid_pkg_uuid":
             golden_fwpkg_path = os.path.join(
@@ -772,6 +772,7 @@ class FunctionalIfc:
         ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU")
         subscriptionList = self.ctam_getes("Subscriptions")
         self.test_run().add_log(LogSeverity.INFO, "subscriptionList is {}\n".format(subscriptionList))
+        # FIXME: Handle when subscriptionList is empty
         ctam_getes_uri = ctam_getes_uri + "/" + subscriptionList[-1]
         response = self.dut().run_redfish_command(uri=ctam_getes_uri, mode="DELETE")
         status = response.status

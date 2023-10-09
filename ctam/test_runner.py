@@ -555,6 +555,7 @@ class TestRunner:
 
         except (NotImplementedError, Exception) as e:
             exception_details = traceback.format_exc()
+            # FIXME: Throws error if the exception happens before setting active_run (e.g. in comptool_dut init)
             self.active_run.add_log(
                 severity=LogSeverity.FATAL, message=exception_details
             )
