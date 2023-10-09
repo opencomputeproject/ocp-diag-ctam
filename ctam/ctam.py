@@ -81,11 +81,11 @@ def main():
 
         if args.list:
             test_hierarchy.print_test_groups_test_cases(args.group)
-            exit(0)
+            return 0, None, "List of tests is printed"
 
         if not os.path.isdir(args.workspace):
             print("Invalid workspace specified")
-            exit(1)
+            return 1, None, "Invalid workspace specified"
         required_workspace_files = [
             "dut_info.json",
             "package_info.json",
@@ -101,7 +101,7 @@ def main():
         if missing_files:
             for file_name in missing_files:
                 print(f"The required file {file_name} does not exist in the workspace.")
-            exit(1)
+            return 1, None, "Missing required files"
         print(f"WorkSpace : {args.workspace}")
         test_runner_json = os.path.join(args.workspace, "test_runner.json")
         dut_info_json = os.path.join(args.workspace, "dut_info.json")
@@ -118,7 +118,7 @@ def main():
                 net_rc=net_rc,
             )
             runner.get_system_details()
-            sys.exit(1)
+            return 0, None, "System discovery is done" # FIXME: Status code can be returned from get_system_details
 
         elif args.testcase:
             runner = TestRunner(
@@ -170,13 +170,18 @@ def main():
                 redfish_uri_config_file=redfish_uri_config,
             )
 
-        runner.run()
+        status_code, exit_string = runner.run()
+        log_directory = os.path.relpath(runner.output_dir, os.getcwd())
+        return status_code, log_directory, exit_string
 
     except (NotImplementedError, Exception) as e:
         exception_details = traceback.format_exc()
         print(f"Test Run Failed: {exception_details}")
-        exit(1)
+        return 1, None, f"Test failed due to exception: {e}"
 
-
+      
 if __name__ == "__main__":
-    main()
+    status_code, log_directory, exit_string = main() 
+    print("Test exited with status code: {} - {}".format("FAIL" if status_code else "PASS", exit_string))
+    print(f"Log Directory: {log_directory}")
+    exit(status_code)

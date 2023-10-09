@@ -292,12 +292,17 @@ class TestRunner:
     def run(self):
         """
         Public API used to kick of the test suite
+        
+        :return: status_code, exit_string
+        :rtype: int, str 
         """
         try:
             if self.progress_bar:
                 progress_thread = threading.Thread(target=self.display_progress_bar)
                 progress_thread.daemon = True
 
+            group_status_set = set()
+            group_result_set = set()
             if self.test_cases:
                 if self.progress_bar and self.console_log is False:
                         self.total_cases = len(self.test_cases)
@@ -323,7 +328,9 @@ class TestRunner:
                         )
                         continue
 
-                    self._run_group_test_cases(group_instance, test_case_instances)
+                    group_status, group_result = self._run_group_test_cases(group_instance, test_case_instances)
+                    group_status_set.add(group_status)
+                    group_result_set.add(group_result)
             elif self.test_sequence:
                 if self.progress_bar and self.console_log is False:
                         self.total_cases = len(self.test_sequence)
@@ -349,7 +356,9 @@ class TestRunner:
                         )
                         continue
 
-                    self._run_group_test_cases(group_instance, test_case_instances)
+                    group_status, group_result = self._run_group_test_cases(group_instance, test_case_instances)
+                    group_status_set.add(group_status)
+                    group_result_set.add(group_result)
 
             elif self.test_groups:
                 for group in self.test_groups:
@@ -376,7 +385,10 @@ class TestRunner:
                         )
                         continue
 
-                    self._run_group_test_cases(group_instance, test_case_instances)
+                    group_status, group_result = self._run_group_test_cases(group_instance, test_case_instances)
+                    group_status_set.add(group_status)
+                    group_result_set.add(group_result)
+                    
             elif self.group_sequence:
                 # get total cases in group sequence from test hierarchy
                 tc_group = []
@@ -409,7 +421,10 @@ class TestRunner:
                         )
                         continue
 
-                    self._run_group_test_cases(group_instance, test_case_instances)
+                    group_status, group_result = self._run_group_test_cases(group_instance, test_case_instances)
+                    group_status_set.add(group_status)
+                    group_result_set.add(group_result)
+                    
             if self.comp_tool_dut:
                 self.comp_tool_dut.clean_up()
             grade = (
@@ -435,8 +450,12 @@ class TestRunner:
             if self.progress_bar and self.console_log is False:
                 while progress_thread.is_alive():
                     progress_thread.join(10)
+                    
+            status_code = 1 if group_result_set - {TestResult.PASS} else 0 # if there is any result other than PASS, status code repots failure
+            exit_string = "Test execution failed" if group_status_set - {TestStatus.COMPLETE} else "Test execution is complete"
+            return status_code, exit_string
         except KeyboardInterrupt:
-            sys.exit(1)
+            return 1, "Test interrupted by user (KeyboardInterrupt)"
         
         
     def _run_group_test_cases(self, group_instance, test_case_instances):
@@ -448,6 +467,8 @@ class TestRunner:
         :type group_instance: TestGroup
         :param test_case_instances: List of test cases associated with the group
         :type test_case_instances: List[Testcase]]
+        :returns: group_status, group_result
+        :rtype:  ocptv.output.TestStatus, ocptv.output.TestResult
         """
 
         group_status = TestStatus.ERROR
@@ -544,10 +565,12 @@ class TestRunner:
             # attempt group cleanup even if test exception raised
             group_instance.teardown()
             self._end(group_status, group_result)
+            return group_status, group_result
 
     def get_system_details(self):
         self._start()
-        pass
+        if self.comp_tool_dut:
+            self.comp_tool_dut.clean_up()
 
     def generate_test_report(self):
         """
