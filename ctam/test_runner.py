@@ -136,8 +136,8 @@ class TestRunner:
             self.test_sequence = sequence_test_override
         elif sequence_group_override != None:
             self.group_sequence = sequence_group_override
-        elif runner_config["test_cases"]:
-            self.test_cases = runner_config["test_cases"]
+        # elif runner_config["test_cases"]:
+        #     self.test_cases = runner_config["test_cases"]
         elif runner_config["test_sequence"]:
             self.test_sequence = runner_config["test_sequence"]
         elif runner_config["group_sequence"]:
@@ -152,7 +152,7 @@ class TestRunner:
 
             if selected_test_suite is not None:
                 # Assign the selected test suite to a Python list
-                self.test_groups = selected_test_suite
+                self.test_sequence = selected_test_suite
             else:
                 raise Exception(
                     "active_test_suite in test_runner.json specifies missing List"

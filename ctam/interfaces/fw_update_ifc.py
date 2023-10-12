@@ -247,7 +247,10 @@ class FWUpdateIfc(FunctionalIfc):
         else:
             if image_type == "large":
                 GPULargeFWMessage = "{GPULargeFWMessage}".format(**self.dut().redfish_uri_config.get("GPU"))
-                if GPULargeFWMessage in JSONData["error"]:
+                if "message" in JSONData["error"]:
+                    if GPULargeFWMessage in JSONData["error"]["message"] or GPULargeFWMessage in JSONData["error"]:
+                        StageFWOOB_Status = True
+                elif GPULargeFWMessage in JSONData["error"]:
                     StageFWOOB_Status = True
                 else:
                     StageFWOOB_Status = False
