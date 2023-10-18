@@ -596,7 +596,7 @@ class FWUpdateIfc(FunctionalIfc):
                                         break
                                 for comp_index in ApplicableComponents:
                                     comp_info =  PLDMPkgJson.get("ComponentImageInformationArea", {}).get("ComponentImageInformation", [])[comp_index]
-                                    if comp_info["ComponentIdentifier"] == str(hex(int(software_id, 16))):
+                                    if comp_info["ComponentIdentifier"] == str(int(software_id, 16)):
                                         ComponentVersions[software_id] = comp_info["ComponentVersionString"]
                                         break
         return ComponentVersions
