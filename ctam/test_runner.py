@@ -16,7 +16,7 @@ import logging
 import sys
 #from unittest import runner
 from ocptv.output import LogSeverity, StdoutWriter, Writer
-from datetime import datetime
+from datetime import datetime, timedelta
 from tests.test_case import TestCase
 from tests.test_group import TestGroup
 from interfaces.functional_ifc import FunctionalIfc
@@ -438,12 +438,15 @@ class TestRunner:
 
             msg = {
                     "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                    "TotalExecutionTime": str(timedelta(seconds=TestCase.total_execution_time)),
                     "TotalScore": TestCase.total_compliance_score,
                     "MaxComplianceScore": TestCase.max_compliance_score,
                     "Grade": "{}%".format(gtotal),
                     }
             self.score_logger.write(json.dumps(msg))
-            self.test_result_data.append(("Total Score", "", TestCase.total_compliance_score, 
+            self.test_result_data.append(("Total Score", "", 
+                                        timedelta(seconds=TestCase.total_execution_time),
+                                        TestCase.total_compliance_score, 
                                         TestCase.max_compliance_score,"{}%".format(gtotal)))
             self.generate_test_report()
             self.generate_domain_test_report()
@@ -498,6 +501,7 @@ class TestRunner:
 
                 # this exception block goal is to ensure test case teardown() is called even if setup() or run() fails
                 try:
+                    test_starttime = time.perf_counter()
                     test_instance.setup()
                     self.comp_tool_dut.current_test_name = test_instance.test_name
                     file_name = "RedfishCommandDetails_{}_{}".format(test_instance.test_id,
@@ -524,9 +528,11 @@ class TestRunner:
                     test_instance.teardown()
                     execution_endtime = time.perf_counter()
                     execution_time = round(execution_endtime - execution_starttime, 3)
+                    test_instance.execution_time = timedelta(seconds=round(execution_endtime - test_starttime, 3))
+                    TestCase.total_execution_time += round(execution_endtime - test_starttime, 3)
                     msg = {
                         "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
-                        "ExecutionTime": execution_time,
+                        "ExecutionTime": f"{execution_time} seconds",
                         "TestID": test_instance.test_id,
                         "TestName": test_instance.test_name,
                         "TestCaseScoreWeight":test_instance.score_weight,
@@ -535,6 +541,7 @@ class TestRunner:
                     }
                     self.test_result_data.append((test_instance.test_id,
                                                    test_instance.test_name,
+                                                   test_instance.execution_time,
                                                    test_instance.score_weight,
                                                    test_instance.score,                                              
                                                    TestResult(test_instance.result).name))
@@ -581,11 +588,11 @@ class TestRunner:
 
         """
         #print(self.test_result_data)
-        t = PrettyTable(["TestID", "TestName", "TestScoreWeight", "TestScore", "TestResult"])
+        t = PrettyTable(["TestID", "TestName", "ExecutionTime", "TestScoreWeight", "TestScore", "TestResult"])
         t.title = "Test Result"
         t.add_rows(self.test_result_data[:len(self.test_result_data) - 1:])
-        t.add_row(["", "", "", "", ""], divider=True)
-        t.add_row(["", "","Compliance Score",
+        t.add_row(["", "", "", "", "", ""], divider=True)
+        t.add_row(["", "", "Total Execution Time", "Compliance Score",
                    "Total Test Score", "Grade"], divider=True)
         t.add_row(self.test_result_data[-1], divider=True)
         t.align["TestName"] = "l"
@@ -600,34 +607,54 @@ class TestRunner:
         It will have DomainID, Domain, TComplianceWeight, ComplianceScore, Grade and total
 
         """
-        dt = PrettyTable(["DomainID", "Domain", "ComplianceWeight", "ComplianceScore", "Grade"])
+        dt = PrettyTable(["DomainID", "Domain", "Total Execution Time", "Testcases Run", "Testcases Passed", "ComplianceWeight", "ComplianceScore", "Grade"])
         dt.title = "Domain-wise Test Report"
 
+        executionTimes = [0, 0, 0, 0]
+        testCases = [0, 0, 0, 0]
+        passedTests = [0, 0, 0, 0]
         compScore = [0, 0, 0, 0]
         compWeight = [0, 0, 0, 0]
-
+        
         for i in range(len(self.test_result_data)-1):
             testID = self.test_result_data[i][0]
-            testWeight = self.test_result_data[i][2]
-            testScore = self.test_result_data[i][3]
+            testExecTime = self.test_result_data[i][2].total_seconds()
+            testWeight = self.test_result_data[i][3]
+            testScore = self.test_result_data[i][4]
 
             # check for telemetry cases
             if testID.startswith("T"):
+                executionTimes[0] += testExecTime
+                testCases[0] += 1
+                if testScore == testWeight:
+                    passedTests[0] += 1
                 compWeight[0] += testWeight
                 compScore[0] += testScore
 
             # check for RAS cases
             elif testID.startswith("R"):
+                executionTimes[1] += testExecTime
+                testCases[1] += 1
+                if testScore == testWeight:
+                    passedTests[1] += 1
                 compWeight[1] += testWeight   
                 compScore[1] += testScore
 
             # check for health check cases
             elif testID.startswith("H"):
+                executionTimes[2] += testExecTime
+                testCases[2] += 1
+                if testScore == testWeight:
+                    passedTests[2] += 1
                 compWeight[2] += testWeight    
                 compScore[2] += testScore
 
             # check for fw update cases
             elif testID.startswith("F"):
+                executionTimes[3] += testExecTime
+                testCases[3] += 1
+                if testScore == testWeight:
+                    passedTests[3] += 1
                 compWeight[3] += testWeight    
                 compScore[3] += testScore
 
@@ -637,11 +664,18 @@ class TestRunner:
                 grade[j] = compScore[j]/compWeight[j]*100
                 grade[j] = round(grade[j], 2)
 
-        dt.add_row(["T", "Telemetry", compWeight[0], compScore[0], "{}%".format(grade[0])])
-        dt.add_row(["R", "RAS", compWeight[1], compScore[1], "{}%".format(grade[1])])
-        dt.add_row(["H", "Health Check", compWeight[2], compScore[2], "{}%".format(grade[2])])
-        dt.add_row(["F", "FW Update", compWeight[3], compScore[3], "{}%".format(grade[3])], divider=True)
+        dt.add_row(["T", "Telemetry", timedelta(seconds=executionTimes[0]), 
+                    testCases[0], passedTests[0], compWeight[0], compScore[0], "{}%".format(grade[0])])
+        dt.add_row(["R", "RAS", timedelta(seconds=executionTimes[1]), 
+                    testCases[1], passedTests[1], compWeight[1], compScore[1], "{}%".format(grade[1])])
+        dt.add_row(["H", "Health Check", timedelta(seconds=executionTimes[2]), 
+                    testCases[2], passedTests[2], compWeight[2], compScore[2], "{}%".format(grade[2])])
+        dt.add_row(["F", "FW Update", timedelta(seconds=executionTimes[3]), 
+                    testCases[3], passedTests[3], compWeight[3], compScore[3], "{}%".format(grade[3])], divider=True)
 
+        executionTimetotal = sum(executionTimes)
+        testCasesTotal = sum(testCases)
+        passedTestsTotal = sum(passedTests)
         compWeightTotal = sum(compWeight)
         compScoreTotal = sum(compScore)
         gradeTotal = (
@@ -652,7 +686,8 @@ class TestRunner:
         
         gt = round(gradeTotal, 2)
 
-        dt.add_row(["", "Overall", 
+        dt.add_row(["", "Overall", timedelta(seconds=executionTimetotal),
+                    testCasesTotal, passedTestsTotal,
                    compWeightTotal, compScoreTotal, "{}%".format(gt)], divider=True)
         with open(self.test_result_file, 'a') as f:
             f.write("\n" + str(dt))

@@ -12,6 +12,7 @@ import json
 import subprocess
 import time
 import ast
+import shlex
 from datetime import datetime
 from typing import Optional, List
 from datetime import datetime
@@ -86,6 +87,7 @@ class FunctionalIfc:
         :rtype:                 string
         """
 
+        # FIXME: Refactor.. Lots of repeated code
         if image_type == "default":
             json_fw_file_payload = os.path.join(
                 self.dut().cwd,
@@ -208,8 +210,10 @@ class FunctionalIfc:
                     self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
                 )
                 json_fw_file_payload = FwpkgSignature.clear_signature_in_pkg(golden_fwpkg_path)
+        
         elif image_type == "corrupt":
-            json_fw_file_payload = os.path.join(
+            if self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT", {}).get("Package", "") != "":
+                json_fw_file_payload = os.path.join(
                 self.dut().cwd,
                 self.dut()
                 .package_config.get("GPU_FW_IMAGE_CORRUPT", {})
@@ -217,7 +221,20 @@ class FunctionalIfc:
                 self.dut()
                 .package_config.get("GPU_FW_IMAGE_CORRUPT", {})
                 .get("Package", ""),
-            )
+                )
+            else:
+                if corrupted_component_id is None:
+                    corrupted_component_id = self.ctam_get_component_to_be_corrupted()
+                msg = f"Corrupted component ID: {corrupted_component_id}"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)
+                golden_fwpkg_path = os.path.join(
+                    self.dut().cwd,
+                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+                )
+                metadata_size = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("MetadataSizeBytes", 4096)
+                json_fw_file_payload = PLDMFwpkg.corrupt_component_image_in_pkg(golden_fwpkg_path, corrupted_component_id, metadata_size)
+                
         elif image_type == "negate":
             self.test_run().add_log(LogSeverity.INFO, "Negative Test Case")
             json_fw_file_payload = ""
@@ -435,12 +452,14 @@ class FunctionalIfc:
         command_to_run = ""
         command_to_run = self.dut().dut_config["PowerOffCommand"]["value"]
         self.test_run().add_log(LogSeverity.INFO, json.dumps(command_to_run, indent=4))
-        subprocess.check_output(command_to_run, shell=self.dut().is_debug_mode())
+        arguments = shlex.split(command_to_run)
+        subprocess.check_output(arguments, cwd=os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
         time.sleep(self.dut().dut_config["PowerOffWaitTime"]["value"])
         self.test_run().add_log(LogSeverity.INFO, "Power Off wait time done")
         command_to_run = self.dut().dut_config["PowerOnCommand"]["value"]
         self.test_run().add_log(LogSeverity.INFO, json.dumps(command_to_run, indent=4))
-        subprocess.check_output(command_to_run, shell=self.dut().is_debug_mode())
+        arguments = shlex.split(command_to_run)
+        subprocess.check_output(arguments, cwd=os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
         time.sleep(self.dut().dut_config["PowerOnWaitTime"]["value"])
         self.test_run().add_log(LogSeverity.INFO, "Power ON wait time done")
         return

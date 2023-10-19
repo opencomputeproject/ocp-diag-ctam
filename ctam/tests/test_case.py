@@ -34,6 +34,7 @@ class TestCase(ABC):
     _dut: Optional[CompToolDut]  # dut object
     total_compliance_score = 0  # accumulative
     max_compliance_score = 0
+    total_execution_time = 0 # seconds
 
     @staticmethod
     def SetUpAssociations(testrun: tv.TestRun, dut: CompToolDut):
@@ -49,6 +50,7 @@ class TestCase(ABC):
         TestCase._dut = dut
         TestCase.total_compliance_score = 0
         TestCase.max_compliance_score = 0
+        TestCase.total_execution_time = 0
 
     def __init__(self):
         """

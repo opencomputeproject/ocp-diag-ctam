@@ -182,6 +182,7 @@ def main():
       
 if __name__ == "__main__":
     status_code, log_directory, exit_string = main() 
-    print("Test exited with status code: {} - {}".format("FAIL" if status_code else "PASS", exit_string))
-    print(f"Log Directory: {log_directory}")
+    print("\nTest exited with status code*: {} - {}".format("FAIL" if status_code else "PASS", exit_string))
+    print(f"Log Directory: {log_directory}") 
+    print("\n*Note: Return/Status Codes - PASS(0): All tests passed, FAIL(1): Execution/runtime failure or test failure\n")
     exit(status_code)
