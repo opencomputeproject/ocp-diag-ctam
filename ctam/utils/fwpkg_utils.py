@@ -62,7 +62,36 @@ class PLDMFwpkg:
         
         pldm_parser = PLDMUnpack(corrupted_package_path)
         if result := pldm_parser.parse_pldm_package():
-            result = pldm_parser.corrupt_component_metadata_in_pkg(corrupted_package_path, component_id, metadata_size)
+            result = pldm_parser.corrupt_component_metadata_in_pkg(component_id, metadata_size)
+            
+        if not result:
+            print(f"Error in corrupting the package.")
+            # delete the package
+            os.remove(corrupted_package_path)
+            corrupted_package_path = None
+            
+        return corrupted_package_path
+    
+    @staticmethod
+    def corrupt_component_image_in_pkg(golden_fwpkg_path, component_id=None, metadata_size=4096):
+        """
+        :Description:                       Corrupt image/payload of any component in the PLDM bundle.
+                                            If component_id is provided, corrupt the respective component's image.
+
+        :param str golden_fwpkg_path:	    Path to golden firmware package
+        :param int component_id:            ComponentIdentifier of the component image to be corrupted. Default is None.
+        :param int metadata_size:           Metadata size in bytes. Default is 4096 bytes.
+
+        :returns:                           Path to corrupted package. None if corruption fails. 
+        :rtype:                             str
+        """
+        # Make a copy of the golden fwpkg
+        corrupted_package =  os.path.join(os.path.dirname(golden_fwpkg_path), "corrupted-pkg.fwpkg")
+        corrupted_package_path = shutil.copy(golden_fwpkg_path, corrupted_package)
+        
+        pldm_parser = PLDMUnpack(corrupted_package_path)
+        if result := pldm_parser.parse_pldm_package():
+            result = pldm_parser.corrupt_component_image_in_pkg(component_id, metadata_size)
             
         if not result:
             print(f"Error in corrupting the package.")
@@ -159,7 +188,7 @@ class FwpkgSignature:
     """
     Methods related to PLDM fwpkg signature
     """
-    NUM_BYTES_FROM_END = 1024
+    PKG_SIGNATURE_STRUCT_BYTES = 1024
     HeaderV2 = 2
     HeaderV3 = 3
     
@@ -175,7 +204,7 @@ class FwpkgSignature:
         """
         try:
             with open(package_path, 'rb') as infile:
-                infile.seek(-FwpkgSignature.NUM_BYTES_FROM_END, os.SEEK_END)
+                infile.seek(-FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES, os.SEEK_END)
                 infile.seek(4, 1)
                 major_version = infile.read(1)
                 minor_version = infile.read(1)
@@ -198,7 +227,7 @@ class FwpkgSignature:
         """
         try:
             with open(fwpkg_path, 'r+b') as file:
-                file.seek(-FwpkgSignature.NUM_BYTES_FROM_END + skip_byte, os.SEEK_END)
+                file.seek(-FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES + skip_byte, os.SEEK_END)
                 file.write(bytes([value]))
             return True
         except Exception as e:
@@ -251,7 +280,7 @@ class FwpkgSignature:
         
         try:
             with open(corrupted_package_path, 'r+b') as file:
-                file.seek(-FwpkgSignature.NUM_BYTES_FROM_END, os.SEEK_END)
+                file.seek(-FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES, os.SEEK_END)
                 file.write(bytearray(4)) # 4 bytes long Magic
         except Exception as e:
             print(f"Error in corrupting the package: {e}")
@@ -276,8 +305,8 @@ class FwpkgSignature:
         corrupted_package_path = shutil.copy(golden_fwpkg_path, corrupted_package)
         try:
             with open(corrupted_package_path, 'r+b') as file:
-                file.seek(-FwpkgSignature.NUM_BYTES_FROM_END, os.SEEK_END)
-                file.write(bytearray(FwpkgSignature.NUM_BYTES_FROM_END))
+                file.seek(-FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES, os.SEEK_END)
+                file.write(bytearray(FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES))
         except Exception as e:
             print(f"Error in corrupting the package: {e}")
             # delete the package
@@ -569,6 +598,42 @@ class PLDMUnpack:
                     # Zero out metadata bytes
                     # Save the bundle
                     self.fwpkg_fd.write(bytearray(metadata_size))
+                    corruption_status = True
+            except IOError as e_io_error:
+                log_message = f"Couldn't open or read given FW package ({e_io_error})"
+                print(log_message)
+        return corruption_status
+    
+    def corrupt_component_image_in_pkg(self, component_id=None, metadata_size=4096):
+        """
+        :Description:                       Corrupt a component's image/payload in the given FW package.
+                                            If component_id is provided, corrupt the respective component's image.
+                                            Otherwise, corrupt the first component image in the package.
+    
+        :param int component_id:            ComponentIdentifier (in hex format) of the component image to be corrupted. Default is None.
+        :param int metadata_size:           Metadata size in bytes. Default is 4096 bytes.
+
+        :returns:                           True if the corruption was successful, False otherwise.
+        :rtype:                             bool
+        """
+        corruption_status = False
+        package_size = os.path.getsize(self.package)
+        for index, info in enumerate(self.component_img_info_list):
+            if component_id is not None and info["ComponentIdentifier"] != hex(int(component_id, 16)):
+                continue
+            # Lseek to the component from the PLDM fwpkg   
+            offset = info["ComponentLocationOffset"]
+            size = info["ComponentSize"]
+            if offset + size > package_size:
+                log_msg = f"Error: ComponentLocationOffset {offset} + \
+                ComponentSize {size} exceeds given package size {package_size}"
+                print(log_msg)
+            print(f"Corrupting component: {self.component_img_info_list[index]}")
+            try:
+                with open(self.package, 'r+b') as self.fwpkg_fd:
+                    self.fwpkg_fd.seek(offset+metadata_size)
+                    # Zero out image bytes and save the bundle
+                    self.fwpkg_fd.write(bytearray(math.floor(size/2))) # Corrupting half of the image
                     corruption_status = True
             except IOError as e_io_error:
                 log_message = f"Couldn't open or read given FW package ({e_io_error})"

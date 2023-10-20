@@ -247,7 +247,7 @@ class FWUpdateIfc(FunctionalIfc):
         else:
             if image_type == "large":
                 GPULargeFWMessage = "{GPULargeFWMessage}".format(**self.dut().redfish_uri_config.get("GPU"))
-                if GPULargeFWMessage in JSONData["error"]:
+                if GPULargeFWMessage in JSONData["error"] or GPULargeFWMessage in JSONData["error"].get("message", {}) : # FIXME: Temp fix to make it work in both MSFT and Nvidia systems
                     StageFWOOB_Status = True
                 else:
                     StageFWOOB_Status = False
@@ -294,7 +294,7 @@ class FWUpdateIfc(FunctionalIfc):
             if negative_case:
                 # FW version should be same as from pre-update
                 ExpectedVersion = self.PreInstallVersionDetails[element["Id"]]
-                msg = "negative test case, expected version = {}".format(
+                msg = "FW should not be updated, expected version = {}".format(
                     ExpectedVersion
                 )
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
