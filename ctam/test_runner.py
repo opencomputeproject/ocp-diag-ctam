@@ -24,7 +24,6 @@ from test_hierarchy import TestHierarchy
 
 from prettytable import PrettyTable
 import threading, time
-from queue import Queue
 from alive_progress import alive_bar
 
 import ocptv.output as tv
@@ -137,8 +136,8 @@ class TestRunner:
             self.test_sequence = sequence_test_override
         elif sequence_group_override != None:
             self.group_sequence = sequence_group_override
-        elif runner_config["test_cases"]:
-            self.test_cases = runner_config["test_cases"]
+        # elif runner_config["test_cases"]:
+        #     self.test_cases = runner_config["test_cases"]
         elif runner_config["test_sequence"]:
             self.test_sequence = runner_config["test_sequence"]
         elif runner_config["group_sequence"]:
@@ -153,7 +152,7 @@ class TestRunner:
 
             if selected_test_suite is not None:
                 # Assign the selected test suite to a Python list
-                self.test_groups = selected_test_suite
+                self.test_sequence = selected_test_suite
             else:
                 raise Exception(
                     "active_test_suite in test_runner.json specifies missing List"
@@ -450,7 +449,7 @@ class TestRunner:
                                         TestCase.max_compliance_score,"{}%".format(gtotal)))
             self.generate_test_report()
             self.generate_domain_test_report()
-            time.sleep(2)
+            time.sleep(1)
             if self.progress_bar and self.console_log is False:
                 while progress_thread.is_alive():
                     progress_thread.join(10)
@@ -693,36 +692,20 @@ class TestRunner:
             f.write("\n" + str(dt))
         print(dt)
 
-    def update_report(self, out_q):
-        """
-        updates the current value of executed number of test cases and passes it to progress_bar()
-        param: queue object
-        """
-        current = 0
-        while current < self.total_cases:
-            temp2 = current
-            current = len(self.test_result_data)
-            if current == temp2 + 1:
-                # print("current value=", current)
-                out_q.put(current)
-
 
     def display_progress_bar(self):
         """
-        prints a progress bar in the console displaying the percentage of test cases completed.
+        shows a real-time progress bar in the console displaying the percentage of test cases completed.
         """
-        # print("total cases in progress_bar=", self.total_cases)
-
-
         with alive_bar(self.total_cases, title= "Progress:", spinner="arrow") as bar:
             count = 0
             while count < self.total_cases:
                 temp = count
-                #count = in_q.get()
                 count = len(self.test_result_data)
-
-                if count == temp + 1:
+                time.sleep(0.002)
+                while temp < count:
                     bar()
+                    temp += 1 
                             
                 if count == self.total_cases:
                     break
