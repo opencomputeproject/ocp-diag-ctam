@@ -273,7 +273,7 @@ class CompToolDut(Dut):
         """
         PortList = [18888, 18889]
         for port in PortList:
-            ssh_cmd = "sshpass -p {ssh_password} ssh -fNT -L {binded_port}:{amc_ip}:80 {ssh_username}@{bmc_ip} -p 22".format(
+            ssh_cmd = "sshpass -p {ssh_password} ssh -4 -o StrictHostKeyChecking=no -fNT -L {binded_port}:{amc_ip}:80 {ssh_username}@{bmc_ip} -p 22".format(
                     ssh_password = self.__user_pass,
                     binded_port = port,
                     ssh_username = self.__user_name,

@@ -389,7 +389,20 @@ class TelemetryIfc(FunctionalIfc):
         for uri in mgr_instance:
             URI = "/Managers/" + uri + "/EthernetInterfaces/usb0"
             gpu_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}" + URI, component_type="GPU")
-            payload = {"IPv4StaticAddresses": [{"Address": "192.168.31.1", "Gateway":"192.168.31.2", "SubnetMask": "255.255.0.0"}]}
+            response = self.dut().run_redfish_command(uri=gpu_uri)
+            JSONData = response.dict
+            JSONData_IPv4StaticAddresses = JSONData["IPv4StaticAddresses"]
+            status = response.status
+            if status == 200 or status == 201:
+                self.test_run().add_log(LogSeverity.INFO, "Getting IPv4StaticAddresses from Manager with ID Pass: {} : {}".format(uri, JSONData_IPv4StaticAddresses))
+            else:
+                self.test_run().add_log(LogSeverity.FATAL, "Getting IPv4StaticAddresses from Manager ID Fails: {} : {}".format(uri, JSONData_IPv4StaticAddresses))
+                result = False
+                break
+
+            for item in JSONData_IPv4StaticAddresses:
+                item.pop("AddressOrigin", None) # Remove the key
+            payload = {"IPv4StaticAddresses": JSONData_IPv4StaticAddresses}
             header = {"Content-Type: application/json"}
             response = self.dut().run_redfish_command(gpu_uri, mode="PATCH", body=payload, headers=header)
             status = response.status
@@ -533,6 +546,7 @@ class TelemetryIfc(FunctionalIfc):
         MyName = __name__ + "." + self.ctam_get_chassis_sensor_metrics.__qualname__
         sensorNameList = []
 
+        # FIXME: Needs improvement. Can we use the path itself instead of if-else?
         if path == "ChassisRetimersIDs":
             outer_list = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{ChassisRetimersIDs}", component_type="GPU"))
         elif path == "ChassisIDs":
