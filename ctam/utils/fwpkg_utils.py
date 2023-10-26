@@ -14,6 +14,12 @@ import shutil
 import uuid
 import math
 
+def copy_fwpkg(golden_fwpkg_path):
+    # Make a copy of the given fwpkg
+    corrupted_package =  os.path.join(os.path.dirname(golden_fwpkg_path), "corrupted-pkg.fwpkg")
+    corrupted_package_path = shutil.copy(golden_fwpkg_path, corrupted_package)
+    return corrupted_package_path
+    
 class PLDMFwpkg:
     """
     Methods related to PLDM fwpkg in general
@@ -29,9 +35,7 @@ class PLDMFwpkg:
         :returns:                           Path to corrupted package. None if corruption fails. 
         :rtype:                             str
         """
-        # Make a copy of the golden fwpkg
-        corrupted_package =  os.path.join(os.path.dirname(golden_fwpkg_path), "corrupted-pkg.fwpkg")
-        corrupted_package_path = shutil.copy(golden_fwpkg_path, corrupted_package)
+        corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
         try:
             with open(corrupted_package_path, 'r+b') as file:
                 file.write(bytearray(16)) # UUID is 16 bytes
@@ -56,9 +60,7 @@ class PLDMFwpkg:
         :returns:                           Path to corrupted package. None if corruption fails. 
         :rtype:                             str
         """
-        # Make a copy of the golden fwpkg
-        corrupted_package =  os.path.join(os.path.dirname(golden_fwpkg_path), "corrupted-pkg.fwpkg")
-        corrupted_package_path = shutil.copy(golden_fwpkg_path, corrupted_package)
+        corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
         
         pldm_parser = PLDMUnpack(corrupted_package_path)
         if result := pldm_parser.parse_pldm_package():
@@ -85,9 +87,7 @@ class PLDMFwpkg:
         :returns:                           Path to corrupted package. None if corruption fails. 
         :rtype:                             str
         """
-        # Make a copy of the golden fwpkg
-        corrupted_package =  os.path.join(os.path.dirname(golden_fwpkg_path), "corrupted-pkg.fwpkg")
-        corrupted_package_path = shutil.copy(golden_fwpkg_path, corrupted_package)
+        corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
         
         pldm_parser = PLDMUnpack(corrupted_package_path)
         if result := pldm_parser.parse_pldm_package():
@@ -113,9 +113,7 @@ class PLDMFwpkg:
         :returns:                           Path to corrupted package. None if corruption fails. 
         :rtype:                             str
         """
-        # Make a copy of the golden fwpkg
-        corrupted_package =  os.path.join(os.path.dirname(golden_fwpkg_path), "corrupted-pkg.fwpkg")
-        corrupted_package_path = shutil.copy(golden_fwpkg_path, corrupted_package)
+        corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
         
         pldm_parser = PLDMUnpack(corrupted_package_path)
         if result := pldm_parser.parse_pldm_package():
@@ -140,9 +138,7 @@ class PLDMFwpkg:
         :returns:                           Path to corrupted package. None if corruption fails. 
         :rtype:                             str
         """
-        # Make a copy of the golden fwpkg
-        corrupted_package =  os.path.join(os.path.dirname(golden_fwpkg_path), "corrupted-pkg.fwpkg")
-        corrupted_package_path = shutil.copy(golden_fwpkg_path, corrupted_package)
+        corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
         
         with open(golden_fwpkg_path, 'rb') as infile:
             golden_fwpkg_content = infile.read()
@@ -169,9 +165,7 @@ class PLDMFwpkg:
         :returns:                           Path to corrupted package. None if corruption fails. 
         :rtype:                             str
         """
-        # Make a copy of the golden fwpkg
-        corrupted_package =  os.path.join(os.path.dirname(golden_fwpkg_path), "corrupted-pkg.fwpkg")
-        corrupted_package_path = shutil.copy(golden_fwpkg_path, corrupted_package)
+        corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
         
         pldm_parser = PLDMUnpack(corrupted_package_path)
         result = pldm_parser.corrupt_device_record_uuid_in_pkg()
@@ -245,16 +239,14 @@ class FwpkgSignature:
         :returns:                           Path to corrupted package. None if corruption fails. 
         :rtype:                             str
         """
-        major_package_version, _ = get_major_minor_version_of_package_signature(golden_fwpkg_path)
+        major_package_version, _ = FwpkgSignature.get_major_minor_version_of_package_signature(golden_fwpkg_path)
         if int(major_package_version) not in [FwpkgSignature.HeaderV2, FwpkgSignature.HeaderV3]:
             print(
                 f"Package Major Version is not supported: {major_package_version}"
             )
             return None
         
-        # Make a copy of the golden fwpkg
-        corrupted_package =  os.path.join(os.path.dirname(golden_fwpkg_path), "corrupted-pkg.fwpkg")
-        corrupted_package_path = shutil.copy(golden_fwpkg_path, corrupted_package)
+        corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
         
         if not corrupt_single_byte_in_package_signature(corrupted_package_path, 13, 255):
             print("Failed to corrupt the signature type")
@@ -274,10 +266,7 @@ class FwpkgSignature:
         :returns:                           Path to corrupted package. None if corruption fails. 
         :rtype:                             str
         """
-        # Make a copy of the golden fwpkg
-        corrupted_package =  os.path.join(os.path.dirname(golden_fwpkg_path), "corrupted-pkg.fwpkg")
-        corrupted_package_path = shutil.copy(golden_fwpkg_path, corrupted_package)
-        
+        corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
         try:
             with open(corrupted_package_path, 'r+b') as file:
                 file.seek(-FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES, os.SEEK_END)
@@ -290,7 +279,7 @@ class FwpkgSignature:
         return corrupted_package_path
 
     @staticmethod
-    def clear_signature_in_pkg(golden_fwpkg_path):
+    def clear_entire_signature_in_pkg(golden_fwpkg_path):
         """
         :Description:                       Clear the signature data appended at the end of
                                             the PLDM bundle.
@@ -300,13 +289,49 @@ class FwpkgSignature:
         :returns:                           Path to corrupted package. None if corruption fails. 
         :rtype:                             str
         """
-        # Make a copy of the golden fwpkg
-        corrupted_package =  os.path.join(os.path.dirname(golden_fwpkg_path), "corrupted-pkg.fwpkg")
-        corrupted_package_path = shutil.copy(golden_fwpkg_path, corrupted_package)
+        corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
         try:
             with open(corrupted_package_path, 'r+b') as file:
                 file.seek(-FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES, os.SEEK_END)
                 file.write(bytearray(FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES))
+        except Exception as e:
+            print(f"Error in corrupting the package: {e}")
+            # delete the package
+            os.remove(corrupted_package_path)
+            corrupted_package_path = None
+            
+        return corrupted_package_path
+    
+    @staticmethod
+    def clear_signature_in_pkg(golden_fwpkg_path):
+        """
+        :Description:                       Clear the signature field in the PLDM bundle signature.
+
+        :param str golden_fwpkg_path:	    Path to golden firmware package
+
+        :returns:                           Path to corrupted package. None if corruption fails. 
+        :rtype:                             str
+        """
+        major_package_version, _ = FwpkgSignature.get_major_minor_version_of_package_signature(golden_fwpkg_path)
+        if int(major_package_version) not in [FwpkgSignature.HeaderV2, FwpkgSignature.HeaderV3]:
+            print(
+                f"Package Major Version is not supported: {major_package_version}"
+            )
+            return None
+        
+        corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
+        try:
+            with open(corrupted_package_path, 'r+b') as file:
+                signature_offset_index = 7 # Magic number is at index 0
+                file.seek(-FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES + signature_offset_index, os.SEEK_END)
+                signature_offset = int.from_bytes(file.read(2),
+                                                 byteorder='big',
+                                                 signed=False) # Offset to Signature is UINT16
+                file.seek(-FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES+signature_offset, os.SEEK_END) # Move to signature size index
+                signature_size = int.from_bytes(file.read(2),
+                                                 byteorder='big',
+                                                 signed=False) # Signature Size  is UINT16
+                file.write(bytearray(signature_size))
         except Exception as e:
             print(f"Error in corrupting the package: {e}")
             # delete the package
@@ -580,7 +605,9 @@ class PLDMUnpack:
         :rtype:                             bool
         """
         corruption_status = False
-        package_size = os.path.getsize(self.package)
+        with open(self.package, 'rb') as infile:
+            fwpkg_content = infile.read()
+        package_size = os.path.getsize(fwpkg_content)
         for index, info in enumerate(self.component_img_info_list):
             if component_id is not None and info["ComponentIdentifier"] != hex(int(component_id, 16)):
                 continue
@@ -617,7 +644,9 @@ class PLDMUnpack:
         :rtype:                             bool
         """
         corruption_status = False
-        package_size = os.path.getsize(self.package)
+        with open(self.package, 'rb') as infile:
+            fwpkg_content = infile.read()
+        package_size = os.path.getsize(fwpkg_content)
         for index, info in enumerate(self.component_img_info_list):
             if component_id is not None and info["ComponentIdentifier"] != hex(int(component_id, 16)):
                 continue
@@ -652,7 +681,9 @@ class PLDMUnpack:
         :rtype:                             bool
         """
         corruption_status = False
-        package_size = os.path.getsize(self.package)
+        with open(self.package, 'rb') as infile:
+            fwpkg_content = infile.read()
+        package_size = os.path.getsize(fwpkg_content)
         for index, info in enumerate(self.component_img_info_list):
             if component_id is not None and info["ComponentIdentifier"] != hex(int(component_id, 16)):
                 continue

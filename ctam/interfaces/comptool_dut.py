@@ -179,7 +179,7 @@ class CompToolDut(Dut):
             if response.status in range (200,204) and response.text: # FIXME: Add error handling in case the request fails
                 msg.update({
                     "ResponseCode": response.status,
-                    "Response":response.dict, # FIXED: Throws error in some cases when response.dict is used and the response body is empty
+                    "Response":response.dict, # FIXME: self-test report cannot be converted to dict # FIXED: Throws error in some cases when response.dict is used and the response body is empty
                     }) 
             elif response.status in range (200,204):
                 msg.update({
