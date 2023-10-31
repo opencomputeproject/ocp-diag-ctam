@@ -15,7 +15,7 @@ LICENSE file in the root directory of this source tree.
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Single Device Update Ping Pong"
 
 """
-
+import ast
 from typing import Optional, List
 from tests.test_case import TestCase
 from ocptv.output import (
@@ -70,19 +70,21 @@ class CTAMTestSingleDeviceUpdatePingPong(TestCase):
         result = True
         loops = 2
 
-        step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
-        with step1.scope():
-            if self.group.fw_update_ifc.ctam_selectpartiallist(
-                count=1,
-                excluded_targets=self.excluded_targets,
-                specific_targets=self.specific_targets
-            ):
-                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Single Device Selected")
-            else:
-                step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Single Device Selection Failed")
-                result = False
-
+        self.specific_targets = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{specific_targets}", component_type="GPU"))
         for i in range(loops):
+            step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
+            with step1.scope():
+                self.specific_targets = self.group.fw_update_ifc.ctam_selectpartiallist(
+                    count=1,
+                    excluded_targets=self.excluded_targets,
+                    specific_targets=self.specific_targets
+                )
+                if self.specific_targets:
+                    step1.add_log(LogSeverity.INFO, f"{self.test_id} : Single Device Selected")
+                else:
+                    step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Single Device Selection Failed")
+                    result = False
+                
             image_t = "default" if i % 2 == 0 else "backup"
 
             if result:

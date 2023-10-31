@@ -40,6 +40,9 @@ class FWUpdateIfc(FunctionalIfc):
         self.PostInstallVersionDetails = {}
         self.PreInstallVersionDetails = {}
         self._PLDMComponentVersions = {} # { image_type: {SoftwareID: ComponentVersionString}}
+        self.NegativeTestImages = ["invalid_sign", "unsigned_component_image", "corrupt", \
+                                    "invalid_pkg_uuid", "invalid_device_uuid", "empty_metadata", \
+                                    "corrupt_component", "unsigned_bundle"]
 
     @classmethod
     def get_instance(cls, *args, **kwargs):
@@ -219,7 +222,7 @@ class FWUpdateIfc(FunctionalIfc):
                     json.dumps(JSONData, indent=4),
                 )
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
-                if image_type in ["invalid_sign", "unsigned", "corrupt", "invalid_pkg_uuid", "invalid_device_uuid", "empty_metadata", "empty_component"]:
+                if image_type in self.NegativeTestImages:
                     if "TaskState" in JSONData and "TaskStatus" in JSONData:
                         if (
                             JSONData["TaskState"] == "Exception"
@@ -229,7 +232,7 @@ class FWUpdateIfc(FunctionalIfc):
                                 JSONData["TaskState"], JSONData["TaskStatus"]
                             )
                             self.test_run().add_log(LogSeverity.DEBUG, msg)
-                            if image_type == "empty_component":
+                            if image_type == "corrupt_component":
                                 StageFWOOB_Status = self.ctam_check_component_fwupd_failure(
                                     task_message_list=JSONData["Messages"],
                                     corrupted_component_id=corrupted_component_id
@@ -251,7 +254,7 @@ class FWUpdateIfc(FunctionalIfc):
                     StageFWOOB_Status = True
                 else:
                     StageFWOOB_Status = False
-            elif not (image_type in ["invalid_sign", "unsigned", "corrupt", "invalid_pkg_uuid", "invalid_device_uuid", "empty_metadata", "empty_component"]):
+            elif not image_type in self.NegativeTestImages:
                 msg = "Staging failed with incorrect error message {}".format(
                     JSONData["error"]
                 )
@@ -286,8 +289,8 @@ class FWUpdateIfc(FunctionalIfc):
         for element in self.PostInstallDetails:
             negative_case = (
                 image_type == "negate" 
-                or (image_type == "corrupt_component" and element["SoftwareId"] == corrupted_component_id)
-                or str(element["Updateable"]) == "False"
+                or str(element["Updateable"]) == "False" # Note, this may mean empty SoftwareId. So this condition needs to come before the next one
+                or (image_type == "corrupt_component" and int(element["SoftwareId"], 16) == int(corrupted_component_id, 16) )
                 or (self.included_targets != []
                     and element["@odata.id"] not in self.included_targets)
             )
@@ -324,7 +327,7 @@ class FWUpdateIfc(FunctionalIfc):
 
         return Update_Verified
 
-    def ctam_pushtargets(self, targets=[], illegal=0):
+    def ctam_pushtargets(self, targets=[]):
         MyName = __name__ + "." + self.ctam_pushtargets.__qualname__
         PushSuccess = False
         targets = [
@@ -420,37 +423,53 @@ class FWUpdateIfc(FunctionalIfc):
             device_list_new = [device for device in device_list if not device in excluded_targets]
             RandomListOfDevices = random.choices(device_list_new, k=random.randint(1, count))
             self.test_run().add_log(LogSeverity.INFO, str(RandomListOfDevices))
-            if self.ctam_pushtargets(RandomListOfDevices, illegal):
-                PartialDeviceSelected = True
+            if self.ctam_pushtargets(RandomListOfDevices):
+                PartialDeviceSelected = RandomListOfDevices
         else:
             if all(device in device_list for device in specific_targets):
-                PartialDeviceSelected = True
-                self.ctam_pushtargets(specific_targets, illegal)
+                PartialDeviceSelected = specific_targets
+                self.ctam_pushtargets(specific_targets)
             else:
-                PartialDeviceSelected = False
-                self.test_run().add_log(LogSeverity.INFO, "specific_targets is not available in Device list")
+                PartialDeviceSelected = None
+                msg = f"specific_targets {specific_targets} is not available in Device list {device_list}"
+                self.test_run().add_log(LogSeverity.INFO, msg)
             JSONData = self.ctam_getus()
         return PartialDeviceSelected
     
-    def ctam_get_component_to_be_corrupted(self):
+    def ctam_get_component_to_be_corrupted(self, VendorProvidedBundle=True):
         """
-        :Description:         It will check the package_info.json for CorruptComponentIdentifier.
-                              If it is not provided, it'll find the first updatabele element from firmware inventory.
+        :Description:                   It will check the package_info.json for CorruptComponentIdentifier.
+                                        If both corrupt package and CorruptComponentIdentifier are not provided, 
+                                        it'll find the first updatabele element from firmware inventory.
 
-        :returns:		      SoftwareID of the component to be corrupted (in hex format)
-        :rtype:               str
-        """
-        MyName = __name__ + "." + self.ctam_get_component_to_be_corrupted.__qualname__        
-        corrupt_component_id = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("CorruptComponentIdentifier", "")
+        :param VendorProvidedBundle:    Boolean value indicating if the vendor is required to provide a corrupt bundle.
+                                        True by default.
         
-        if corrupt_component_id == "":
-            JSONData = self.ctam_getfi(expanded=1)
-            for element in JSONData["Members"]:
-                if str(element["Updateable"]) == "True":
-                    corrupt_component_id = element["SoftwareId"]
-        #component_id = hex(int(corrupt_component_id, 16))
-        msg = f"{MyName} returned component ID to be corrupted: {corrupt_component_id}"
-        self.test_run().add_log(LogSeverity.DEBUG, msg)
+        :returns:		                SoftwareID of the component to be corrupted (in hex format)
+        :rtype:                         str. None in case of failure
+        """
+        MyName = __name__ + "." + self.ctam_get_component_to_be_corrupted.__qualname__    
+        vendor_provided_corrupt_pkg = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Package", "")
+        if VendorProvidedBundle and vendor_provided_corrupt_pkg == "":
+            msg = "Missing corrupt bundle name in package info file."
+            self.test_run().add_log(LogSeverity.ERROR, msg)
+            corrupt_component_id = None
+            
+        else:
+            corrupt_component_id = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("CorruptComponentIdentifier", "")
+            if corrupt_component_id == "":
+                if VendorProvidedBundle:
+                    msg = "CorruptComponentIdentifier must be provided for bundle {package_name}."
+                    self.test_run().add_log(LogSeverity.ERROR, msg)
+                    corrupt_component_id = None
+                else:
+                    JSONData = self.ctam_getfi(expanded=1)
+                    for element in JSONData["Members"]:
+                        if str(element["Updateable"]) == "True":
+                            corrupt_component_id = element["SoftwareId"]
+                    
+            msg = f"{MyName} returned component ID to be corrupted: {corrupt_component_id}"
+            self.test_run().add_log(LogSeverity.DEBUG, msg)
         
         return corrupt_component_id
     
@@ -582,11 +601,11 @@ class FWUpdateIfc(FunctionalIfc):
                             data = response.dict
                             component_sku = data.get("SKU")
                             if component_sku:
-                                ApplicableComponents = None
+                                ApplicableComponents = []
                                 for DeviceRecord in PLDMPkgJson.get("FirmwareDeviceIdentificationArea", {}).get("FirmwareDeviceIDRecords", {}):
                                     for descriptor in DeviceRecord["RecordDescriptors"]:
                                         if "SKU" in descriptor.get("VendorDefinedDescriptorTitleString", "")\
-                                            and descriptor.get("VendorDefinedDescriptorData") == component_sku:
+                                            and int(descriptor.get("VendorDefinedDescriptorData"), 16) == int(component_sku, 16):
                                                 ApplicableComponents = DeviceRecord["ApplicableComponents"]
                                                 break
                                     if ApplicableComponents:

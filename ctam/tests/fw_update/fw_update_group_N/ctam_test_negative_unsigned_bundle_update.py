@@ -1,18 +1,19 @@
 """
-Copyright (c) Microsoft Corporation
+Copyright (c) NVIDIA CORPORATION
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Negative Unsigned Image Update
-:Test ID:		F18
+:Test Name:		CTAM Test Negative Unsigned Bundle Update
+:Test ID:		F90
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test case is a Negative test. It would search for GPU_FW_IMAGE_UNSIGNED referenced by package_info.json and attempt
-                firmware update using the unsigned image.
+:Description:	This test case is a Negative test. It would search for GPU_FW_IMAGE_UNSIGNED_BUNDLE referenced by package_info.json.
+                If the nudle is not provided, it will modify GPU_FW_IMAGE (golden fwpkg) for this test. Then it will attempt
+                firmware update using the Unsigned Bundle.
 
-:Usage 1:		python ctam.py -w ..\workspace -t F18
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Unsigned Image Update"
+:Usage 1:		python ctam.py -w ..\workspace -t F90
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Unsigned Bundle Update"
 
 """
 
@@ -30,16 +31,16 @@ from tests.fw_update.fw_update_group_N._fw_update_group_N import (
 )
 
 
-class CTAMTestNegativeUnsignedImageUpdate(TestCase):
+class CTAMTestNegativeUnsignedBundleUpdate(TestCase):
     """
-    Test case which attempts an unsigned image update
+    Test case which attempts an Unsigned Bundle update
 
     :param TestCase: super class for all test cases
     :type TestCase:
     """
 
-    test_name: str = "CTAM Test Negative Unsigned Image Update"
-    test_id: str = "F18"
+    test_name: str = "CTAM Test Negative Unsigned Bundle Update"
+    test_id: str = "F90"
     score_weight: int = 10
     tags: List[str] = ["Negative"]
 
@@ -69,7 +70,7 @@ class CTAMTestNegativeUnsignedImageUpdate(TestCase):
         result = True
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="unsigned"):
+            if self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="unsigned_bundle"):
                 step1.add_log(
                     LogSeverity.INFO,
                     f"{self.test_id} : FW Update Stage Initiation Failed as Expected",
