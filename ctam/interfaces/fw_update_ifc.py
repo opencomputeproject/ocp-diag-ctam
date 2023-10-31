@@ -575,7 +575,7 @@ class FWUpdateIfc(FunctionalIfc):
                 fw_versions = []
                 jsonhuntall(PLDMPkgJson,
                         "ComponentIdentifier",
-                        str(hex(int(software_id, 16))),
+                        str(int(software_id, 16)),
                         "ComponentVersionString",
                         fw_versions
                     )
