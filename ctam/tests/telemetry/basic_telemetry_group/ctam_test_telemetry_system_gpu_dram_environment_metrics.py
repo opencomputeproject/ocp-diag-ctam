@@ -60,7 +60,7 @@ class CTAMTestTelemetrySystemsGPUDRAMEnvironmentMetrics(TestCase):
         result = True
         step1 = self.test_run().add_step((f"{self.__class__.__name__} run(), step1"))  # type: ignore
         with step1.scope():
-            if self.group.telemetry_ifc.ctam_system_gpu_dram_ids(path="MemoryMetrics"):
+            if self.group.telemetry_ifc.ctam_system_gpu_dram_ids(path="EnvironmentMetrics"):
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Passed")
             else:
                 step1.add_log(LogSeverity.FATAL, f"{self.test_id} : Failed")
