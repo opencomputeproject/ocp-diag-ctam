@@ -9,6 +9,7 @@
     "progress_bar":  false,
     "include_tags": [],
     "exclude_tags": [],
+    "test_cases": [],
     "test_sequence" : [],
     "group_sequence" : [],
     "command_output_log_path": "",

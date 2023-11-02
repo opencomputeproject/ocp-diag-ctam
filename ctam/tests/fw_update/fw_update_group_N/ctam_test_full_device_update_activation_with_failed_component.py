@@ -9,8 +9,6 @@ LICENSE file in the root directory of this source tree.
 :Score Weight:	10
 
 :Description:	Firmware Update Stack Robustness Test. If one component copying (staging) fails, verify activation is handled correctly.
-                Vendor needs to provide a fwpkg where a component image is corrupted, and all other component images are good (i.e. it will not fail the update).
-                
 :Usage 1:		python ctam.py -w ..\workspace -t F56
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Activation With Failed Component"
 
@@ -49,7 +47,6 @@ class CTAMTestFullDeviceUpdateActivationWithFailedComponent(TestCase):
         """
         super().__init__()
         self.group = group
-        self.corrupted_component_id = None
 
     def setup(self):
         """
@@ -69,39 +66,29 @@ class CTAMTestFullDeviceUpdateActivationWithFailedComponent(TestCase):
         """
         result = True
         
-        step0 = self.test_run().add_step(f"{self.__class__.__name__} run(), step0")  # type: ignore
-        with step0.scope():
-            self.corrupted_component_id = self.group.fw_update_ifc.ctam_get_component_to_be_corrupted()
-            if self.corrupted_component_id is None:
-                step0.add_log(
-                    LogSeverity.ERROR, f"{self.test_id} : Corrupt Component Id Retrieval Failed"
+        corrupted_component_id = self.group.fw_update_ifc.ctam_get_component_to_be_corrupted()
+
+        step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
+        with step1.scope():
+            if not self.group.fw_update_ifc.ctam_fw_update_precheck():
+                step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
+            else:
+                step1.add_log(
+                    LogSeverity.INFO, f"{self.test_id} : FW Update Not Required"
+                )
+
+        step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
+        with step2.scope():
+            if self.group.fw_update_ifc.ctam_stage_fw(
+                image_type="empty_component", 
+                corrupted_component_id=corrupted_component_id
+                ):
+                step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
+            else:
+                step2.add_log(
+                    LogSeverity.ERROR, f"{self.test_id} : FW Update Stage Failed"
                 )
                 result = False
-            else:
-                step0.add_log(LogSeverity.INFO, f"{self.test_id} : Corrupt Component Id Retrieved")
-
-        if result:
-            step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
-            with step1.scope():
-                if not self.group.fw_update_ifc.ctam_fw_update_precheck():
-                    step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
-                else:
-                    step1.add_log(
-                        LogSeverity.INFO, f"{self.test_id} : FW Update Not Required"
-                    )
-
-            step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
-            with step2.scope():
-                if self.group.fw_update_ifc.ctam_stage_fw(
-                    image_type="corrupt_component", 
-                    corrupted_component_id=self.corrupted_component_id
-                    ):
-                    step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
-                else:
-                    step2.add_log(
-                        LogSeverity.ERROR, f"{self.test_id} : FW Update Stage Failed"
-                    )
-                    result = False
 
         if result:
             step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
@@ -121,7 +108,7 @@ class CTAMTestFullDeviceUpdateActivationWithFailedComponent(TestCase):
             step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")
             with step4.scope():
                 if self.group.fw_update_ifc.ctam_fw_update_verify(image_type="corrupt_component", 
-                                                                  corrupted_component_id=self.corrupted_component_id
+                                                                  corrupted_component_id=corrupted_component_id
                                                                   ):
                     step4.add_log(
                         LogSeverity.INFO,

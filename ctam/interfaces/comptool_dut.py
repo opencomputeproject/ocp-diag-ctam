@@ -14,8 +14,8 @@ import netrc
 import subprocess
 import platform
 import json
-import time
 from datetime import datetime
+import traceback
 
 # import pandas as pd
 
@@ -85,7 +85,8 @@ class CompToolDut(Dut):
         )
         
         if not self.check_ping_status(self.connection_ip_address): # FIXME: Use logging method
-            raise Exception("[FATAL] Unable to ping the ip address. Please check the IP is valid or not.")
+            print("[FATAL] Unable to ping the ip address. Please check the IP is valid or not.")
+            sys.exit(1)
         
         # Set up SSH Tunneling if requested
         self.BindedPort = None
@@ -123,7 +124,7 @@ class CompToolDut(Dut):
 
     def run_redfish_command(self, uri, mode="GET", body=None, headers=None, timeout=None):
         """
-        This method is for running redfish commands according to mode and log the output into
+        This method is for running redfish commands according to mode and log the ouput into
         a formatted log file and return the response
         
         :param uri: uri for redfish connection
@@ -139,7 +140,6 @@ class CompToolDut(Dut):
         :rtype: response object or None in case of failure
         """
         try:
-            start_time = time.time()
             response = None
             msg = {
                     "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
@@ -165,21 +165,11 @@ class CompToolDut(Dut):
             elif mode == "DELETE":
                 msg.update({"Method":"DELETE",})
                 response = self.redfish_ifc.delete(**kwargs) # path=uri, headers=headers   
-            
-            end_time = time.time()
-            time_difference_seconds = end_time - start_time
-            time_difference = datetime.utcfromtimestamp(time_difference_seconds) - datetime.utcfromtimestamp(0)
-            hours, remainder = divmod(time_difference.seconds, 3600)
-            minutes, seconds = divmod(remainder, 60)
-            milliseconds = int(time_difference.microseconds / 1000)
-            formatted_time = "{:02d}H:{:02d}M:{:02d}S:{:03d}MS".format(hours, minutes, seconds, milliseconds)
-            
-            msg.update({"ResponseTime": "{}".format(formatted_time)})
-
+                
             if response.status in range (200,204) and response.text: # FIXME: Add error handling in case the request fails
                 msg.update({
                     "ResponseCode": response.status,
-                    "Response":response.dict, # FIXME: self-test report cannot be converted to dict # FIXED: Throws error in some cases when response.dict is used and the response body is empty
+                    "Response":response.dict, # FIXED: Throws error in some cases when response.dict is used and the response body is empty
                     }) 
             elif response.status in range (200,204):
                 msg.update({
@@ -189,18 +179,12 @@ class CompToolDut(Dut):
             elif response.status > 300: 
                 msg.update({
                     "ResponseCode": response.status,
-                    "Response":f"Unexpected Response: {response.text}",
+                    "Response":"Unexpected Response",
                     })
-            else:
-                msg.update({
-                    "ResponseCode": f"Unexpected status: {response.status}",
-                    "Response": response.text,
-                    })
-            # msg.update({"TimeTaken": time_taken})
         except Exception as e:
             msg.update({
             "ResponseCode": None,
-            "Response":f"FATAL: Exception occurred while running redfish command - {e}",
+            "Response":"FATAL: Exception occurred while running redfish command. Please see below exception...",
             })
         finally:                         
             self.logger.write(json.dumps(msg))
@@ -273,7 +257,7 @@ class CompToolDut(Dut):
         """
         PortList = [18888, 18889]
         for port in PortList:
-            ssh_cmd = "sshpass -p {ssh_password} ssh -4 -o StrictHostKeyChecking=no -fNT -L {binded_port}:{amc_ip}:80 {ssh_username}@{bmc_ip} -p 22".format(
+            ssh_cmd = "sshpass -p {ssh_password} ssh -fNT -L {binded_port}:{amc_ip}:80 {ssh_username}@{bmc_ip} -p 22".format(
                     ssh_password = self.__user_pass,
                     binded_port = port,
                     ssh_username = self.__user_name,
@@ -347,7 +331,7 @@ class CompToolDut(Dut):
             able_to_get_system_details = True
             t = PrettyTable(["Component", "Value"])
             system_detail_uri = self.uri_builder.format_uri(redfish_str="{BaseURI}{SystemURI}",
-                                                                component_type="GPU")
+                                                                component_type="BMC")
             bmc_fw_inv_uri = self.uri_builder.format_uri(redfish_str="{BaseURI}{BMCFWInventory}/",
                                                                 component_type="BMC")
             system_details = self.run_redfish_command(system_detail_uri).dict

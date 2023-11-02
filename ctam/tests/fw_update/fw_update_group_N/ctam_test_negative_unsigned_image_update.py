@@ -1,18 +1,18 @@
 """
-Copyright (c) NVIDIA CORPORATION
+Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Negative Empty Metadata Image Update
-:Test ID:		F26
+:Test Name:		CTAM Test Negative Unsigned Image Update
+:Test ID:		F18
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test case is a Negative Test. It'll make a copy of the default FW image provided in package_info.json 
-                and clear metadat of any component in the PLDM bundle. Then it'll attempt firmware update with the fwpkg containing corrupted UUID. 
+:Description:	This test case is a Negative test. It would search for GPU_FW_IMAGE_UNSIGNED referenced by package_info.json and attempt
+                firmware update using the unsigned image.
 
-:Usage 1:		python ctam.py -w ..\workspace -t F26
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Empty Metadata Image Update"
+:Usage 1:		python ctam.py -w ..\workspace -t F18
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Unsigned Image Update"
 
 """
 
@@ -30,16 +30,16 @@ from tests.fw_update.fw_update_group_N._fw_update_group_N import (
 )
 
 
-class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
+class CTAMTestNegativeUnsignedImageUpdate(TestCase):
     """
-    Verify values of Software Inventory Collection are present
+    Test case which attempts an unsigned image update
 
     :param TestCase: super class for all test cases
     :type TestCase:
     """
 
-    test_name: str = "CTAM Test Negative Empty Metadata Image Update"
-    test_id: str = "F26"
+    test_name: str = "CTAM Test Negative Unsigned Image Update"
+    test_id: str = "F18"
     score_weight: int = 10
     tags: List[str] = ["Negative"]
 
@@ -67,32 +67,15 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
         actual test verification
         """
         result = True
-        
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            corrupted_component_id  = self.group.fw_update_ifc.ctam_get_component_to_be_corrupted()
-            corrupted_component_list = self.group.fw_update_ifc.ctam_get_component_list(component_id=corrupted_component_id)
-            step1.add_log(LogSeverity.INFO, f"{self.test_id} : Selected component to corrupt -> {corrupted_component_id}")
-        
-        step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2_{corrupted_component_list[0]}")  # type: ignore
-        with step2.scope():
-            if self.group.fw_update_ifc.ctam_selectpartiallist(count=1, specific_targets=[corrupted_component_list[0]]):
-                step2.add_log(LogSeverity.INFO, f"{self.test_id} : Single Device Selected")
-            else:
-                step2.add_log(LogSeverity.ERROR, f"{self.test_id} : Single Device Selection Failed")
-                result = False
-
-        step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3_{corrupted_component_list[0]}")  # type: ignore
-        with step3.scope():
-            if self.group.fw_update_ifc.ctam_stage_fw(
-                partial=1, image_type="empty_metadata", corrupted_component_id=corrupted_component_id
-            ):
-                step3.add_log(
+            if self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="unsigned"):
+                step1.add_log(
                     LogSeverity.INFO,
                     f"{self.test_id} : FW Update Stage Initiation Failed as Expected",
                 )
             else:
-                step3.add_log(
+                step1.add_log(
                     LogSeverity.ERROR,
                     f"{self.test_id} : FW Update Staging Initiated - Unexpected",
                 )
@@ -114,10 +97,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():
-            if self.group.fw_update_ifc.ctam_pushtargets():
-                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Push URI Targets Reset")
-            else:
-                step1.add_log(LogSeverity.WARNING, f"{self.test_id} : Push URI Targets Reset - Failed")
+            pass
 
         # call super teardown last
         super().teardown()

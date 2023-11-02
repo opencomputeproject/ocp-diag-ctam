@@ -2,18 +2,12 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-import argparse
 import os
+import argparse
 import sys
-import traceback
-from pathlib import Path
-
-# until the folder structure gets fixed to a more pip/setuptools oriented format
-# we need to manually adjust the path so that running the main script's imports work
-sys.path.append(str(Path(__file__).resolve().parent))
-
 from test_hierarchy import TestHierarchy
 from test_runner import TestRunner
+import traceback
 
 
 def parse_args():
@@ -34,13 +28,13 @@ def parse_args():
         "-test_seq",
         "--testcase_sequence",
         help="Runs no of test cases with given sequence",
-        nargs="+",
+        nargs='+',
     )
     parser.add_argument(
         "-group_seq",
         "--group_sequence",
         help="Runs no of groups with given sequence",
-        nargs="+",
+        nargs='+',
     )
     parser.add_argument("-s", "--Suite", help="Run full ACT Suite", action="store_true")
 
@@ -51,7 +45,9 @@ def parse_args():
         type=str,
     )
 
-    parser.add_argument("-d", "--Discovery", help="Perform System Discovery", action="store_true")
+    parser.add_argument(
+        "-d", "--Discovery", help="Perform System Discovery", action="store_true"
+    )
 
     parser.add_argument(
         "-w",
@@ -70,22 +66,22 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
+if __name__ == "__main__":
     args = parse_args()
 
     try:
         # builds hierarchy of test groups and associated test cases
-        test_root_dir =  os.path.join(os.path.dirname(__file__), "tests")
-        ifc_dir = os.path.join(os.path.dirname(__file__), "interfaces")
-        test_hierarchy = TestHierarchy(test_root_dir, ifc_dir)
+        test_hierarchy = TestHierarchy(
+            os.path.join(os.getcwd(), "tests"), os.path.join(os.getcwd(), "interfaces")
+        )
 
         if args.list:
             test_hierarchy.print_test_groups_test_cases(args.group)
-            return 0, None, "List of tests is printed"
+            exit(0)
 
         if not os.path.isdir(args.workspace):
             print("Invalid workspace specified")
-            return 1, None, "Invalid workspace specified"
+            exit(1)
         required_workspace_files = [
             "dut_info.json",
             "package_info.json",
@@ -95,13 +91,15 @@ def main():
         ]
 
         missing_files = [
-            file for file in required_workspace_files if not os.path.isfile(os.path.join(args.workspace, file))
+            file
+            for file in required_workspace_files
+            if not os.path.isfile(os.path.join(args.workspace, file))
         ]
 
         if missing_files:
             for file_name in missing_files:
                 print(f"The required file {file_name} does not exist in the workspace.")
-            return 1, None, "Missing required files"
+            exit(1)
         print(f"WorkSpace : {args.workspace}")
         test_runner_json = os.path.join(args.workspace, "test_runner.json")
         dut_info_json = os.path.join(args.workspace, "dut_info.json")
@@ -118,7 +116,7 @@ def main():
                 net_rc=net_rc,
             )
             runner.get_system_details()
-            return 0, None, "System discovery is done" # FIXME: Status code can be returned from get_system_details
+            sys.exit(1)
 
         elif args.testcase:
             runner = TestRunner(
@@ -170,19 +168,9 @@ def main():
                 redfish_uri_config_file=redfish_uri_config,
             )
 
-        status_code, exit_string = runner.run()
-        log_directory = os.path.relpath(runner.output_dir, os.getcwd())
-        return status_code, log_directory, exit_string
+        runner.run()
 
     except (NotImplementedError, Exception) as e:
         exception_details = traceback.format_exc()
         print(f"Test Run Failed: {exception_details}")
-        return 1, None, f"Test failed due to exception: {e}"
-
-      
-if __name__ == "__main__":
-    status_code, log_directory, exit_string = main() 
-    print("\nTest exited with status code*: {} - {}".format("FAIL" if status_code else "PASS", exit_string))
-    print(f"Log Directory: {log_directory}") 
-    print("\n*Note: Return/Status Codes - PASS(0): All tests passed, FAIL(1): Execution/runtime failure or test failure\n")
-    exit(status_code)
+        exit(1)

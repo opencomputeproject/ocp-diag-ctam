@@ -29,7 +29,7 @@ from tests.fw_update.fw_update_group_N._fw_update_group_N import (
 from tests.fw_update.fw_update_group_N_1.ctam_test_full_device_update import (
     CTAMTestFullDeviceUpdate,
 )
-from tests.health_check.long_health_check_group.ctam_verify_self_test_report import (
+from tests.health_check.basic_health_check_group.ctam_verify_self_test_report import (
     CTAMVerifySelfTestReport,
 )
 from interfaces.health_check_ifc import (

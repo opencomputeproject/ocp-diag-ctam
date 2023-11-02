@@ -40,14 +40,7 @@
     "JSON": "",
     "Vendor": ""
   },
-  "GPU_FW_IMAGE_UNSIGNED_COMPONENT": {
-    "Path": "workspace",
-    "Package": "",
-    "Version": "",
-    "JSON": "",
-    "Vendor": ""
-  },
-  "GPU_FW_IMAGE_UNSIGNED_BUNDLE": {
+  "GPU_FW_IMAGE_UNSIGNED": {
     "Path": "workspace",
     "Package": "",
     "Version": "",
@@ -62,10 +55,6 @@
     "Vendor": ""
   },
   "GPU_FW_IMAGE_CORRUPT_COMPONENT": {
-    "Path": "workspace",
-    "Package": "",
-    "Version": "",
-    "JSON": "",
     "CorruptComponentIdentifier": "",
     "MetadataSizeBytes": 4096,
     "Vendor": ""

@@ -23,8 +23,7 @@
         "GPULargeFWMessage": "",
         "GPUPushUriTargetsSuccessMessage": "",
         "HttpPushUriTargets": "",
-        "specific_targets": "",
-		"UnstructuredHttpPush": false
+        "specific_targets": ""
     },
     "BMC": {
         "BaseURI": "",

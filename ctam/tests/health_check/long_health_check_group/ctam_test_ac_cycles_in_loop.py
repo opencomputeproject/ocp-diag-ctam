@@ -25,7 +25,7 @@ from ocptv.output import (
     TestResult,
     TestStatus,
 )
-from tests.health_check.long_health_check_group.long_health_check_test_group import LongHealthCheckTestGroup
+from tests.health_check.basic_health_check_group.basic_health_check_test_group import BasicHealthCheckTestGroup
 
 class CTAMTestAcCyclesInLoop(TestCase):
     """
@@ -39,7 +39,7 @@ class CTAMTestAcCyclesInLoop(TestCase):
     score_weight:int = 10
     tags: List[str] = []
 
-    def __init__(self, group: LongHealthCheckTestGroup):
+    def __init__(self, group: BasicHealthCheckTestGroup):
         """
         _summary_
         """

@@ -8,7 +8,6 @@
 #  pip install -r pip-requirements.txt
 ##
 
-alive-progress
 ocptv
 prettytable
 redfish
@@ -24,7 +23,6 @@ requests
 requests-ntlm
 requests-toolbelt
 requests-unixsocket
-alive_progress>=3.1.4
 Sphinx
 sphinx-rtd-theme
 sphinx_autodoc_typehints
@@ -38,5 +36,3 @@ sphinxcontrib-jquery
 sphinxcontrib-jsmath
 sphinxcontrib-qthelp
 sphinxcontrib-serializinghtml
-black>=23.3
-bumpver>=2023.1126

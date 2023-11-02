@@ -16,7 +16,7 @@ import logging
 import sys
 #from unittest import runner
 from ocptv.output import LogSeverity, StdoutWriter, Writer
-from datetime import datetime, timedelta
+from datetime import datetime
 from tests.test_case import TestCase
 from tests.test_group import TestGroup
 from interfaces.functional_ifc import FunctionalIfc
@@ -136,8 +136,8 @@ class TestRunner:
             self.test_sequence = sequence_test_override
         elif sequence_group_override != None:
             self.group_sequence = sequence_group_override
-        # elif runner_config["test_cases"]:
-        #     self.test_cases = runner_config["test_cases"]
+        elif runner_config["test_cases"]:
+            self.test_cases = runner_config["test_cases"]
         elif runner_config["test_sequence"]:
             self.test_sequence = runner_config["test_sequence"]
         elif runner_config["group_sequence"]:
@@ -152,7 +152,7 @@ class TestRunner:
 
             if selected_test_suite is not None:
                 # Assign the selected test suite to a Python list
-                self.test_sequence = selected_test_suite
+                self.test_groups = selected_test_suite
             else:
                 raise Exception(
                     "active_test_suite in test_runner.json specifies missing List"
@@ -287,22 +287,18 @@ class TestRunner:
         :type run_result: str
         """
         self.active_run.end(status=run_status, result=run_result)
+        self.comp_tool_dut.clean_up()
         tv.config(writer=StdoutWriter())
 
     def run(self):
         """
         Public API used to kick of the test suite
-        
-        :return: status_code, exit_string
-        :rtype: int, str 
         """
         try:
             if self.progress_bar:
                 progress_thread = threading.Thread(target=self.display_progress_bar)
                 progress_thread.daemon = True
 
-            group_status_set = set()
-            group_result_set = set()
             if self.test_cases:
                 if self.progress_bar and self.console_log is False:
                         self.total_cases = len(self.test_cases)
@@ -328,9 +324,7 @@ class TestRunner:
                         )
                         continue
 
-                    group_status, group_result = self._run_group_test_cases(group_instance, test_case_instances)
-                    group_status_set.add(group_status)
-                    group_result_set.add(group_result)
+                    self._run_group_test_cases(group_instance, test_case_instances)
             elif self.test_sequence:
                 if self.progress_bar and self.console_log is False:
                         self.total_cases = len(self.test_sequence)
@@ -356,9 +350,7 @@ class TestRunner:
                         )
                         continue
 
-                    group_status, group_result = self._run_group_test_cases(group_instance, test_case_instances)
-                    group_status_set.add(group_status)
-                    group_result_set.add(group_result)
+                    self._run_group_test_cases(group_instance, test_case_instances)
 
             elif self.test_groups:
                 for group in self.test_groups:
@@ -385,10 +377,7 @@ class TestRunner:
                         )
                         continue
 
-                    group_status, group_result = self._run_group_test_cases(group_instance, test_case_instances)
-                    group_status_set.add(group_status)
-                    group_result_set.add(group_result)
-                    
+                    self._run_group_test_cases(group_instance, test_case_instances)
             elif self.group_sequence:
                 # get total cases in group sequence from test hierarchy
                 tc_group = []
@@ -421,12 +410,7 @@ class TestRunner:
                         )
                         continue
 
-                    group_status, group_result = self._run_group_test_cases(group_instance, test_case_instances)
-                    group_status_set.add(group_status)
-                    group_result_set.add(group_result)
-                    
-            if self.comp_tool_dut:
-                self.comp_tool_dut.clean_up()
+                    self._run_group_test_cases(group_instance, test_case_instances)
             grade = (
                     TestCase.total_compliance_score / TestCase.max_compliance_score * 100
                     if TestCase.max_compliance_score != 0
@@ -437,15 +421,12 @@ class TestRunner:
 
             msg = {
                     "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
-                    "TotalExecutionTime": str(timedelta(seconds=TestCase.total_execution_time)),
                     "TotalScore": TestCase.total_compliance_score,
                     "MaxComplianceScore": TestCase.max_compliance_score,
                     "Grade": "{}%".format(gtotal),
                     }
             self.score_logger.write(json.dumps(msg))
-            self.test_result_data.append(("Total Score", "", 
-                                        timedelta(seconds=TestCase.total_execution_time),
-                                        TestCase.total_compliance_score, 
+            self.test_result_data.append(("Total Score", "", TestCase.total_compliance_score, 
                                         TestCase.max_compliance_score,"{}%".format(gtotal)))
             self.generate_test_report()
             self.generate_domain_test_report()
@@ -453,12 +434,8 @@ class TestRunner:
             if self.progress_bar and self.console_log is False:
                 while progress_thread.is_alive():
                     progress_thread.join(10)
-                    
-            status_code = 1 if group_result_set - {TestResult.PASS} else 0 # if there is any result other than PASS, status code repots failure
-            exit_string = "Test execution failed" if group_status_set - {TestStatus.COMPLETE} else "Test execution is complete"
-            return status_code, exit_string
         except KeyboardInterrupt:
-            return 1, "Test interrupted by user (KeyboardInterrupt)"
+            sys.exit(1)
         
         
     def _run_group_test_cases(self, group_instance, test_case_instances):
@@ -470,8 +447,6 @@ class TestRunner:
         :type group_instance: TestGroup
         :param test_case_instances: List of test cases associated with the group
         :type test_case_instances: List[Testcase]]
-        :returns: group_status, group_result
-        :rtype:  ocptv.output.TestStatus, ocptv.output.TestResult
         """
 
         group_status = TestStatus.ERROR
@@ -500,7 +475,6 @@ class TestRunner:
 
                 # this exception block goal is to ensure test case teardown() is called even if setup() or run() fails
                 try:
-                    test_starttime = time.perf_counter()
                     test_instance.setup()
                     self.comp_tool_dut.current_test_name = test_instance.test_name
                     file_name = "RedfishCommandDetails_{}_{}".format(test_instance.test_id,
@@ -527,11 +501,9 @@ class TestRunner:
                     test_instance.teardown()
                     execution_endtime = time.perf_counter()
                     execution_time = round(execution_endtime - execution_starttime, 3)
-                    test_instance.execution_time = timedelta(seconds=round(execution_endtime - test_starttime, 3))
-                    TestCase.total_execution_time += round(execution_endtime - test_starttime, 3)
                     msg = {
                         "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
-                        "ExecutionTime": f"{execution_time} seconds",
+                        "ExecutionTime": execution_time,
                         "TestID": test_instance.test_id,
                         "TestName": test_instance.test_name,
                         "TestCaseScoreWeight":test_instance.score_weight,
@@ -540,7 +512,6 @@ class TestRunner:
                     }
                     self.test_result_data.append((test_instance.test_id,
                                                    test_instance.test_name,
-                                                   test_instance.execution_time,
                                                    test_instance.score_weight,
                                                    test_instance.score,                                              
                                                    TestResult(test_instance.result).name))
@@ -561,7 +532,6 @@ class TestRunner:
 
         except (NotImplementedError, Exception) as e:
             exception_details = traceback.format_exc()
-            # FIXME: Throws error if the exception happens before setting active_run (e.g. in comptool_dut init)
             self.active_run.add_log(
                 severity=LogSeverity.FATAL, message=exception_details
             )
@@ -573,12 +543,10 @@ class TestRunner:
             # attempt group cleanup even if test exception raised
             group_instance.teardown()
             self._end(group_status, group_result)
-            return group_status, group_result
 
     def get_system_details(self):
         self._start()
-        if self.comp_tool_dut:
-            self.comp_tool_dut.clean_up()
+        pass
 
     def generate_test_report(self):
         """
@@ -587,11 +555,11 @@ class TestRunner:
 
         """
         #print(self.test_result_data)
-        t = PrettyTable(["TestID", "TestName", "ExecutionTime", "TestScoreWeight", "TestScore", "TestResult"])
+        t = PrettyTable(["TestID", "TestName", "TestScoreWeight", "TestScore", "TestResult"])
         t.title = "Test Result"
         t.add_rows(self.test_result_data[:len(self.test_result_data) - 1:])
-        t.add_row(["", "", "", "", "", ""], divider=True)
-        t.add_row(["", "", "Total Execution Time", "Compliance Score",
+        t.add_row(["", "", "", "", ""], divider=True)
+        t.add_row(["", "","Compliance Score",
                    "Total Test Score", "Grade"], divider=True)
         t.add_row(self.test_result_data[-1], divider=True)
         t.align["TestName"] = "l"
@@ -606,54 +574,34 @@ class TestRunner:
         It will have DomainID, Domain, TComplianceWeight, ComplianceScore, Grade and total
 
         """
-        dt = PrettyTable(["DomainID", "Domain", "Total Execution Time", "Testcases Run", "Testcases Passed", "ComplianceWeight", "ComplianceScore", "Grade"])
+        dt = PrettyTable(["DomainID", "Domain", "ComplianceWeight", "ComplianceScore", "Grade"])
         dt.title = "Domain-wise Test Report"
 
-        executionTimes = [0, 0, 0, 0]
-        testCases = [0, 0, 0, 0]
-        passedTests = [0, 0, 0, 0]
         compScore = [0, 0, 0, 0]
         compWeight = [0, 0, 0, 0]
-        
+
         for i in range(len(self.test_result_data)-1):
             testID = self.test_result_data[i][0]
-            testExecTime = self.test_result_data[i][2].total_seconds()
-            testWeight = self.test_result_data[i][3]
-            testScore = self.test_result_data[i][4]
+            testWeight = self.test_result_data[i][2]
+            testScore = self.test_result_data[i][3]
 
             # check for telemetry cases
             if testID.startswith("T"):
-                executionTimes[0] += testExecTime
-                testCases[0] += 1
-                if testScore == testWeight:
-                    passedTests[0] += 1
                 compWeight[0] += testWeight
                 compScore[0] += testScore
 
             # check for RAS cases
             elif testID.startswith("R"):
-                executionTimes[1] += testExecTime
-                testCases[1] += 1
-                if testScore == testWeight:
-                    passedTests[1] += 1
                 compWeight[1] += testWeight   
                 compScore[1] += testScore
 
             # check for health check cases
             elif testID.startswith("H"):
-                executionTimes[2] += testExecTime
-                testCases[2] += 1
-                if testScore == testWeight:
-                    passedTests[2] += 1
                 compWeight[2] += testWeight    
                 compScore[2] += testScore
 
             # check for fw update cases
             elif testID.startswith("F"):
-                executionTimes[3] += testExecTime
-                testCases[3] += 1
-                if testScore == testWeight:
-                    passedTests[3] += 1
                 compWeight[3] += testWeight    
                 compScore[3] += testScore
 
@@ -663,18 +611,11 @@ class TestRunner:
                 grade[j] = compScore[j]/compWeight[j]*100
                 grade[j] = round(grade[j], 2)
 
-        dt.add_row(["T", "Telemetry", timedelta(seconds=executionTimes[0]), 
-                    testCases[0], passedTests[0], compWeight[0], compScore[0], "{}%".format(grade[0])])
-        dt.add_row(["R", "RAS", timedelta(seconds=executionTimes[1]), 
-                    testCases[1], passedTests[1], compWeight[1], compScore[1], "{}%".format(grade[1])])
-        dt.add_row(["H", "Health Check", timedelta(seconds=executionTimes[2]), 
-                    testCases[2], passedTests[2], compWeight[2], compScore[2], "{}%".format(grade[2])])
-        dt.add_row(["F", "FW Update", timedelta(seconds=executionTimes[3]), 
-                    testCases[3], passedTests[3], compWeight[3], compScore[3], "{}%".format(grade[3])], divider=True)
+        dt.add_row(["T", "Telemetry", compWeight[0], compScore[0], "{}%".format(grade[0])])
+        dt.add_row(["R", "RAS", compWeight[1], compScore[1], "{}%".format(grade[1])])
+        dt.add_row(["H", "Health Check", compWeight[2], compScore[2], "{}%".format(grade[2])])
+        dt.add_row(["F", "FW Update", compWeight[3], compScore[3], "{}%".format(grade[3])], divider=True)
 
-        executionTimetotal = sum(executionTimes)
-        testCasesTotal = sum(testCases)
-        passedTestsTotal = sum(passedTests)
         compWeightTotal = sum(compWeight)
         compScoreTotal = sum(compScore)
         gradeTotal = (
@@ -685,8 +626,7 @@ class TestRunner:
         
         gt = round(gradeTotal, 2)
 
-        dt.add_row(["", "Overall", timedelta(seconds=executionTimetotal),
-                    testCasesTotal, passedTestsTotal,
+        dt.add_row(["", "Overall", 
                    compWeightTotal, compScoreTotal, "{}%".format(gt)], divider=True)
         with open(self.test_result_file, 'a') as f:
             f.write("\n" + str(dt))
