@@ -93,20 +93,32 @@ class CompToolDut(Dut):
         if not self.check_ping_status(self.connection_ip_address): # FIXME: Use logging method
             raise Exception("[FATAL] Unable to ping the ip address. Please check the IP is valid or not.")
         
-        # Set up SSH Tunneling if requested
         self.BindedPort = None
-        if config["properties"].get("SshTunnel"):
-            self.SshTunnel = config["properties"]["SshTunnel"]["value"]
-        else:
-            self.SshTunnel = False
+        self.AMCIPAddress = None
+        self.SshTunnel = config["properties"].get("SshTunnel", {}).get("value", False)
+        if self.SshTunnel:
+            self.AMCIPAddress = config["properties"].get("AMCIPAddress", {}).get("value", None)
+            if not self.AMCIPAddress:
+                raise Exception("AMCIPAddress must be provided when SSHTunnel is set to True.")
+            self.AMCIPAddress = config["properties"].get("AMCIPAddress", {}).get("value", None)
+        
+        self.redfish_ifc = None
+        self.redfish_auth = config["properties"].get("AuthenticationRequired", {}).get("value", False)
+        
+    def set_up_connection(self):
+        """
+        This method sets up connection to the DUT,
+        which includes ssh_tunneling, Redfish client setup and login if needed
+        """
+        # Set up SSH Tunneling if requested
         if self.SshTunnel:
             # Set up port forwarding
-            if not config["properties"].get("AMCIPAddress") or not config["properties"]["AMCIPAddress"]["value"]:
+            if not self.AMCIPAddress:
                 raise Exception("AMCIPAddress must be provided when SSHTunnel is set to True.")
-            self.setup_ssh_tunnel(config["properties"]["AMCIPAddress"]["value"])
+            self.setup_ssh_tunnel(self.AMCIPAddress)
             self.connection_ip_address = "127.0.0.1:" + str(self.BindedPort) 
             self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
-                config["properties"]["AMCIPAddress"]["value"]
+                self.AMCIPAddress
             )
 
         # TODO investigate storing FW update files via add_software_info() in super
@@ -116,16 +128,13 @@ class CompToolDut(Dut):
             self.__connection_url,
             username=self.__user_name,
             password=self.__user_pass,
-            default_prefix=default_prefix,
+            default_prefix=self.default_prefix,
             timeout=30
         )
 
-        if config["properties"].get("AuthenticationRequired", {}).get("value"):
-            self.redfish_auth = True
+        if self.redfish_auth:
             self.redfish_ifc.login(auth="basic")   #TODO investigate 'session' token auth
             self.test_info_logger.log("Redfish login is successful.")
-        else:
-            self.redfish_auth = False
 
     @property
     def package_config(self):

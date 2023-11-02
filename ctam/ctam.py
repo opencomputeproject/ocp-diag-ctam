@@ -151,8 +151,8 @@ def main():
                 redfish_uri_config_file=redfish_uri_config,
                 net_rc=net_rc,
             )
-            runner.get_system_details()
-            return 0, None, "System discovery is done" # FIXME: Status code can be returned from get_system_details
+            status_code, exit_string = runner.get_system_details()
+            return status_code, None, exit_string
 
         elif args.testcase:
             runner = TestRunner(
