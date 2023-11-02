@@ -12,6 +12,7 @@ import json
 import subprocess
 import time
 import ast
+import shlex
 from datetime import datetime
 from typing import Optional, List
 from datetime import datetime
@@ -86,6 +87,7 @@ class FunctionalIfc:
         :rtype:                 string
         """
 
+        # FIXME: Refactor.. Lots of repeated code
         if image_type == "default":
             json_fw_file_payload = os.path.join(
                 self.dut().cwd,
@@ -93,7 +95,7 @@ class FunctionalIfc:
                 self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
             )
         elif image_type == "large":
-            if self.dut().package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {}).get("Package", "") != "":
+            if self.dut().package_config.get("GPU_FW_IMAGE_LARGE", {}).get("Package", "") != "":
                 json_fw_file_payload = os.path.join(
                     self.dut().cwd,
                     self.dut().package_config.get("GPU_FW_IMAGE_LARGE", {}).get("Path", ""),
@@ -128,15 +130,23 @@ class FunctionalIfc:
                     self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
                     self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
                 )
-                json_fw_file_payload = FwpkgSignature.clear_signature_in_pkg(golden_fwpkg_path)
+                json_fw_file_payload = FwpkgSignature.invalidate_signature_in_pkg(golden_fwpkg_path)
             
-        elif image_type == "invalid_uuid":
+        elif image_type == "invalid_pkg_uuid":
             golden_fwpkg_path = os.path.join(
                 self.dut().cwd,
                 self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
                 self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
             )
             json_fw_file_payload = PLDMFwpkg.corrupt_package_UUID(golden_fwpkg_path)
+            
+        elif image_type == "invalid_device_uuid":
+            golden_fwpkg_path = os.path.join(
+                self.dut().cwd,
+                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+            )
+            json_fw_file_payload = PLDMFwpkg.corrupt_device_record_uuid_in_pkg(golden_fwpkg_path)
         
         elif image_type == "empty_metadata":
             if corrupted_component_id is None:
@@ -151,17 +161,28 @@ class FunctionalIfc:
             metadata_size = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("MetadataSizeBytes", 4096)
             json_fw_file_payload = PLDMFwpkg.clear_component_metadata_in_pkg(golden_fwpkg_path, corrupted_component_id, metadata_size)
         
-        elif image_type == "empty_component":
-            if corrupted_component_id is None:
-                corrupted_component_id = self.ctam_get_component_to_be_corrupted()
-            msg = f"Corrupted component ID: {corrupted_component_id}"
-            self.test_run().add_log(LogSeverity.DEBUG, msg)
-            golden_fwpkg_path = os.path.join(
-                self.dut().cwd,
-                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
-                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
-            )
-            json_fw_file_payload = PLDMFwpkg.clear_component_image_in_pkg(golden_fwpkg_path, corrupted_component_id)
+        elif image_type == "corrupt_component":
+            if self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Package", "") != "":
+                json_fw_file_payload = os.path.join(
+                    self.dut().cwd,
+                    self.dut()
+                    .package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {})
+                    .get("Path", ""),
+                    self.dut()
+                    .package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {})
+                    .get("Package", ""),
+                )
+            else:
+                if corrupted_component_id is None:
+                    corrupted_component_id = self.ctam_get_component_to_be_corrupted()
+                msg = f"Corrupted component ID: {corrupted_component_id}"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)
+                golden_fwpkg_path = os.path.join(
+                    self.dut().cwd,
+                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+                )
+                json_fw_file_payload = PLDMFwpkg.clear_component_image_in_pkg(golden_fwpkg_path, corrupted_component_id)
         
         elif image_type == "backup":
             json_fw_file_payload = os.path.join(
@@ -182,18 +203,41 @@ class FunctionalIfc:
                 .get("Package", ""),
             )
 
-        elif image_type == "unsigned":
+        elif image_type == "unsigned_component_image":
+            # As of now, there is no suitable way to update the component's signature on-the-fly.
+            # So vendor needs to provide a bundle with an unsigned component image
             json_fw_file_payload = os.path.join(
                 self.dut().cwd,
                 self.dut()
-                .package_config.get("GPU_FW_IMAGE_UNSIGNED", {})
+                .package_config.get("GPU_FW_IMAGE_UNSIGNED_COMPONENT", {})
                 .get("Path", ""),
                 self.dut()
-                .package_config.get("GPU_FW_IMAGE_UNSIGNED", {})
+                .package_config.get("GPU_FW_IMAGE_UNSIGNED_COMPONENT", {})
                 .get("Package", ""),
             )
+                
+        elif image_type == "unsigned_bundle":
+            if self.dut().package_config.get("GPU_FW_IMAGE_UNSIGNED_BUNDLE", {}).get("Package", "") != "":
+                json_fw_file_payload = os.path.join(
+                    self.dut().cwd,
+                    self.dut()
+                    .package_config.get("GPU_FW_IMAGE_UNSIGNED_BUNDLE", {})
+                    .get("Path", ""),
+                    self.dut()
+                    .package_config.get("GPU_FW_IMAGE_UNSIGNED_BUNDLE", {})
+                    .get("Package", ""),
+                )
+            else:
+                golden_fwpkg_path = os.path.join(
+                    self.dut().cwd,
+                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+                )
+                json_fw_file_payload = FwpkgSignature.clear_signature_in_pkg(golden_fwpkg_path)
+        
         elif image_type == "corrupt":
-            json_fw_file_payload = os.path.join(
+            if self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT", {}).get("Package", "") != "":
+                json_fw_file_payload = os.path.join(
                 self.dut().cwd,
                 self.dut()
                 .package_config.get("GPU_FW_IMAGE_CORRUPT", {})
@@ -201,7 +245,20 @@ class FunctionalIfc:
                 self.dut()
                 .package_config.get("GPU_FW_IMAGE_CORRUPT", {})
                 .get("Package", ""),
-            )
+                )
+            else:
+                if corrupted_component_id is None:
+                    corrupted_component_id = self.ctam_get_component_to_be_corrupted()
+                msg = f"Corrupted component ID: {corrupted_component_id}"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)
+                golden_fwpkg_path = os.path.join(
+                    self.dut().cwd,
+                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+                )
+                metadata_size = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("MetadataSizeBytes", 4096)
+                json_fw_file_payload = PLDMFwpkg.corrupt_component_image_in_pkg(golden_fwpkg_path, corrupted_component_id, metadata_size)
+                
         elif image_type == "negate":
             self.test_run().add_log(LogSeverity.INFO, "Negative Test Case")
             json_fw_file_payload = ""
@@ -218,7 +275,7 @@ class FunctionalIfc:
         :rtype:                 string
         """
         pldm_json_file = ""
-        if image_type == "default" or image_type == "corrupt_component":
+        if image_type == "default":
             pldm_json_file = os.path.join(
                 self.dut().cwd,
                 self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
@@ -241,6 +298,14 @@ class FunctionalIfc:
                 self.dut().package_config.get("GPU_FW_IMAGE_OLD", {}).get("Path", ""),
                 self.dut().package_config.get("GPU_FW_IMAGE_OLD", {}).get("JSON", ""),
             )
+            
+        elif image_type == "corrupt_component":
+            pldm_json_file = os.path.join(
+                self.dut().cwd,
+                self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Path", ""),
+                self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("JSON", ""),
+            )
+            
         return pldm_json_file
 
     def ctam_getfi(self, expanded=0):
@@ -419,12 +484,14 @@ class FunctionalIfc:
         command_to_run = ""
         command_to_run = self.dut().dut_config["PowerOffCommand"]["value"]
         self.test_run().add_log(LogSeverity.INFO, json.dumps(command_to_run, indent=4))
-        subprocess.check_output(command_to_run, shell=self.dut().is_debug_mode())
+        arguments = shlex.split(command_to_run)
+        subprocess.check_output(arguments, cwd=os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
         time.sleep(self.dut().dut_config["PowerOffWaitTime"]["value"])
         self.test_run().add_log(LogSeverity.INFO, "Power Off wait time done")
         command_to_run = self.dut().dut_config["PowerOnCommand"]["value"]
         self.test_run().add_log(LogSeverity.INFO, json.dumps(command_to_run, indent=4))
-        subprocess.check_output(command_to_run, shell=self.dut().is_debug_mode())
+        arguments = shlex.split(command_to_run)
+        subprocess.check_output(arguments, cwd=os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
         time.sleep(self.dut().dut_config["PowerOnWaitTime"]["value"])
         self.test_run().add_log(LogSeverity.INFO, "Power ON wait time done")
         return
@@ -721,7 +788,6 @@ class FunctionalIfc:
                             result = False
                             break
         return result
-
     def ctam_getepc(self, expanded=1):
         """
         :Description:       Get Expanded Processor Collection
@@ -757,6 +823,7 @@ class FunctionalIfc:
         ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU")
         subscriptionList = self.ctam_getes("Subscriptions")
         self.test_run().add_log(LogSeverity.INFO, "subscriptionList is {}\n".format(subscriptionList))
+        # FIXME: Handle when subscriptionList is empty
         ctam_getes_uri = ctam_getes_uri + "/" + subscriptionList[-1]
         response = self.dut().run_redfish_command(uri=ctam_getes_uri, mode="DELETE")
         status = response.status
@@ -766,5 +833,26 @@ class FunctionalIfc:
             result = True
         else:
             self.test_run().add_log(LogSeverity.INFO, "Chassis with ID Pass: {} : {}".format(ctam_getes_uri, status))
+            result = False
+        return result
+
+    def ctam_redfish_GET_status_ok(self, uri):
+        """
+        :Description:   Check if the Redfish API response status is OK
+        
+        :param uri:     Redfish uri
+        :type uri:      str
+        
+        :returns:       result (Pass/Fail)
+        :rtype:         bool
+        """
+        result = True
+        response = self.dut().run_redfish_command(uri=uri)
+        JSONData = response.dict
+        status = response.status
+        if status == 200 or status == 201:
+            self.test_run().add_log(LogSeverity.INFO, "GET request Passed: {} : {}".format(uri, JSONData))
+        else:
+            self.test_run().add_log(LogSeverity.FATAL, "GET request Failed: {} : {}".format(uri, JSONData))
             result = False
         return result

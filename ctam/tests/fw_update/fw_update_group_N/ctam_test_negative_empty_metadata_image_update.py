@@ -72,7 +72,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
         with step1.scope():
             corrupted_component_id  = self.group.fw_update_ifc.ctam_get_component_to_be_corrupted()
             corrupted_component_list = self.group.fw_update_ifc.ctam_get_component_list(component_id=corrupted_component_id)
-            step1.add_log(LogSeverity.INFO, f"{self.test_id} : Selected component to corrupt -> {corrupted_component_id}")
+            step1.add_log(LogSeverity.INFO, f"{self.test_id} : Selected component to corrupt -> ID: {corrupted_component_id} List: {corrupted_component_list}")
         
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2_{corrupted_component_list[0]}")  # type: ignore
         with step2.scope():
