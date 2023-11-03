@@ -71,7 +71,7 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
         
         step0 = self.test_run().add_step(f"{self.__class__.__name__} run(), step0")  # type: ignore
         with step0.scope():
-            self.corrupted_component_id = self.group.fw_update_ifc.ctam_get_component_to_be_corrupted()
+            self.corrupted_component_id = self.group.fw_update_ifc.ctam_get_component_to_be_corrupted(VendorProvidedBundle=False)
             if self.corrupted_component_id is None:
                 step0.add_log(
                     LogSeverity.ERROR, f"{self.test_id} : Corrupt Component Id Retrieval Failed"
@@ -117,7 +117,7 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
         undo environment state change from setup() above, this function is called even if run() fails or raises exception
         """
         # add custom teardown here
-        result = True
+        
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...step1")
         with step1.scope():
             if self.group.fw_update_ifc.ctam_activate_ac():
@@ -129,22 +129,15 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
                     LogSeverity.WARNING,
                     f"{self.test_id} : FW Update Activation Failed",
                 )
-                result = False
-                    
-        if result:
-            step2 = self.test_run().add_step(f"{self.__class__.__name__} teardown()...step2")
-            with step2.scope():
-                if self.group.fw_update_ifc.ctam_fw_update_verify(image_type="corrupt_component", 
-                                                                  corrupted_component_id=self.corrupted_component_id
-                                                                  ):
-                    step2.add_log(
-                        LogSeverity.INFO,
-                        f"{self.test_id} : Update Verification Completed",
-                    )
-                else:
-                    step2.add_log(
-                        LogSeverity.INFO, f"{self.test_id} : Update Verification Failed"
-                    )
+        
+        step2 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...step2")
+        with step2.scope():
+            if self.group.fw_update_ifc.ctam_activate_ac():
+                msg = f"{self.test_id} : AC Cycle Passed"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)  
+            else:
+                msg = f"{self.test_id} : AC Cycle Failed"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)
 
         # call super teardown last
         super().teardown()

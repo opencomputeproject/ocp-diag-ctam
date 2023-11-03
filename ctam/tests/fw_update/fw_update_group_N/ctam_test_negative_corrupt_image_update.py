@@ -95,8 +95,13 @@ class CTAMTestNegativeCorruptImageUpdate(TestCase):
         """
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
-        with step1.scope():
-            pass
-
+        with step1.scope(): 
+            if self.group.fw_update_ifc.ctam_activate_ac():
+                msg = f"{self.test_id} : AC Cycle Passed"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)  
+            else:
+                msg = f"{self.test_id} : AC Cycle Failed"
+                self.test_run().add_log(LogSeverity.DEBUG, msg) 
+            
         # call super teardown last
         super().teardown()
