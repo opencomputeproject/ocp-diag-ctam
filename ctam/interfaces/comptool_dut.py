@@ -16,7 +16,9 @@ import platform
 import json
 import time
 from datetime import datetime
-
+import shutil
+import stat
+from os import path
 # import pandas as pd
 
 from prettytable import PrettyTable
@@ -48,6 +50,7 @@ class CompToolDut(Dut):
         logger,
         test_info_logger,
         test_uri_response_check,
+        logger_path,
         name: ty.Optional[str] = None,
         metadata: ty.Optional[Metadata] = None,
     ):
@@ -72,6 +75,7 @@ class CompToolDut(Dut):
         self.current_test_name = ""
         self.net_rc = net_rc
         self.logger = logger
+        self.logger_path = logger_path
         self.test_info_logger = test_info_logger
         self.test_uri_response_check = test_uri_response_check
         self.cwd = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -412,7 +416,7 @@ class CompToolDut(Dut):
             print(e)
     
     def validate_redfish_service(self, file_name, uri, depth, *args, **kwargs):
-        log_path = os.path.join(self.output_dir, file_name)
+        log_path = os.path.join(self.logger_path, file_name)
         try:
             file_name = os.path.join(self.repo_path, file_name)
             base_uri = self.uri_builder.format_uri(redfish_str="{GPUMC}",
@@ -439,7 +443,7 @@ class CompToolDut(Dut):
             print(f"Exception Occurred: {e}")
     
     def validate_redfish_interop(self, file_name, uri, depth, *args, **kwargs):
-        log_path = os.path.join(self.output_dir, file_name)
+        log_path = os.path.join(self.logger_path, file_name)
         try:
             file_name = os.path.join(self.repo_path, file_name)
             base_uri = self.uri_builder.format_uri(redfish_str="{GPUMC}",
