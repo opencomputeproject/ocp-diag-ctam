@@ -388,3 +388,105 @@ class CompToolDut(Dut):
             print(str(e))
             return ["[FATAL] Exception occurred during system discovery. Please see below exception...",str(e)], False
         
+    def clone_repo(self, repo_url="", username="", repo_dir=""):
+        try:
+            repo_parent = os.path.dirname(os.path.dirname(__file__))
+            # self.repo_path = os.path.join(repo_parent, )
+            self.repo_path = os.path.join(repo_parent, repo_dir)
+
+            # repo_path = os.path.join(self.cwd, "")
+            if not os.path.exists(self.repo_path):
+                os.makedirs(self.repo_path)
+            
+            import subprocess
+            result = subprocess.run(["git", "clone", repo_url, self.repo_path], capture_output=True)
+            for filename in os.listdir(self.repo_path):
+                if "requirement" in filename:
+                    cmd = "python -m pip install -r {} ".format(os.path.join(self.repo_path, filename))
+                    res  =subprocess.run(cmd)
+                    if res.stderr:
+                        raise Exception(res.stderr)
+            if result.stderr:
+                raise Exception(result.stderr)
+        except Exception as e:
+            print(e)
+    
+    def validate_redfish_service(self, file_name, uri, depth, *args, **kwargs):
+        log_path = os.path.join(self.output_dir, file_name)
+        try:
+            file_name = os.path.join(self.repo_path, file_name)
+            base_uri = self.uri_builder.format_uri(redfish_str="{GPUMC}",
+                                                                component_type="GPU")
+            ip = self.connection_ip_address + base_uri
+            schema_directory = os.path.join(self.repo_path, "SchemaFiles")
+            run_command = "python {file_name}.py --ip {ip} \
+                -u {user} -p {pwd} --logdir {log_dir} \
+                --schema_directory {schema_directory} \
+                    --payload {depth} {uri}".format(
+                        file_name=file_name,
+                        ip="https://"+ ip,
+                        user=self.__user_name,
+                        pwd=self.__user_pass,
+                        log_dir=log_path,
+                        schema_directory=schema_directory,
+                        depth=depth,
+                        uri=uri
+                    )
+            result = subprocess.run(run_command, capture_output=True)
+            if result.stderr:
+                raise Exception(result.stderr)
+        except Exception as e:
+            print(f"Exception Occurred: {e}")
+    
+    def validate_redfish_interop(self, file_name, uri, depth, *args, **kwargs):
+        log_path = os.path.join(self.output_dir, file_name)
+        try:
+            file_name = os.path.join(self.repo_path, file_name)
+            base_uri = self.uri_builder.format_uri(redfish_str="{GPUMC}",
+                                                                component_type="GPU")
+            ip = self.connection_ip_address + base_uri
+            schema_directory = os.path.join(self.repo_path, "SchemaFiles")
+            run_command = "python {file_name}.py --ip {ip} \
+                -u {user} -p {pwd} --logdir {log_dir} \
+                --schema_directory {schema_directory} \
+                    --payload {depth} {uri}".format(
+                        file_name=file_name,
+                        ip="https://"+ ip,
+                        user=self.__user_name,
+                        pwd=self.__user_pass,
+                        log_dir=log_path,
+                        schema_directory=schema_directory,
+                        depth=depth,
+                        uri=uri
+                    )
+            result = subprocess.run(run_command, capture_output=True)
+            if result.stderr:
+                raise Exception(result.stderr)
+        except Exception as e:
+            print(f"Exception Occurred: {e}")
+    
+    def clean_repo(self, repo_path=""):
+        # for filename in os.listdir(self.repo_path):
+        #     if "requirement" in filename:
+        #         print(os.path.join(self.repo_path, filename))
+        #         cmd = "python -m pip uninstall -r {} ".format(os.path.join(self.repo_path, filename))
+        #         print(cmd)
+        #         res  =subprocess.run(cmd)
+        #         print(res.stdout)
+        if not repo_path:
+            repo_path = self.repo_path
+        
+        for root, dirs, files in os.walk(self.repo_path):  
+            for dir in dirs:
+                os.chmod(path.join(root, dir), stat.S_IRWXU)
+            for file in files:
+                os.chmod(path.join(root, file), stat.S_IRWXU)
+        shutil.rmtree(repo_path)
+    
+        
+
+
+
+
+
+
