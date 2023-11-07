@@ -9,7 +9,7 @@ LICENSE file in the root directory of this source tree.
 :Score Weight:	10
 
 :Description:	This test case is a Negative Test. It'll make a copy of the default FW image provided in package_info.json 
-                and clear metadat of any component in the PLDM bundle. Then it'll attempt firmware update with the fwpkg containing corrupted UUID. 
+                and clear metadata of any component in the PLDM bundle. Then it'll attempt firmware update with the fwpkg containing corrupted UUID. 
 
 :Usage 1:		python ctam.py -w ..\workspace -t F26
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Empty Metadata Image Update"
@@ -70,7 +70,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
         
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            corrupted_component_id  = self.group.fw_update_ifc.ctam_get_component_to_be_corrupted()
+            corrupted_component_id  = self.group.fw_update_ifc.ctam_get_component_to_be_corrupted(VendorProvidedBundle=False)
             corrupted_component_list = self.group.fw_update_ifc.ctam_get_component_list(component_id=corrupted_component_id)
             step1.add_log(LogSeverity.INFO, f"{self.test_id} : Selected component to corrupt -> ID: {corrupted_component_id} List: {corrupted_component_list}")
         
@@ -112,12 +112,20 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
         undo environment state change from setup() above, this function is called even if run() fails or raises exception
         """
         # add custom teardown here
-        step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
+        step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown(), Step1")
         with step1.scope():
             if self.group.fw_update_ifc.ctam_pushtargets():
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Push URI Targets Reset")
             else:
                 step1.add_log(LogSeverity.WARNING, f"{self.test_id} : Push URI Targets Reset - Failed")
 
+        step2 = self.test_run().add_step(f"{self.__class__.__name__}  teardown(), Step2")
+        with step2.scope():
+            if self.group.fw_update_ifc.ctam_activate_ac():
+                msg = f"{self.test_id} : AC Cycle Passed"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)  
+            else:
+                msg = f"{self.test_id} : AC Cycle Failed"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)
         # call super teardown last
         super().teardown()

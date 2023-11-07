@@ -9,7 +9,7 @@ LICENSE file in the root directory of this source tree.
 :Score Weight:	10
 
 :Description:	This test case is a Negative test. It would search for GPU_FW_IMAGE_UNSIGNED_BUNDLE referenced by package_info.json.
-                If the nudle is not provided, it will modify GPU_FW_IMAGE (golden fwpkg) for this test. Then it will attempt
+                If the bundle is not provided, it will modify GPU_FW_IMAGE (golden fwpkg) for this test. Then it will attempt
                 firmware update using the Unsigned Bundle.
 
 :Usage 1:		python ctam.py -w ..\workspace -t F90
@@ -98,7 +98,12 @@ class CTAMTestNegativeUnsignedBundleUpdate(TestCase):
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():
-            pass
+            if self.group.fw_update_ifc.ctam_activate_ac():
+                msg = f"{self.test_id} : AC Cycle Passed"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)  
+            else:
+                msg = f"{self.test_id} : AC Cycle Failed"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)
 
         # call super teardown last
         super().teardown()

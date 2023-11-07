@@ -8,7 +8,7 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Verfy that firmware copy operation (staging) does not exceed the max time specified in the requirements.
+:Description:	Verify that firmware copy operation (staging) does not exceed the max time specified in the requirements.
 :Usage 1:		python ctam.py -w ..\workspace -t F63
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Staging Time"
 
@@ -126,5 +126,13 @@ class CTAMTestFullDeviceUpdateStagingTime(TestCase):
                         LogSeverity.INFO, f"{self.test_id} : Update Verification Failed"
                     )
 
+        step3 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...step3")
+        with step3.scope():
+            if self.group.fw_update_ifc.ctam_activate_ac():
+                msg = f"{self.test_id} : AC Cycle Passed"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)  
+            else:
+                msg = f"{self.test_id} : AC Cycle Failed"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)
         # call super teardown last
         super().teardown()

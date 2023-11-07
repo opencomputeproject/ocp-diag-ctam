@@ -251,8 +251,8 @@ class TestRunner:
             console_log=self.console_log,
             logger=dut_logger,
             test_info_logger=test_info_logger,
-            test_uri_response_check=self.test_uri_response_check
-
+            test_uri_response_check=self.test_uri_response_check,
+            logger_path=self.output_dir
         )
         self.comp_tool_dut.current_test_name = "Initialization"
         # FIXME: This needs to be fixed

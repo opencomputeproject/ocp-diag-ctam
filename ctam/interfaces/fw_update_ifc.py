@@ -440,7 +440,7 @@ class FWUpdateIfc(FunctionalIfc):
         """
         :Description:                   It will check the package_info.json for CorruptComponentIdentifier.
                                         If both corrupt package and CorruptComponentIdentifier are not provided, 
-                                        it'll find the first updatabele element from firmware inventory.
+                                        it'll find the first updatable element from firmware inventory.
 
         :param VendorProvidedBundle:    Boolean value indicating if the vendor is required to provide a corrupt bundle.
                                         True by default.
@@ -566,7 +566,7 @@ class FWUpdateIfc(FunctionalIfc):
         # Then get the PLDM bundle json
         PLDMPkgJson_file = self.get_PLDMPkgJson_file(image_type=image_type)
         # check again above code
-        if PLDMPkgJson_file:
+        if PLDMPkgJson_file and os.path.isfile(PLDMPkgJson_file):
             with open(PLDMPkgJson_file, "r") as f:
                 PLDMPkgJson = json.load(f)
         
@@ -575,7 +575,7 @@ class FWUpdateIfc(FunctionalIfc):
                 fw_versions = []
                 jsonhuntall(PLDMPkgJson,
                         "ComponentIdentifier",
-                        str(hex(int(software_id, 16))),
+                        str(int(software_id, 16)),
                         "ComponentVersionString",
                         fw_versions
                     )
@@ -615,6 +615,9 @@ class FWUpdateIfc(FunctionalIfc):
                                     if comp_info["ComponentIdentifier"] == str(int(software_id, 16)):
                                         ComponentVersions[software_id] = comp_info["ComponentVersionString"]
                                         break
+        else:
+            msg = "PLDMPkgJson file not found."
+            self.test_run().add_log(LogSeverity.DEBUG, msg)    
         return ComponentVersions
                                             
                             

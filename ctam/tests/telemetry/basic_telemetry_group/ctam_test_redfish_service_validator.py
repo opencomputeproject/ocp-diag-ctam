@@ -1,17 +1,17 @@
 """
 Copyright (c) Microsoft Corporation
-This source code is licensed under the MIT license found in the 
+This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Telemetry Systems GPU DRAM Environment Metrics
-:Test ID:		T29
-:Group Name:	telemetry
+:Test Name:		CTAM Test Collect Crashdump Manager
+:Test ID:		R2
+:Group Name:	ras
 :Score Weight:	10
 
-:Description:	Basic telemetry test case to discover & print the list of Systems GPU DRAM Environment Metrics.
+:Description:	Placeholder only. Post CollectDiagnisticData for '\redfish\v1\Managers\{Manager}\LogService\EventLog with DiagnosticDataType = Manager
 
-:Usage 1:		python ctam.py -w ..\workspace -t T29
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry Systems GPU DRAM Environment Metrics"
+:Usage 1:		python ctam.py -w ..\workspace -t R2
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Collect Crashdump Manager"
 
 """
 from typing import Optional, List
@@ -24,15 +24,24 @@ from ocptv.output import (
     TestStatus,
 )
 from tests.telemetry.basic_telemetry_group.basic_telemetry_group import (
-    BasicTelemetryTestGroup
+    BasicTelemetryTestGroup,
 )
 
-class CTAMTestTelemetrySystemsGPUDRAMEnvironmentMetrics(TestCase):
-    
-    test_name: str = "CTAM Test Telemetry Systems GPU DRAM Environment Metrics"
-    test_id: str = "T29"
+
+class CTAMTestServiceValidator(TestCase):
+    """
+    Post CollectDiagnisticData for '\redfish\v1\Managers\{Manager}\LogService\EventLog with DiagnosticDataType = Manager
+
+    :param TestCase: super class for all test cases
+    :type TestCase:
+    """
+
+    test_name: str = "CTAM Test Service Validator"
+    test_id: str = "T0"
     score_weight: int = 10
     tags: List[str] = []
+
+    # exclude_tags: List[str] = ["NotCheck"]
 
     def __init__(self, group: BasicTelemetryTestGroup):
         """
@@ -58,14 +67,21 @@ class CTAMTestTelemetrySystemsGPUDRAMEnvironmentMetrics(TestCase):
         actual test verification
         """
         result = True
-        step1 = self.test_run().add_step((f"{self.__class__.__name__} run(), step1"))  # type: ignore
+        step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if self.group.telemetry_ifc.ctam_system_gpu_dram_ids(path="EnvironmentMetrics"):
-                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Passed")
-            else:
-                step1.add_log(LogSeverity.FATAL, f"{self.test_id} : Failed")
-                result = False
+            self.dut().clone_repo(repo_url="https://github.com/DMTF/Redfish-Service-Validator.git",
+                                  repo_dir="RedfishServiceValidator")
 
+        step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
+        with step2.scope():
+            # uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/Chassis",
+            #                                     component_type="GPU")
+            self.dut().validate_redfish_service(file_name="RedfishServiceValidator", 
+                                        uri="/redfish/v1/Chassis",
+                                        depth="Single")
+        step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
+        with step3.scope():
+            self.dut().clean_repo()
         # ensure setting of self.result and self.score prior to calling super().run()
         self.result = TestResult.PASS if result else TestResult.FAIL
         if self.result == TestResult.PASS:

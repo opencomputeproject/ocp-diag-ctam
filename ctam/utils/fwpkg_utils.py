@@ -605,9 +605,9 @@ class PLDMUnpack:
         :rtype:                             bool
         """
         corruption_status = False
-        with open(self.package, 'rb') as infile:
+        with open(self.package, 'rb') as infile: # Need to resolve
             fwpkg_content = infile.read()
-        package_size = os.path.getsize(fwpkg_content)
+        package_size = os.path.getsize(self.package)
         for index, info in enumerate(self.component_img_info_list):
             if component_id is not None and info["ComponentIdentifier"] != hex(int(component_id, 16)):
                 continue
@@ -644,9 +644,9 @@ class PLDMUnpack:
         :rtype:                             bool
         """
         corruption_status = False
-        with open(self.package, 'rb') as infile:
+        with open(self.package, 'rb') as infile: # Need to fix this
             fwpkg_content = infile.read()
-        package_size = os.path.getsize(fwpkg_content)
+        package_size = os.path.getsize(self.package)
         for index, info in enumerate(self.component_img_info_list):
             if component_id is not None and info["ComponentIdentifier"] != hex(int(component_id, 16)):
                 continue
@@ -681,9 +681,9 @@ class PLDMUnpack:
         :rtype:                             bool
         """
         corruption_status = False
-        with open(self.package, 'rb') as infile:
+        with open(self.package, 'rb') as infile: # Need to Fix this
             fwpkg_content = infile.read()
-        package_size = os.path.getsize(fwpkg_content)
+        package_size = os.path.getsize(self.package)
         for index, info in enumerate(self.component_img_info_list):
             if component_id is not None and info["ComponentIdentifier"] != hex(int(component_id, 16)):
                 continue

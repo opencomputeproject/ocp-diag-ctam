@@ -71,7 +71,7 @@ class CTAMTestFullDeviceUpdateActivationWithFailedComponent(TestCase):
         
         step0 = self.test_run().add_step(f"{self.__class__.__name__} run(), step0")  # type: ignore
         with step0.scope():
-            self.corrupted_component_id = self.group.fw_update_ifc.ctam_get_component_to_be_corrupted()
+            self.corrupted_component_id = self.group.fw_update_ifc.ctam_get_component_to_be_corrupted(VendorProvidedBundle=False)
             if self.corrupted_component_id is None:
                 step0.add_log(
                     LogSeverity.ERROR, f"{self.test_id} : Corrupt Component Id Retrieval Failed"
@@ -149,7 +149,12 @@ class CTAMTestFullDeviceUpdateActivationWithFailedComponent(TestCase):
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():
-            pass
+            if self.group.fw_update_ifc.ctam_activate_ac():
+                msg = f"{self.test_id} : AC Cycle Passed"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)  
+            else:
+                msg = f"{self.test_id} : AC Cycle Failed"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)
 
         # call super teardown last
         super().teardown()
