@@ -41,7 +41,7 @@ class CTAMTestNegativeInvalidPackageUUIDImageUpdate(TestCase):
     test_name: str = "CTAM Test Negative Invalid Package UUID Image Update"
     test_id: str = "F27"
     score_weight: int = 10
-    tags: List[str] = ["Negative"]
+    tags: List[str] = ["Negative", "L2"]
 
     def __init__(self, group: FWUpdateTestGroupN):
         """

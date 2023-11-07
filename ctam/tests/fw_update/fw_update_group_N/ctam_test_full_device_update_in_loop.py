@@ -39,7 +39,7 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
     test_name: str = "CTAM Test Full Device Update In Loop"
     test_id: str = "F8"
     score_weight: int = 10
-    tags: List[str] = []
+    tags: List[str] = ["L1"]
 
     def __init__(self, group: FWUpdateTestGroupN):
         """

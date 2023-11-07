@@ -42,7 +42,7 @@ class CTAMTestInstallSameImageTwoTimes(TestCase):
     test_name: str = "CTAM Test Install Same Image Two Times"
     test_id: str = "F16"
     score_weight: int = 10
-    tags: List[str] = []
+    tags: List[str] = ["L1"]
 
     def __init__(self, group: FWUpdateTestGroupNMinus1):
         """

@@ -41,7 +41,7 @@ class CTAMTestNegativeCorruptImageUpdate(TestCase):
     test_name: str = "CTAM Test Negative Corrupt Image Update"
     test_id: str = "F23"
     score_weight: int = 10
-    tags: List[str] = ["Negative"]
+    tags: List[str] = ["Negative", "L2"]
 
     def __init__(self, group: FWUpdateTestGroupN):
         """

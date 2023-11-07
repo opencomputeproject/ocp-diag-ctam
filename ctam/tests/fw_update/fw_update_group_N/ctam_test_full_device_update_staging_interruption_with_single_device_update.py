@@ -38,7 +38,7 @@ class CTAMTestFullDeviceUpdateInterruptionWithSingleDeviceUpdate(TestCase):
     test_name: str = "CTAM Test Full Device Update Staging Interruption With Single Device Update"
     test_id: str = "F24"
     score_weight: int = 10
-    tags: List[str] = []
+    tags: List[str] = ["Negative", "L2"]
 
     def __init__(self, group: FWUpdateTestGroupN):
         """
