@@ -619,7 +619,12 @@ class FWUpdateIfc(FunctionalIfc):
             msg = "PLDMPkgJson file not found."
             self.test_run().add_log(LogSeverity.DEBUG, msg)    
         return ComponentVersions
-                                            
+    
+    def ctam_delay_between_testcases(self):
+        MyName = __name__ + "." + self.ctam_delay_between_testcases.__qualname__
+        time.sleep(600)
+        msg = "Execution is delayed by 600 seconds."
+        self.test_run().add_log(LogSeverity.DEBUG, msg)                       
                             
                             
                             

@@ -58,7 +58,7 @@ class CTAMTestFullDeviceUpdateActivationTime(TestCase):
         # add custom setup here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  setup()...")
         with step1.scope():
-            pass
+            self.group.fw_update_ifc.ctam_delay_between_testcases()
 
     def run(self) -> TestResult:
         """
