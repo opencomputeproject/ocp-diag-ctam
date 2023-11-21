@@ -19,6 +19,7 @@ from datetime import datetime
 import shutil
 import stat
 from os import path
+from alive_progress import alive_bar
 # import pandas as pd
 
 from prettytable import PrettyTable
@@ -83,7 +84,7 @@ class CompToolDut(Dut):
         self.connection_ip_address = config["properties"]["ConnectionIPAddress"][
             "value"
         ]
-        default_prefix = config["properties"]["DefaultPrefix"]["value"]
+        # default_prefix = config["properties"]["DefaultPrefix"]["value"]
         self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
             self.connection_ip_address
         )
@@ -109,7 +110,7 @@ class CompToolDut(Dut):
 
         # TODO investigate storing FW update files via add_software_info() in super
         connection_url = ("http://" if self.SshTunnel else "https://") + self.connection_ip_address + "/"
-        
+        default_prefix = self.uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
         self.redfish_ifc = redfish.redfish_client(
             connection_url,
             username=self.__user_name,
@@ -417,12 +418,15 @@ class CompToolDut(Dut):
     
     def validate_redfish_service(self, file_name, uri, depth, *args, **kwargs):
         log_path = os.path.join(self.logger_path, file_name)
+        print(log_path)
         try:
+            print("@@@@")
             file_name = os.path.join(self.repo_path, file_name)
             base_uri = self.uri_builder.format_uri(redfish_str="{GPUMC}",
                                                                 component_type="GPU")
             ip = self.connection_ip_address + base_uri
             schema_directory = os.path.join(self.repo_path, "SchemaFiles")
+            print("+++++")
             run_command = "python {file_name}.py --ip {ip} \
                 -u {user} -p {pwd} --logdir {log_dir} \
                 --schema_directory {schema_directory} \
@@ -436,9 +440,11 @@ class CompToolDut(Dut):
                         depth=depth,
                         uri=uri
                     )
-            result = subprocess.run(run_command, capture_output=True)
-            if result.stderr:
-                raise Exception(result.stderr)
+            with alive_bar(0,theme="classic", stats=False) as bar:
+                result = subprocess.run(run_command, capture_output=True)
+                bar()
+                if result.stderr:
+                    raise Exception(result.stderr)
         except Exception as e:
             print(f"Exception Occurred: {e}")
     
@@ -463,9 +469,12 @@ class CompToolDut(Dut):
                         depth=depth,
                         uri=uri
                     )
-            result = subprocess.run(run_command, capture_output=True)
-            if result.stderr:
-                raise Exception(result.stderr)
+            with alive_bar(0,theme="classic", stats=False) as bar:
+                result = subprocess.run(run_command, capture_output=True)
+                bar()
+                if result.stderr:
+                    raise Exception(result.stderr)
+                
         except Exception as e:
             print(f"Exception Occurred: {e}")
     

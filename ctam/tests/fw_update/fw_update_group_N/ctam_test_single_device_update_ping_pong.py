@@ -40,7 +40,7 @@ class CTAMTestSingleDeviceUpdatePingPong(TestCase):
     test_name: str = "CTAM Test Single Device Update Ping Pong"
     test_id: str = "F89"
     score_weight: int = 10
-    tags: List[str] = ["L1"]
+    tags: List[str] = ["L3"]
 
     def __init__(self, group: FWUpdateTestGroupN):
         """
@@ -138,7 +138,12 @@ class CTAMTestSingleDeviceUpdatePingPong(TestCase):
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():
-            pass
+            if self.group.fw_update_ifc.ctam_activate_ac(gpu_check=False):
+                msg = f"{self.test_id} : AC Cycle Passed"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)  
+            else:
+                msg = f"{self.test_id} : AC Cycle Failed"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)
 
         # call super teardown last
         super().teardown()

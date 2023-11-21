@@ -4,11 +4,6 @@
   "title": "dut_info",
   "description": "TODO: link to md doc",
   "properties": {
-    "ConnectionTo": {
-      "description": "Acceptable values are UtilityManager, Node*MC, Gpu*MC",
-      "type": "string",
-      "value": ""
-    },
     "ConnectionIPAddress": {
       "description": "IP Address of Service Entry point to be used",
       "type": "string",
@@ -23,11 +18,6 @@
       "description": "Indicates if REST API authentication is required by the Redfish service",
       "type": "bool",
       "value": false
-    },
-    "DefaultPrefix": {
-      "description": "Default preix for connecting to redfish",
-      "type": "string",
-      "value": ""
     },
     "BMCUserName": {
       "description": "Username for service entry login",

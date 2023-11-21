@@ -76,6 +76,7 @@ class CTAMTestServiceValidator(TestCase):
         with step2.scope():
             # uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/Chassis",
             #                                     component_type="GPU")
+            print("#####")
             self.dut().validate_redfish_service(file_name="RedfishServiceValidator", 
                                         uri="/redfish/v1/Chassis",
                                         depth="Single")

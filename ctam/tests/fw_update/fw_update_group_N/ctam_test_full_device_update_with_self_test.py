@@ -48,7 +48,7 @@ class CTAMTestFullDeviceUpdateWithSelfTest(TestCase):
     test_name: str = "CTAM Test Full Device Update with Self-test Verification"
     test_id: str = "F67"
     score_weight: int = 10
-    tags: List[str] = []
+    tags: List[str] = ["L3"]
 
     def __init__(self, group: FWUpdateTestGroupN):
         """

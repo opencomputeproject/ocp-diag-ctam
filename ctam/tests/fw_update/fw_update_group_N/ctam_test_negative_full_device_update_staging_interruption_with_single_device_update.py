@@ -3,7 +3,7 @@ Copyright (c) NVIDIA CORPORATION
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Full Device Update Staging Interruption With Single Device Update
+:Test Name:		CTAM Test Negative Full Device Update Staging Interruption With Single Device Update
 :Test ID:		F24
 :Group Name:	fw_update
 :Score Weight:	10
@@ -188,7 +188,7 @@ class CTAMTestFullDeviceUpdateInterruptionWithSingleDeviceUpdate(TestCase):
 
         step2 = self.test_run().add_step(f"{self.__class__.__name__}  teardown(), Step2")
         with step2.scope():
-            if self.group.fw_update_ifc.ctam_activate_ac():
+            if self.group.fw_update_ifc.ctam_activate_ac(check_time=False):
                 msg = f"{self.test_id} : AC Cycle Passed"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)  
             else:

@@ -42,7 +42,7 @@ class CTAMTestNegativeUnsignedBundleUpdate(TestCase):
     test_name: str = "CTAM Test Negative Unsigned Bundle Update"
     test_id: str = "F90"
     score_weight: int = 10
-    tags: List[str] = ["Negative"]
+    tags: List[str] = ["L3", "Negative"]
 
     def __init__(self, group: FWUpdateTestGroupN):
         """
@@ -98,7 +98,7 @@ class CTAMTestNegativeUnsignedBundleUpdate(TestCase):
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():
-            if self.group.fw_update_ifc.ctam_activate_ac():
+            if self.group.fw_update_ifc.ctam_activate_ac(gpu_check=False):
                 msg = f"{self.test_id} : AC Cycle Passed"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)  
             else:

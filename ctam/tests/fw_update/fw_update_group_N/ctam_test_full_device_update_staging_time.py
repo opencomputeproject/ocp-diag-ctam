@@ -58,7 +58,7 @@ class CTAMTestFullDeviceUpdateStagingTime(TestCase):
         # add custom setup here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  setup()...")
         with step1.scope():
-            pass
+            self.group.fw_update_ifc.ctam_delay_between_testcases()
 
     def run(self) -> TestResult:
         """
@@ -128,7 +128,7 @@ class CTAMTestFullDeviceUpdateStagingTime(TestCase):
 
         step3 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...step3")
         with step3.scope():
-            if self.group.fw_update_ifc.ctam_activate_ac():
+            if self.group.fw_update_ifc.ctam_activate_ac(check_time=False):
                 msg = f"{self.test_id} : AC Cycle Passed"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)  
             else:
