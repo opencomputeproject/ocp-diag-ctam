@@ -196,6 +196,7 @@ def main():
                 sequence_group_override=args.group_sequence,
             )
         else:
+            all_tests = test_hierarchy.get_all_tests()
             runner = TestRunner(
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
@@ -203,6 +204,7 @@ def main():
                 package_info_json_file=package_info_json,
                 net_rc=net_rc,
                 redfish_uri_config_file=redfish_uri_config,
+                sequence_test_override=all_tests
             )
 
         status_code, exit_string = runner.run()

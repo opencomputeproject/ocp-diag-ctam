@@ -418,15 +418,12 @@ class CompToolDut(Dut):
     
     def validate_redfish_service(self, file_name, uri, depth, *args, **kwargs):
         log_path = os.path.join(self.logger_path, file_name)
-        print(log_path)
         try:
-            print("@@@@")
             file_name = os.path.join(self.repo_path, file_name)
             base_uri = self.uri_builder.format_uri(redfish_str="{GPUMC}",
                                                                 component_type="GPU")
             ip = self.connection_ip_address + base_uri
             schema_directory = os.path.join(self.repo_path, "SchemaFiles")
-            print("+++++")
             run_command = "python {file_name}.py --ip {ip} \
                 -u {user} -p {pwd} --logdir {log_dir} \
                 --schema_directory {schema_directory} \

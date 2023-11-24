@@ -446,3 +446,10 @@ class TestHierarchy:
                             raise
 
         return instances
+
+    def get_all_tests(self):
+        all_tests = []
+        for group_name, group_info in self.test_groups.items():
+            for testcase in group_info["test_cases"]:
+                all_tests.append(testcase["attributes"]["test_id"])
+        return all_tests

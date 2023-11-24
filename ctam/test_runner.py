@@ -315,18 +315,8 @@ class TestRunner:
                     ) = self.test_hierarchy.instantiate_obj_for_testcase(test)
 
                     group_inc_tags = group_instance.tags
+                    print("Group tags ", group_instance.tags)
                     # group_exc_tags = group_instance.exclude_tags
-                    valid = self._is_enabled(
-                        self.include_tags_set,
-                        group_inc_tags,
-                        self.exclude_tags_set,
-                        # group_exc_tags,
-                    )
-                    if not valid:
-                        print(
-                            f"Group1 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
-                        )
-                        continue
 
                     group_status, group_result = self._run_group_test_cases(group_instance, test_case_instances)
                     group_status_set.add(group_status)
@@ -344,17 +334,6 @@ class TestRunner:
                     
                     group_inc_tags = group_instance.tags
                     # group_exc_tags = group_instance.exclude_tags
-                    valid = self._is_enabled(
-                        self.include_tags_set,
-                        group_inc_tags,
-                        self.exclude_tags_set,
-                        # group_exc_tags,
-                    )
-                    if not valid:
-                        print(
-                            f"Group1 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
-                        )
-                        continue
 
                     group_status, group_result = self._run_group_test_cases(group_instance, test_case_instances)
                     group_status_set.add(group_status)
@@ -371,19 +350,6 @@ class TestRunner:
                         progress_thread.start()
                     group_inc_tags = group_instance.tags
                     # group_exc_tags = group_instance.exclude_tags
-
-                    valid = self._is_enabled(
-                        self.include_tags_set,
-                        group_inc_tags,
-                        self.exclude_tags_set,
-                        # group_exc_tags,
-                    )
-
-                    if not valid:
-                        print(
-                            f"Group2 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
-                        )
-                        continue
 
                     group_status, group_result = self._run_group_test_cases(group_instance, test_case_instances)
                     group_status_set.add(group_status)
@@ -407,19 +373,6 @@ class TestRunner:
 
                     group_inc_tags = group_instance.tags
                     # group_exc_tags = group_instance.exclude_tags
-
-                    valid = self._is_enabled(
-                        self.include_tags_set,
-                        group_inc_tags,
-                        self.exclude_tags_set,
-                        # group_exc_tags,
-                    )
-
-                    if not valid:
-                        print(
-                            f"Group2 {group_instance.__class__.__name__} skipped due to tags. tags = {group_inc_tags}"
-                        )
-                        continue
 
                     group_status, group_result = self._run_group_test_cases(group_instance, test_case_instances)
                     group_status_set.add(group_status)
@@ -485,13 +438,11 @@ class TestRunner:
 
             for test_instance in test_case_instances:
                 test_inc_tags = test_instance.tags
-                # test_exc_tags = test_instance.exclude_tags
-
+                tags = list(set(test_inc_tags) | set(group_instance.tags))
                 valid = self._is_enabled(
                     self.include_tags_set,
-                    test_inc_tags,
+                    tags,
                     self.exclude_tags_set,
-                    # test_exc_tags,
                 )
                 if not valid:
                     msg = f"Test {test_instance.__class__.__name__} skipped due to tags. tags = {test_inc_tags}"
