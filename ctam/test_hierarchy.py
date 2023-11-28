@@ -277,7 +277,7 @@ class TestHierarchy:
                 print(f"No test group named {group_name} found.")
         
         # print the table now
-        t.align["TestCaseName"] = "l"
+        t.align = "l"
         print(t)
 
     def _find_testcase(self, param):
