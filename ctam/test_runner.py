@@ -54,6 +54,7 @@ class TestRunner:
         sequence_test_override=None,
         single_group_override=None,
         sequence_group_override=None,
+        run_all_tests=None,
     ):
         """
         Init function that handles test execution variations
@@ -157,6 +158,8 @@ class TestRunner:
                 raise Exception(
                     "active_test_suite in test_runner.json specifies missing List"
                 )
+        elif run_all_tests:
+            self.test_sequence = run_all_tests
         else:
             raise Exception(
                 "Specify test cases/groups with -t, -g command line options or use test_runner.json"

@@ -119,7 +119,8 @@ class CTAMTestFullDeviceUpdateWithSelfTest(TestCase):
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():
-            pass
+            self.group.fw_update_ifc.ctam_delay_between_testcases()
+            step1.add_log(LogSeverity.INFO, f"Teardown delay completed.")
 
         # call super teardown last
         super().teardown()

@@ -132,12 +132,8 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
         
         step2 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...step2")
         with step2.scope():
-            if self.group.fw_update_ifc.ctam_activate_ac(check_time=False):
-                msg = f"{self.test_id} : AC Cycle Passed"
-                self.test_run().add_log(LogSeverity.DEBUG, msg)  
-            else:
-                msg = f"{self.test_id} : AC Cycle Failed"
-                self.test_run().add_log(LogSeverity.DEBUG, msg)
+            self.group.fw_update_ifc.ctam_delay_between_testcases()
+            step1.add_log(LogSeverity.INFO, f"Teardown delay completed.")
 
         # call super teardown last
         super().teardown()

@@ -61,7 +61,7 @@ class CTAMTestInstallSameImageTwoTimes(TestCase):
         # add custom setup here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  setup()...")
         with step1.scope():
-            self.group.fw_update_ifc.ctam_delay_between_testcases()
+            pass
 
     def run(self) -> TestResult:
         """
@@ -140,12 +140,8 @@ class CTAMTestInstallSameImageTwoTimes(TestCase):
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():
-            if self.group.fw_update_ifc.ctam_activate_ac(gpu_check=False):
-                msg = f"{self.test_id} : AC Cycle Passed"
-                self.test_run().add_log(LogSeverity.DEBUG, msg)  
-            else:
-                msg = f"{self.test_id} : AC Cycle Failed"
-                self.test_run().add_log(LogSeverity.DEBUG, msg)
+            self.group.fw_update_ifc.ctam_delay_between_testcases()
+            step1.add_log(LogSeverity.INFO, f"Teardown delay completed.")
 
         # call super teardown last
         super().teardown()

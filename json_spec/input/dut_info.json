@@ -88,6 +88,11 @@
       "description": "Maximum time in seconds taken by activation phase of full device FW update",
       "type": "int",
       "value": 600
+    },
+    "IdleWaitTimeAfterFirmwareUpdate":{
+      "description": "Wait time (in seconds) for runtime execution delay",
+      "type": "int",
+      "value": 300
     }
   },
   "required": [
@@ -99,6 +104,7 @@
     "PowerOffWaitTime",
     "PowerOnWaitTime",
     "FwStagingTimeMax",
-    "FwActivationTimeMax"
+    "FwActivationTimeMax",
+    "IdleWaitTimeAfterFirmwareUpdate"
   ]
 }

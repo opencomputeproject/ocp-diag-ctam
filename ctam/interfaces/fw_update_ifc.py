@@ -622,9 +622,13 @@ class FWUpdateIfc(FunctionalIfc):
     
     def ctam_delay_between_testcases(self):
         MyName = __name__ + "." + self.ctam_delay_between_testcases.__qualname__
-        time.sleep(600)
-        msg = "Execution is delayed by 600 seconds."
-        self.test_run().add_log(LogSeverity.DEBUG, msg)                       
+        IdleWaitTime = self.dut().dut_config["IdleWaitTimeAfterFirmwareUpdate"]["value"]
+        msg = f"Execution will be delayed by {IdleWaitTime} seconds."
+        self.test_run().add_log(LogSeverity.DEBUG, msg)
+        time.sleep(IdleWaitTime)
+        msg = f"Execution is delayed successfully by {IdleWaitTime} seconds."
+        self.test_run().add_log(LogSeverity.DEBUG, msg)
+        return True
                             
                             
                             

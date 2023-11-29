@@ -204,7 +204,7 @@ def main():
                 package_info_json_file=package_info_json,
                 net_rc=net_rc,
                 redfish_uri_config_file=redfish_uri_config,
-                sequence_test_override=all_tests
+                run_all_tests=all_tests
             )
 
         status_code, exit_string = runner.run()

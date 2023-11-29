@@ -77,6 +77,21 @@ This project is part of [OCPTV](https://github.com/opencomputeproject/ocp-diag-c
 2. console_log - True/False (for console logs)
 3. progress_bar - True/False (for progress bar idicator)
 
+## Tags
+
+### 1. Group Tag
+
+- We can give tags at group level also.
+- If we provide any tag to a particular group, then all the test case under that group will be considered as the same tag.
+- If we run according to group tag, then all the test case will run under the group irrespective of the test case tag. 
+
+### 2. Test Case Tags
+- We can assign different tags to different test cases.
+- If we run according to test case tag, then all the test cases which assigned with that tag would run irrespective of group tags.
+
+**Note: - Tags = Group Tags Union Test Case Tags
+group tags = ["G1"] and test case tags = ["L1"], so the final tags will be ["G1", "L1"]**
+
 ## Developer notes
 ### VS Code
 
