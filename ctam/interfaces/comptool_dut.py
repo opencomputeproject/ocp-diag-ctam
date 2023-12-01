@@ -69,7 +69,7 @@ class CompToolDut(Dut):
         """
         self._debugMode: bool = debugMode
         self._console_log: bool = console_log
-        self.package_config = package_config
+        self.__package_config_file = package_config
         self.dut_config = config["properties"]
         self.redfish_uri_config = redfish_uri_config
         self.uri_builder = UriBuilder(redfish_uri_config)
@@ -109,10 +109,10 @@ class CompToolDut(Dut):
             )
 
         # TODO investigate storing FW update files via add_software_info() in super
-        connection_url = ("http://" if self.SshTunnel else "https://") + self.connection_ip_address + "/"
+        self.connection_url = ("http://" if self.SshTunnel else "https://") + self.connection_ip_address + "/"
         default_prefix = self.uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
         self.redfish_ifc = redfish.redfish_client(
-            connection_url,
+            self.connection_url,
             username=self.__user_name,
             password=self.__user_pass,
             default_prefix=default_prefix,
@@ -125,6 +125,18 @@ class CompToolDut(Dut):
             self.test_info_logger.log("Redfish login is successful.")
         else:
             self.redfish_auth = False
+
+    @property
+    def package_config(self):
+        _package_config = {}
+        if os.path.isfile(self.__package_config_file):
+            with open(self.__package_config_file) as package_info_json:
+                _package_config = json.load(package_info_json)
+            return _package_config
+        else:
+            self.test_info_logger.log("No package_info.json file found...")
+            return {}
+            # raise Exception("Please provide package info config file...")
 
     def run_redfish_command(self, uri, mode="GET", body=None, headers=None, timeout=None):
         """
@@ -422,14 +434,13 @@ class CompToolDut(Dut):
             file_name = os.path.join(self.repo_path, file_name)
             base_uri = self.uri_builder.format_uri(redfish_str="{GPUMC}",
                                                                 component_type="GPU")
-            ip = self.connection_ip_address + base_uri
             schema_directory = os.path.join(self.repo_path, "SchemaFiles")
             run_command = "python {file_name}.py --ip {ip} \
                 -u {user} -p {pwd} --logdir {log_dir} \
                 --schema_directory {schema_directory} \
                     --payload {depth} {uri}".format(
                         file_name=file_name,
-                        ip="https://"+ ip,
+                        ip=self.connection_url + base_uri,
                         user=self.__user_name,
                         pwd=self.__user_pass,
                         log_dir=log_path,

@@ -123,8 +123,6 @@ def main():
             return 1, None, "Invalid workspace specified"
         required_workspace_files = [
             "dut_info.json",
-            "package_info.json",
-            "test_runner.json",
             "redfish_uri_config.json",
             ".netrc",
         ]
@@ -145,6 +143,7 @@ def main():
         net_rc = os.path.join(args.workspace, ".netrc")
         if args.Discovery:
             runner = TestRunner(
+                workspace_dir=args.workspace,
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
                 dut_info_json_file=dut_info_json,
@@ -157,6 +156,7 @@ def main():
 
         elif args.testcase:
             runner = TestRunner(
+                workspace_dir=args.workspace,
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
                 dut_info_json_file=dut_info_json,
@@ -167,6 +167,7 @@ def main():
             )
         elif args.testcase_sequence:
             runner = TestRunner(
+                workspace_dir=args.workspace,
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
                 dut_info_json_file=dut_info_json,
@@ -177,6 +178,7 @@ def main():
             )
         elif args.group:
             runner = TestRunner(
+                workspace_dir=args.workspace,
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
                 dut_info_json_file=dut_info_json,
@@ -187,6 +189,7 @@ def main():
             )
         elif args.group_sequence:
             runner = TestRunner(
+                workspace_dir=args.workspace,
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
                 dut_info_json_file=dut_info_json,
@@ -198,6 +201,7 @@ def main():
         else:
             all_tests = test_hierarchy.get_all_tests()
             runner = TestRunner(
+                workspace_dir=args.workspace,
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
                 dut_info_json_file=dut_info_json,

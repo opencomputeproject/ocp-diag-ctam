@@ -44,6 +44,7 @@ class TestRunner:
 
     def __init__(
         self,
+        workspace_dir,
         test_hierarchy,
         test_runner_json_file,
         dut_info_json_file,
@@ -87,16 +88,24 @@ class TestRunner:
         self.test_groups = []
         self.group_sequence = []
         self.test_result_data = []
-        self.total_cases = 0
+        self.total_cases = 0        
+        self.output_dir = ""
+        self.workspace_dir = workspace_dir
+        self.response_check_name = None
+        
+        self.include_tags_set = set()
+        self.exclude_tags_set = set()
+        self.debug_mode = True
+        self.console_log = True
+        self.progress_bar = False
+        self.package_config = package_info_json_file
 
+        runner_config = self._get_test_runner_config(test_runner_json_file)
         with open(dut_info_json_file) as dut_info_json:
             self.dut_config = json.load(dut_info_json)
 
-        with open(test_runner_json_file) as test_runner_json:
-            runner_config = json.load(test_runner_json)
-
-        with open(package_info_json_file) as package_info_json:
-            self.package_config = json.load(package_info_json)
+        # with open(package_info_json_file) as package_info_json:
+        #     self.package_config = json.load(package_info_json)
 
         with open(redfish_uri_config_file) as redfish_uri:
             self.redfish_uri_config = json.load(redfish_uri)
@@ -108,24 +117,6 @@ class TestRunner:
 
         # use override output directory if specified in test_runner.json, otherwise
         # use TestRuns directory below workspace directory
-        self.output_dir = runner_config["output_override_directory"]
-        self.response_check_name = runner_config.get("test_uri_response_excel", None)
-        
-        # if out_dir:
-        #     self.output_dir = out_dir
-        # else:
-        #     self.output_dir = os.path.join(os.path.dirname(os.path.dirname(test_runner_json_file)),
-        #                                    "workspace","TestRuns")
-
-        # if not os.path.exists(self.output_dir):
-        #     os.makedirs(self.output_dir)
-
-        self.include_tags_set = set(runner_config["include_tags"])
-        self.exclude_tags_set = set(runner_config["exclude_tags"])
-
-        self.debug_mode = runner_config["debug_mode"]
-        self.console_log = runner_config["console_log"]
-        self.progress_bar = runner_config["progress_bar"]
 
         # end result is that either test_cases[] or test_groups[] will have values but not both
         # if passed via the command line, then there will only be 1 testcase or 1 testgroup in the list
@@ -139,12 +130,12 @@ class TestRunner:
             self.group_sequence = sequence_group_override
         # elif runner_config["test_cases"]:
         #     self.test_cases = runner_config["test_cases"]
-        elif runner_config["test_sequence"]:
-            self.test_sequence = runner_config["test_sequence"]
-        elif runner_config["group_sequence"]:
-            self.group_sequence = runner_config["group_sequence"]
-        elif runner_config["active_test_suite"]:
-            test_suite_to_select = runner_config.get("active_test_suite")
+        elif runner_config.get("test_sequence", None):
+            self.test_sequence = runner_config.get("test_sequence", None)
+        elif runner_config.get("group_sequence", None):
+            self.group_sequence = runner_config.get("group_sequence", None)
+        elif runner_config.get("active_test_suite", None):
+            test_suite_to_select = runner_config.get("active_test_suite", None)
             # Remove the active_test_suite key before selecting the test suite
             del runner_config["active_test_suite"]
 
@@ -160,10 +151,30 @@ class TestRunner:
                 )
         elif run_all_tests:
             self.test_sequence = run_all_tests
+        # else:
+        #     raise Exception(
+        #         "Specify test cases/groups with -t, -g command line options or use test_runner.json"
+        #     )
+
+    def _get_test_runner_config(self, test_runner_json_file):
+        runner_config = {}
+        if os.path.isfile(test_runner_json_file):
+            with open(test_runner_json_file) as test_runner_json:
+                runner_config = json.load(test_runner_json)
+                self.output_dir = runner_config["output_override_directory"]
+                self.response_check_name = runner_config.get("test_uri_response_excel", None)
+                
+                self.include_tags_set = set(runner_config["include_tags"])
+                self.exclude_tags_set = set(runner_config["exclude_tags"])
+
+                self.debug_mode = runner_config["debug_mode"]
+                self.console_log = runner_config["console_log"]
+                self.progress_bar = runner_config["progress_bar"]
         else:
-            raise Exception(
-                "Specify test cases/groups with -t, -g command line options or use test_runner.json"
-            )
+            print("[WARNING]: Running CTAM with  default setting. If you want to \
+                  provide custom setting, Please use test_runner.json config file.")
+        return runner_config
+
 
     def _is_enabled(
         self,
@@ -217,14 +228,16 @@ class TestRunner:
         # If up then establish the connection and the discovery 
         self.cwd = os.path.dirname(os.path.dirname(__file__))
         self.dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        if self.output_dir:
+        if self.workspace_dir:
+            print("Output Dir is : ", self.output_dir)
             self.output_dir = os.path.join(
-                self.cwd, "workspace", self.output_dir, "TestRuns", testrun_name+"_{}".format(self.dt)
+                self.workspace_dir, self.output_dir, "TestRuns", testrun_name+"_{}".format(self.dt)
             )
         else:
             self.output_dir = os.path.join(
-                self.cwd, "workspace", "TestRuns", testrun_name+"_{}".format(self.dt)
+                "workspace", "TestRuns", testrun_name+"_{}".format(self.dt)
             )
+        print(self.output_dir)
         self.cmd_output_dir = os.path.join(self.output_dir, "RedfishCommandDetails")
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)

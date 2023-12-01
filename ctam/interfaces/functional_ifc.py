@@ -88,6 +88,8 @@ class FunctionalIfc:
         """
 
         # FIXME: Refactor.. Lots of repeated code
+        # if not self.dut().package_config:
+        #     raise Exception("Please provide data in package config file to run this test case...")
         if image_type == "default":
             json_fw_file_payload = os.path.join(
                 self.dut().cwd,
@@ -274,6 +276,8 @@ class FunctionalIfc:
         :returns:	            File path
         :rtype:                 string
         """
+        # if not self.dut().package_config:
+        #     raise Exception("Please provide data in package config file to run this test case...")
         pldm_json_file = ""
         if image_type == "default":
             pldm_json_file = os.path.join(
@@ -482,23 +486,29 @@ class FunctionalIfc:
         """
         MyName = __name__ + "." + self.NodeACReset.__qualname__
         command_to_run = ""
-        command_to_run = self.dut().dut_config["PowerOffCommand"]["value"]
+        command_to_run = self.dut().dut_config.get("PowerOffCommand", {}).get("value", "")
+        if not command_to_run:
+            self.test_run().add_log(LogSeverity.INFO, "Please provide the command in dut info for running power off.")
+            return 
         self.test_run().add_log(LogSeverity.INFO, json.dumps(command_to_run, indent=4))
         arguments = shlex.split(command_to_run)
         subprocess.check_output(arguments, cwd=os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-        time.sleep(self.dut().dut_config["PowerOffWaitTime"]["value"])
+        time.sleep(self.dut().dut_config.get("PowerOffWaitTime", {}).get("value", 60))
         self.test_run().add_log(LogSeverity.INFO, "Power Off wait time done")
-        command_to_run = self.dut().dut_config["PowerOnCommand"]["value"]
+        command_to_run = self.dut().dut_config.get("PowerOnCommand", {}).get("value", "")
+        if not command_to_run:
+            self.test_run().add_log(LogSeverity.INFO, "Please provide the power on command in dut info to run.")
+            return 
         self.test_run().add_log(LogSeverity.INFO, json.dumps(command_to_run, indent=4))
         arguments = shlex.split(command_to_run)
         subprocess.check_output(arguments, cwd=os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-        time.sleep(self.dut().dut_config["PowerOnWaitTime"]["value"])
+        time.sleep(self.dut().dut_config.get("PowerOnWaitTime", {}).get("value", 300))
         self.test_run().add_log(LogSeverity.INFO, "Power ON wait time done")
         return
 
     def IsGPUReachable(self):
         """
-        :Description:        It will check fofr GPU is available or not using Redfish command
+        :Description:        It will check for GPU is available or not using Redfish command
 
         :returns:	         JSON data after executing redfish command
         :rtype:              JSON Dict

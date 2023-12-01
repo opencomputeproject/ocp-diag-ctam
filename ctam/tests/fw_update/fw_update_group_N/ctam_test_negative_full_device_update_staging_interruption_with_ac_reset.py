@@ -3,14 +3,14 @@ Copyright (c) NVIDIA CORPORATION
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Negative Full Device Update Staging Interruption With Single Device Update
+:Test Name:		CTAM Test Negative Full Device Update Staging Interruption With AC Reset
 :Test ID:		F24
 :Group Name:	fw_update
 :Score Weight:	10
 
 :Description:	Test case of full firmware update in a loop. To verify the ongoing rollback is not affected by 
 :Usage 1:		python ctam.py -w ..\workspace -t F24
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Staging Interruption With Single Device Update"
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Staging Interruption With AC Reset"
 
 """
 from typing import Optional, List
@@ -35,7 +35,7 @@ class CTAMTestFullDeviceUpdateInterruptionWithSingleDeviceUpdate(TestCase):
     :type TestCase:
     """
 
-    test_name: str = "CTAM Test Full Device Update Staging Interruption With Single Device Update"
+    test_name: str = "CTAM Test Negative Full Device Update Staging Interruption With AC Reset"
     test_id: str = "F24"
     score_weight: int = 10
     tags: List[str] = ["Negative", "L2"]
