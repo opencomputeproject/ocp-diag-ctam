@@ -76,9 +76,9 @@ class CTAMTestServiceValidator(TestCase):
         with step2.scope():
             # uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/Chassis",
             #                                     component_type="GPU")
-            self.dut().validate_redfish_service(file_name="RedfishServiceValidator", 
-                                        uri="/redfish/v1/Chassis",
-                                        depth="Single")
+            result = self.dut().validate_redfish_service(file_name="RedfishServiceValidator", 
+                                        uri="/redfish/v1",
+                                        depth="Tree")
         step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
         with step3.scope():
             self.dut().clean_repo()

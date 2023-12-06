@@ -453,8 +453,17 @@ class CompToolDut(Dut):
                 bar()
                 if result.stderr:
                     raise Exception(result.stderr)
+            result = result.stdout.decode("utf-8").strip()
+            data = result.replace("\r", "").split("\n")[-1]
+            if "fail" in data.lower():
+                msg = "Redfish ServiceVerification has failed. Please check log file for more details."
+                msg += "\n{}".format(self.logger_path)
+                self.test_info_logger.log(msg)
+                return False
+            return True
         except Exception as e:
             print(f"Exception Occurred: {e}")
+            return False
     
     def validate_redfish_interop(self, file_name, uri, depth, *args, **kwargs):
         log_path = os.path.join(self.logger_path, file_name)
