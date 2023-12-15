@@ -577,8 +577,12 @@ class TestRunner:
             self.generate_compliance_data(test_instance, "Others", self.weighted_scores["Others"], execution_time, total_test, test_passed, score_weight, score, grade)
 
     def generate_compliance_data(self, test_instance, c_level, l_weight, e_time, t_test, t_pass, s_weight, score, grade):
+        
         if c_level not in self.compliance_data:
-            grade = round((test_instance.score / test_instance.score_weight * 100), 2)
+            if test_instance.score_weight == 0:
+                grade = 0
+            else:
+                grade = round((test_instance.score / test_instance.score_weight * 100), 2)
             self.compliance_data[c_level] = [c_level,
                                             l_weight,
                                             e_time,
@@ -592,7 +596,10 @@ class TestRunner:
             data = self.compliance_data[c_level]
             sw = data[5] + test_instance.score_weight
             s = data[6] + test_instance.score
-            grade = round((s / sw * 100), 2)
+            if test_instance.score_weight == 0:
+                grade = 0
+            else:
+                grade = round((s / sw * 100), 2)
             self.compliance_data[c_level] = [c_level,
                                                 l_weight,
                                                 data[2] + e_time,
