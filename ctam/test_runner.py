@@ -92,9 +92,10 @@ class TestRunner:
         self.output_dir = ""
         self.workspace_dir = workspace_dir
         self.response_check_name = None
-        
+        self.compliance_data = {}
         self.include_tags_set = set()
         self.exclude_tags_set = set()
+        self.weighted_scores = {}
         self.debug_mode = True
         self.console_log = True
         self.progress_bar = False
@@ -137,18 +138,20 @@ class TestRunner:
         elif runner_config.get("active_test_suite", None):
             test_suite_to_select = runner_config.get("active_test_suite", None)
             # Remove the active_test_suite key before selecting the test suite
-            del runner_config["active_test_suite"]
+            #del runner_config["active_test_suite"]
 
             # Select the test suite from test_runner_data
-            selected_test_suite = runner_config.get(test_suite_to_select)
+            for test_suite in test_suite_to_select:
+                selected_test_suite_cases = runner_config.get(test_suite)
 
-            if selected_test_suite is not None:
-                # Assign the selected test suite to a Python list
-                self.test_sequence = selected_test_suite
-            else:
-                raise Exception(
-                    "active_test_suite in test_runner.json specifies missing List"
-                )
+                if selected_test_suite_cases is not None:
+                    # Assign the selected test suite to a Python list
+                    for test_case in selected_test_suite_cases:
+                        self.test_sequence.append(test_case)
+                else:
+                    raise Exception(
+                        "active_test_suite in test_runner.json specifies missing List"
+                    )
         elif run_all_tests:
             self.test_sequence = run_all_tests
         # else:
@@ -170,8 +173,10 @@ class TestRunner:
                 self.debug_mode = runner_config["debug_mode"]
                 self.console_log = runner_config["console_log"]
                 self.progress_bar = runner_config["progress_bar"]
+                self.weighted_scores = runner_config["weighted_score"]
+                
         else:
-            print("[WARNING]: Running CTAM with  default setting. If you want to \
+            print("[WARNING]: Running CTAM with default setting. If you want to \
                   provide custom setting, Please use test_runner.json config file.")
         return runner_config
 
@@ -237,7 +242,7 @@ class TestRunner:
             self.output_dir = os.path.join(
                 "workspace", "TestRuns", testrun_name+"_{}".format(self.dt)
             )
-        print(self.output_dir)
+       
         self.cmd_output_dir = os.path.join(self.output_dir, "RedfishCommandDetails")
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
@@ -305,6 +310,12 @@ class TestRunner:
         self.active_run.end(status=run_status, result=run_result)
         tv.config(writer=StdoutWriter())
 
+    def __compliance_level_score(self, testcase):
+        
+        for tag in self.weighted_scores:
+            if tag in testcase.compliance_level:
+                testcase.score_weight = self.weighted_scores[tag]
+            
     def run(self):
         """
         Public API used to kick of the test suite
@@ -412,12 +423,13 @@ class TestRunner:
                     "Grade": "{}%".format(gtotal),
                     }
             self.score_logger.write(json.dumps(msg))
-            self.test_result_data.append(("Total Score", "", 
+            self.test_result_data.append(("Overall", "", 
                                         timedelta(seconds=TestCase.total_execution_time),
                                         TestCase.total_compliance_score, 
                                         TestCase.max_compliance_score,"{}%".format(gtotal)))
-            self.generate_test_report()
             self.generate_domain_test_report()
+            self.generate_compliance_level_test_report()
+            self.generate_test_report()
             time.sleep(1)
             if self.progress_bar and self.console_log is False:
                 while progress_thread.is_alive():
@@ -464,7 +476,7 @@ class TestRunner:
                     msg = f"Test {test_instance.__class__.__name__} skipped due to tags. tags = {test_inc_tags}"
                     self.active_run.add_log(severity=LogSeverity.INFO, message=msg)
                     continue
-
+                self.__compliance_level_score(testcase=test_instance)
                 # this exception block goal is to ensure test case teardown() is called even if setup() or run() fails
                 try:
                     test_starttime = time.perf_counter()
@@ -505,12 +517,14 @@ class TestRunner:
                         "TestCaseScore": test_instance.score,
                         "TestCaseResult": TestResult(test_instance.result).name
                     }
-                    self.test_result_data.append((test_instance.test_id,
+                    test_tuple = (test_instance.test_id,
                                                    test_instance.test_name,
                                                    test_instance.execution_time,
                                                    test_instance.score_weight,
                                                    test_instance.score,                                              
-                                                   TestResult(test_instance.result).name))
+                                                   TestResult(test_instance.result).name)
+                    self.test_result_data.append(test_tuple)
+                    self.update_weighted_data(test_instance)
                     self.score_logger.write(json.dumps(msg))
 
             grade = (
@@ -547,25 +561,92 @@ class TestRunner:
         if self.comp_tool_dut:
             self.comp_tool_dut.clean_up()
 
+    def update_weighted_data(self, test_instance):
+        c_level = test_instance.compliance_level
+        w_score = self.weighted_scores.get(test_instance.compliance_level, 10)
+        execution_time = test_instance.execution_time
+        total_test = 1
+        test_passed = 1 if TestResult(test_instance.result).name == TestResult.PASS.name else 0
+        score_weight = test_instance.score_weight
+        score = test_instance.score
+        grade = 0
+        if test_instance.compliance_level in self.weighted_scores:
+            self.generate_compliance_data(test_instance, c_level, w_score, execution_time, total_test, test_passed, score_weight, score, grade)
+            
+        else:   
+            self.generate_compliance_data(test_instance, "Others", self.weighted_scores["Others"], execution_time, total_test, test_passed, score_weight, score, grade)
+
+    def generate_compliance_data(self, test_instance, c_level, l_weight, e_time, t_test, t_pass, s_weight, score, grade):
+        if c_level not in self.compliance_data:
+            grade = round((test_instance.score / test_instance.score_weight * 100), 2)
+            self.compliance_data[c_level] = [c_level,
+                                            l_weight,
+                                            e_time,
+                                            t_test,
+                                            t_pass,
+                                            s_weight,
+                                            score,
+                                            grade
+                                            ]
+        else:
+            data = self.compliance_data[c_level]
+            sw = data[5] + test_instance.score_weight
+            s = data[6] + test_instance.score
+            grade = round((s / sw * 100), 2)
+            self.compliance_data[c_level] = [c_level,
+                                                l_weight,
+                                                data[2] + e_time,
+                                                data[3] + t_test,
+                                                data[4] + t_pass,
+                                                data[5] + s_weight,
+                                                data[6] + score,
+                                                grade
+                                                ]
+
     def generate_test_report(self):
         """
         This method is used for creating a tabula format for test result.
         It will have TestID, TestName, Test Score, Test Result, Test Weight and total
 
         """
-        #print(self.test_result_data)
         t = PrettyTable(["TestID", "TestName", "ExecutionTime", "TestScoreWeight", "TestScore", "TestResult"])
         t.title = "Test Result"
         t.add_rows(self.test_result_data[:len(self.test_result_data) - 1:])
         t.add_row(["", "", "", "", "", ""], divider=True)
-        t.add_row(["", "", "Total Execution Time", "Compliance Score",
-                   "Total Test Score", "Grade"], divider=True)
         t.add_row(self.test_result_data[-1], divider=True)
         t.align["TestName"] = "l"
         
         with open(self.test_result_file, 'a') as f:
-            f.write(str(t))
+            f.write("\n" + str(t))
         print(t)
+
+    def generate_compliance_level_test_report(self):
+        """
+        This method is used for creating a tabula format for compliance level test result.
+        It will have ComplianceID, ComplianceScore, GroupID, TestCaseID, TestCaseName, WeightedScore, TestScore and TestResult.
+        """
+        
+        if self.weighted_scores:
+        
+            c_data = dict(sorted(self.compliance_data.items()))
+            compliance_values = c_data.values()
+            total_execution = sum([x[2].total_seconds() for x in compliance_values])
+            total_test_cases = sum([x[3] for x in compliance_values])
+            total_passed_test_cases = sum([x[4] for x in compliance_values])
+            total_weight = sum([x[5] for x in compliance_values])
+            total_score = sum([x[6] for x in compliance_values])
+            grade = round((total_score / total_weight * 100), 2)
+
+            ct = PrettyTable(["Compliance Level", "Level Weight", "Total Execution Time", "TestCases Run", "TestCases Passed", "Total Weight", "Total Score", "Grade"])
+            ct.title = "Compliance Level Test Report"
+            ct.add_rows(c_data.values())
+            ct.add_row(["","","","","","","",""], divider=True)
+            ct.add_row(["Overall", "", timedelta(seconds=total_execution), total_test_cases, total_passed_test_cases, total_weight, total_score, grade])
+            
+            with open(self.test_result_file, 'a') as f:
+                f.write("\n" + str(ct))
+            print(ct)
+
 
     def generate_domain_test_report(self):
         """
@@ -573,7 +654,7 @@ class TestRunner:
         It will have DomainID, Domain, TComplianceWeight, ComplianceScore, Grade and total
 
         """
-        dt = PrettyTable(["DomainID", "Domain", "Total Execution Time", "Testcases Run", "Testcases Passed", "ComplianceWeight", "ComplianceScore", "Grade"])
+        dt = PrettyTable(["DomainID", "Domain", "Total Execution Time", "Testcases Run", "Testcases Passed", "TotalWeight", "TotalScore", "Grade"])
         dt.title = "Domain-wise Test Report"
 
         executionTimes = [0, 0, 0, 0]
@@ -652,7 +733,7 @@ class TestRunner:
         
         gt = round(gradeTotal, 2)
 
-        dt.add_row(["", "Overall", timedelta(seconds=executionTimetotal),
+        dt.add_row(["Overall", "", timedelta(seconds=executionTimetotal),
                     testCasesTotal, passedTestsTotal,
                    compWeightTotal, compScoreTotal, "{}%".format(gt)], divider=True)
         with open(self.test_result_file, 'a') as f:

@@ -33,6 +33,7 @@ class CTAMTestTelemetryManagersEthernetInterfacesGatewayChange(TestCase):
     test_id: str = "T38"
     score_weight: int = 10
     tags: List[str] = []
+    compliance_level: str =""
 
     def __init__(self, group: BasicTelemetryTestGroup):
         """

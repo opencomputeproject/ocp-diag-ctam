@@ -49,6 +49,7 @@ class CTAMTestFullDeviceUpdateWithSelfTest(TestCase):
     test_id: str = "F67"
     score_weight: int = 10
     tags: List[str] = ["L3"]
+    compliance_level: str = "L3"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """

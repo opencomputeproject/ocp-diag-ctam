@@ -40,6 +40,7 @@ class CTAMTestFullDeviceUpdateActivationTime(TestCase):
     test_id: str = "F64"
     score_weight: int = 10
     tags: List[str] = ["L1"]
+    compliance_level: str = "L1"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """

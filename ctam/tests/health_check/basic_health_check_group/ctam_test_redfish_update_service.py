@@ -40,6 +40,7 @@ class CTAMTestRedfishUpdateService(TestCase):
     test_id: str = "H4"
     score_weight: int = 10
     tags: List[str] = ["HCheck"]
+    compliance_level: str =""
 
     # exclude_tags: List[str] = ["NotCheck"]
 

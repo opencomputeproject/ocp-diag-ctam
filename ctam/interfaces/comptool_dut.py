@@ -18,6 +18,7 @@ import time
 from datetime import datetime
 import shutil
 import stat
+import shlex
 from os import path
 from alive_progress import alive_bar
 # import pandas as pd
@@ -109,10 +110,10 @@ class CompToolDut(Dut):
             )
 
         # TODO investigate storing FW update files via add_software_info() in super
-        self.connection_url = ("http://" if self.SshTunnel else "https://") + self.connection_ip_address + "/"
+        self.__connection_url = ("http://" if self.SshTunnel else "https://") + self.connection_ip_address
         default_prefix = self.uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
         self.redfish_ifc = redfish.redfish_client(
-            self.connection_url,
+            self.__connection_url,
             username=self.__user_name,
             password=self.__user_pass,
             default_prefix=default_prefix,
@@ -137,6 +138,30 @@ class CompToolDut(Dut):
             self.test_info_logger.log("No package_info.json file found...")
             return {}
             # raise Exception("Please provide package info config file...")
+
+    @property
+    def user_name(self):
+        return self.__user_name
+    
+    @user_name.setter
+    def user_name(self, value):
+        raise Exception("Username can not be override...")
+
+    @property
+    def user_pass(self):
+        return self.__user_name
+    
+    @user_pass.setter
+    def user_pass(self, value):
+        raise Exception("Password can not be override...")
+    
+    @property
+    def connection_url(self):
+        return self.__connection_url
+    
+    @connection_url.setter
+    def connection_url(self, value):
+        raise Exception("Connection IP can not be override...")
 
     def run_redfish_command(self, uri, mode="GET", body=None, headers=None, timeout=None):
         """
@@ -405,113 +430,7 @@ class CompToolDut(Dut):
             print(str(e))
             return ["[FATAL] Exception occurred during system discovery. Please see below exception...",str(e)], False
         
-    def clone_repo(self, repo_url="", username="", repo_dir=""):
-        try:
-            repo_parent = os.path.dirname(os.path.dirname(__file__))
-            # self.repo_path = os.path.join(repo_parent, )
-            self.repo_path = os.path.join(repo_parent, repo_dir)
-
-            # repo_path = os.path.join(self.cwd, "")
-            if not os.path.exists(self.repo_path):
-                os.makedirs(self.repo_path)
-            
-            import subprocess
-            result = subprocess.run(["git", "clone", repo_url, self.repo_path], capture_output=True)
-            for filename in os.listdir(self.repo_path):
-                if "requirement" in filename:
-                    cmd = "python -m pip install -r {} ".format(os.path.join(self.repo_path, filename))
-                    res  =subprocess.run(cmd)
-                    if res.stderr:
-                        raise Exception(res.stderr)
-            if result.stderr:
-                raise Exception(result.stderr)
-        except Exception as e:
-            print(e)
     
-    def validate_redfish_service(self, file_name, uri, depth, *args, **kwargs):
-        log_path = os.path.join(self.logger_path, file_name)
-        try:
-            file_name = os.path.join(self.repo_path, file_name)
-            base_uri = self.uri_builder.format_uri(redfish_str="{GPUMC}",
-                                                                component_type="GPU")
-            schema_directory = os.path.join(self.repo_path, "SchemaFiles")
-            run_command = "python {file_name}.py --ip {ip} \
-                -u {user} -p {pwd} --logdir {log_dir} \
-                --schema_directory {schema_directory} \
-                    --payload {depth} {uri}".format(
-                        file_name=file_name,
-                        ip=self.connection_url + base_uri,
-                        user=self.__user_name,
-                        pwd=self.__user_pass,
-                        log_dir=log_path,
-                        schema_directory=schema_directory,
-                        depth=depth,
-                        uri=uri
-                    )
-            with alive_bar(0,theme="classic", stats=False) as bar:
-                result = subprocess.run(run_command, capture_output=True)
-                bar()
-                if result.stderr:
-                    raise Exception(result.stderr)
-            result = result.stdout.decode("utf-8").strip()
-            data = result.replace("\r", "").split("\n")[-1]
-            if "fail" in data.lower():
-                msg = "Redfish ServiceVerification has failed. Please check log file for more details."
-                msg += "\n{}".format(self.logger_path)
-                self.test_info_logger.log(msg)
-                return False
-            return True
-        except Exception as e:
-            print(f"Exception Occurred: {e}")
-            return False
-    
-    def validate_redfish_interop(self, file_name, uri, depth, *args, **kwargs):
-        log_path = os.path.join(self.logger_path, file_name)
-        try:
-            file_name = os.path.join(self.repo_path, file_name)
-            base_uri = self.uri_builder.format_uri(redfish_str="{GPUMC}",
-                                                                component_type="GPU")
-            ip = self.connection_ip_address + base_uri
-            schema_directory = os.path.join(self.repo_path, "SchemaFiles")
-            run_command = "python {file_name}.py --ip {ip} \
-                -u {user} -p {pwd} --logdir {log_dir} \
-                --schema_directory {schema_directory} \
-                    --payload {depth} {uri}".format(
-                        file_name=file_name,
-                        ip="https://"+ ip,
-                        user=self.__user_name,
-                        pwd=self.__user_pass,
-                        log_dir=log_path,
-                        schema_directory=schema_directory,
-                        depth=depth,
-                        uri=uri
-                    )
-            with alive_bar(0,theme="classic", stats=False) as bar:
-                result = subprocess.run(run_command, capture_output=True)
-                bar()
-                if result.stderr:
-                    raise Exception(result.stderr)
-                
-        except Exception as e:
-            print(f"Exception Occurred: {e}")
-    
-    def clean_repo(self, repo_path=""):
-        # for filename in os.listdir(self.repo_path):
-        #     if "requirement" in filename:
-        #         print(os.path.join(self.repo_path, filename))
-        #         cmd = "python -m pip uninstall -r {} ".format(os.path.join(self.repo_path, filename))
-        #         print(cmd)
-        #         res  =subprocess.run(cmd)
-        #         print(res.stdout)
-        if not repo_path:
-            repo_path = self.repo_path
-        
-        for root, dirs, files in os.walk(self.repo_path):  
-            for dir in dirs:
-                os.chmod(path.join(root, dir), stat.S_IRWXU)
-            for file in files:
-                os.chmod(path.join(root, file), stat.S_IRWXU)
-        shutil.rmtree(repo_path)
     
         
 

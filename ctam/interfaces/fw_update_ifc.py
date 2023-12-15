@@ -157,10 +157,9 @@ class FWUpdateIfc(FunctionalIfc):
         """
         MyName = __name__ + "." + self.ctam_stage_fw.__qualname__
         StartTime = time.time()
-
-        if partial == 0:
+        pushtargets = self.dut().uri_builder.format_uri(redfish_str="{HttpPushUriTargets}", component_type="GPU")
+        if partial == 0 and pushtargets:
             self.ctam_pushtargets()
-
         JSONFWFilePayload = self.get_JSONFWFilePayload_file(image_type=image_type, corrupted_component_id=corrupted_component_id)
         if not os.path.isfile(JSONFWFilePayload):
             self.test_run().add_log(LogSeverity.DEBUG, f"Package file not found!!!")
@@ -571,10 +570,11 @@ class FWUpdateIfc(FunctionalIfc):
         if PLDMPkgJson_file and os.path.isfile(PLDMPkgJson_file):
             with open(PLDMPkgJson_file, "r") as f:
                 PLDMPkgJson = json.load(f)
-        
             # Now find the FW version for the software IDs in the PLDM bundle
+            
             for software_id in Updateable_SoftwareIds:
                 fw_versions = []
+
                 jsonhuntall(PLDMPkgJson,
                         "ComponentIdentifier",
                         str(int(software_id, 16)),
@@ -614,7 +614,7 @@ class FWUpdateIfc(FunctionalIfc):
                                         break
                                 for comp_index in ApplicableComponents:
                                     comp_info =  PLDMPkgJson.get("ComponentImageInformationArea", {}).get("ComponentImageInformation", [])[comp_index]
-                                    if comp_info["ComponentIdentifier"] == str(int(software_id, 16)):
+                                    if comp_info["ComponentIdentifier"] == str(hex(int(software_id, 16))):
                                         ComponentVersions[software_id] = comp_info["ComponentVersionString"]
                                         break
         else:

@@ -41,6 +41,7 @@ class CTAMTestNegativeUpdateWithIllegalTargets(TestCase):
     test_id: str = "F32"
     score_weight: int = 10
     tags: List[str] = ["Negative", "L2"]
+    compliance_level: str = "L2"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """

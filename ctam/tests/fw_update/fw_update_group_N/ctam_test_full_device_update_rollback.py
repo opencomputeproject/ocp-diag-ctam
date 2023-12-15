@@ -40,6 +40,7 @@ class CTAMTestFullDeviceUpdateRollback(TestCase):
     test_id: str = "F0"
     score_weight: int = 10
     tags: List[str] = ["Compliance", "L0"]
+    compliance_level: str = "L0"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """
