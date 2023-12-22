@@ -136,6 +136,7 @@ class TestHierarchy:
             for file_name in files:
                 if file_name.endswith(".py"):
                     module_name = file_name[:-3]  # Remove the .py extension
+                    
                     module_path = os.path.join(root, file_name)
 
                     with open(module_path, "r") as f:
@@ -171,6 +172,7 @@ class TestHierarchy:
                     os.path.join(root, dir)
                 )  # add test group dirs to python search path
                 test_group_dir = os.path.join(root, dir)
+                
                 for filename in os.listdir(test_group_dir):
                     if filename.endswith(".py"):
                         with open(os.path.join(test_group_dir, filename), "r") as f:
@@ -319,6 +321,30 @@ class TestHierarchy:
                 return group_info
         return None
 
+    def get_domains(self):
+        domains = {}
+        for group_name, group_info in self.test_groups.items():
+            d_name = group_info[
+                "group_attributes"
+            ].get("domain_name")
+            if d_name and d_name not in domains:
+                domains[d_name] = len(group_info["test_cases"])
+            elif d_name and d_name in domains:
+                domains[d_name] += len(group_info["test_cases"])
+        return domains
+    
+    def get_compliance_test_cases(self):
+        compliance_test_count = {}
+        for group_name, group_info in self.test_groups.items():
+            for testcase in group_info["test_cases"]:
+                # Check if the param matches the testcase name or the test_id
+                c_data = testcase["attributes"].get("compliance_level")
+                if c_data and c_data not in compliance_test_count:
+                    compliance_test_count[c_data] = 1
+                elif c_data and c_data in compliance_test_count:
+                    compliance_test_count[c_data] += 1     
+        return compliance_test_count  
+    
     def _instantiate_object(self, obj_info, class_name, init_param=None):
         """
         Used to instantiate a TestGroup or TestCase

@@ -20,6 +20,7 @@ class BasicRasTestGroup(TestGroup):
 
     tags: List[str] = []
     group_id : str = "GR1"
+    domain_name: str = "Ras"
     # exclude_tags: List[str] = []
 
     def __init__(self):

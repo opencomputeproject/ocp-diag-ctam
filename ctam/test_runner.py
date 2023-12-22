@@ -96,6 +96,7 @@ class TestRunner:
         self.include_tags_set = set()
         self.exclude_tags_set = set()
         self.weighted_scores = {}
+        self.normalized_scores = {}
         self.debug_mode = True
         self.console_log = True
         self.progress_bar = False
@@ -174,6 +175,11 @@ class TestRunner:
                 self.console_log = runner_config["console_log"]
                 self.progress_bar = runner_config["progress_bar"]
                 self.weighted_scores = runner_config["weighted_score"]
+                self.normalized_scores = runner_config["normalized_score"]
+                normalized_values = list(self.normalized_scores.values())
+                if sum(normalized_values) != 100:
+                    raise Exception("Total Normalized score is not equal to 100. Please check test_runner.json for Normalized score.")
+                
                 
         else:
             print("[WARNING]: Running CTAM with default setting. If you want to \
@@ -327,7 +333,8 @@ class TestRunner:
             if self.progress_bar:
                 progress_thread = threading.Thread(target=self.display_progress_bar)
                 progress_thread.daemon = True
-
+            data = self.test_hierarchy.get_compliance_test_cases()
+            self.comp_data = self.generate_normalized_compliance_data(data, "")
             group_status_set = set()
             group_result_set = set()
             if self.test_cases:
@@ -423,12 +430,14 @@ class TestRunner:
                     "Grade": "{}%".format(gtotal),
                     }
             self.score_logger.write(json.dumps(msg))
-            self.test_result_data.append(("Overall", "", 
+            self.test_result_data.append(("Total", "", 
                                         timedelta(seconds=TestCase.total_execution_time),
                                         TestCase.total_compliance_score, 
                                         TestCase.max_compliance_score,"{}%".format(gtotal)))
             self.generate_domain_test_report()
             self.generate_compliance_level_test_report()
+            self.normalized_compliance_level_table()
+            
             self.generate_test_report()
             time.sleep(1)
             if self.progress_bar and self.console_log is False:
@@ -525,6 +534,7 @@ class TestRunner:
                                                    TestResult(test_instance.result).name)
                     self.test_result_data.append(test_tuple)
                     self.update_weighted_data(test_instance)
+                    self.update_normalized_compliance_data(test_instance)
                     self.score_logger.write(json.dumps(msg))
 
             grade = (
@@ -569,46 +579,91 @@ class TestRunner:
         test_passed = 1 if TestResult(test_instance.result).name == TestResult.PASS.name else 0
         score_weight = test_instance.score_weight
         score = test_instance.score
+        available_testcases = self.test_hierarchy.get_compliance_test_cases()
         grade = 0
         if test_instance.compliance_level in self.weighted_scores:
-            self.generate_compliance_data(test_instance, c_level, w_score, execution_time, total_test, test_passed, score_weight, score, grade)
+            self.generate_compliance_data(test_instance, c_level, w_score, available_testcases[c_level], total_test, test_passed, score_weight, score, grade, execution_time)
             
         else:   
-            self.generate_compliance_data(test_instance, "Others", self.weighted_scores["Others"], execution_time, total_test, test_passed, score_weight, score, grade)
+            self.generate_compliance_data(test_instance, "L3", self.weighted_scores["L3"], available_testcases["L3"], total_test, test_passed, 0, 0, 0, execution_time)
 
-    def generate_compliance_data(self, test_instance, c_level, l_weight, e_time, t_test, t_pass, s_weight, score, grade):
+    def generate_compliance_data(self, test_instance, c_level, l_weight, a_testcases, t_test, t_pass, s_weight, score, grade, e_time):
         
         if c_level not in self.compliance_data:
-            if test_instance.score_weight == 0:
+            
+            if s_weight == 0:
                 grade = 0
             else:
                 grade = round((test_instance.score / test_instance.score_weight * 100), 2)
             self.compliance_data[c_level] = [c_level,
                                             l_weight,
-                                            e_time,
+                                            a_testcases,
                                             t_test,
                                             t_pass,
                                             s_weight,
                                             score,
-                                            grade
+                                            grade,
+                                            e_time
                                             ]
         else:
             data = self.compliance_data[c_level]
             sw = data[5] + test_instance.score_weight
             s = data[6] + test_instance.score
-            if test_instance.score_weight == 0:
+            if s_weight == 0:
                 grade = 0
             else:
                 grade = round((s / sw * 100), 2)
             self.compliance_data[c_level] = [c_level,
                                                 l_weight,
-                                                data[2] + e_time,
+                                                a_testcases,
                                                 data[3] + t_test,
                                                 data[4] + t_pass,
                                                 data[5] + s_weight,
-                                                data[6] + score,
-                                                grade
+                                                data[6]+ score,
+                                                grade,
+                                                data[8] + e_time
                                                 ]
+
+    def generate_normalized_compliance_data(self,  c_data, test_instance):
+        comp_data = {}
+        for key, value in c_data.items():
+            w_score = self.normalized_scores[key]
+            d_score = round(w_score/value, 2)
+
+            comp_data[key] = {"Compliance Level":key,
+                "Normalized Weight":w_score,
+                "TestCases Available":value,
+                "Normalized Score":d_score,
+                "TestCases Executed":0,
+                "TestCases Passed":0,
+                "Total Score":0,
+                "Max Score":0,
+                "Grade":0,
+                "Execution Time":timedelta(seconds=0)}
+        return comp_data
+
+    def update_normalized_compliance_data(self, test_instance):
+        c_level = test_instance.compliance_level
+        if c_level in self.comp_data:
+            data = self.comp_data[c_level]
+            data["TestCases Executed"] += 1
+            data["TestCases Passed"] += 1 if TestResult(test_instance.result).name == TestResult.PASS.name else 0
+            data["Total Score"] = data["Normalized Score"] * data["TestCases Passed"]
+            data["Max Score"] = data["Normalized Score"] * data["TestCases Executed"]
+            grade = round(data["TestCases Passed"] / data["TestCases Executed"] * 100, 2)
+            data["Execution Time"] += test_instance.execution_time
+            data["Grade"] = grade
+            self.comp_data[c_level] = data
+        else:
+            data = self.comp_data["L3"]
+            data["TestCases Executed"] += 1
+            data["TestCases Passed"] += 1 if TestResult(test_instance.result).name == TestResult.PASS.name else 0
+            data["Total Score"] = data["Normalized Score"] * data["TestCases Passed"]
+            data["Max Score"] = data["Normalized Score"] * data["TestCases Executed"]
+            # grade = round(data["TestCases Passed"] / data["TestCases Executed"] * 100, 2)
+            data["Execution Time"] += test_instance.execution_time
+            data["Grade"] = 0
+            self.comp_data["L3"] = data
 
     def generate_test_report(self):
         """
@@ -616,7 +671,7 @@ class TestRunner:
         It will have TestID, TestName, Test Score, Test Result, Test Weight and total
 
         """
-        t = PrettyTable(["TestID", "TestName", "ExecutionTime", "TestScoreWeight", "TestScore", "TestResult"])
+        t = PrettyTable(["Test ID", "Test Name", "Execution Time", "TestCase Weight", "Test Score", "Test Result"])
         t.title = "Test Result"
         t.add_rows(self.test_result_data[:len(self.test_result_data) - 1:])
         t.add_row(["", "", "", "", "", ""], divider=True)
@@ -637,23 +692,66 @@ class TestRunner:
         
             c_data = dict(sorted(self.compliance_data.items()))
             compliance_values = c_data.values()
-            total_execution = sum([x[2].total_seconds() for x in compliance_values])
             total_test_cases = sum([x[3] for x in compliance_values])
             total_passed_test_cases = sum([x[4] for x in compliance_values])
             total_weight = sum([x[5] for x in compliance_values])
             total_score = sum([x[6] for x in compliance_values])
-            grade = round((total_score / total_weight * 100), 2)
+            total_execution = sum([x[8].total_seconds() for x in compliance_values])
+            total_available_testcases = sum([x[2] for x in compliance_values])
+            grade = round((total_score / total_weight * 100), 2) if total_weight else 0
 
-            ct = PrettyTable(["Compliance Level", "Level Weight", "Total Execution Time", "TestCases Run", "TestCases Passed", "Total Weight", "Total Score", "Grade"])
-            ct.title = "Compliance Level Test Report"
+            ct = PrettyTable(["Compliance Level", "Level Weight", "TestCases Available", "TestCases Executed", "TestCases Passed", "Total Weight", "Total Score", "Grade", "Total Execution Time"])
+            ct.title = "Compliance Level Weighted Report"
             ct.add_rows(c_data.values())
-            ct.add_row(["","","","","","","",""], divider=True)
-            ct.add_row(["Overall", "", timedelta(seconds=total_execution), total_test_cases, total_passed_test_cases, total_weight, total_score, grade])
+            
+            ct.add_row(["","","","","","","","",""], divider=True)
+            ct.add_row(["Total", "", total_available_testcases, total_test_cases, total_passed_test_cases, total_weight, total_score, f"{grade}%", timedelta(seconds=total_execution)])
             
             with open(self.test_result_file, 'a') as f:
                 f.write("\n" + str(ct))
             print(ct)
 
+    def normalized_compliance_level_table(self):
+        data = next(iter(self.comp_data))
+        sorted_data = dict(sorted(self.comp_data.items()))
+        total_normalized_weight = 0
+        total_test_cases_available = 0
+        total_normalized_score = 0
+        total_test_cases_executed = 0
+        total_test_cases_passed = 0
+        total_score = 0
+        sum_max_score = 0
+        total_execution_time = timedelta(seconds=0)
+
+        for key, value in self.comp_data.items():
+            total_normalized_weight += value['Normalized Weight']
+            total_test_cases_available += value['TestCases Available']
+            total_normalized_score += value['Normalized Score']
+            total_test_cases_executed += value['TestCases Executed']
+            total_test_cases_passed += value['TestCases Passed']
+            total_score += value['Total Score']
+            sum_max_score += value['Max Score']
+            total_execution_time += value['Execution Time']
+
+        grade = round((total_score / sum_max_score * 100), 2) if sum_max_score else 0
+        normalized_grade = round((total_test_cases_passed / total_test_cases_available * 100), 2)
+        dt = PrettyTable(list(self.comp_data[data].keys()))
+        dt.title = "Compliance Level Normalized Weighted Report"
+        vals = [d.values() for _,d in sorted_data.items()]
+        dt.add_rows(vals)
+        dt.add_row(["","","","","","","","", "", ""], divider=True)
+        dt.add_row(["Total", total_normalized_weight, total_test_cases_available, total_normalized_score, total_test_cases_executed, total_test_cases_passed, total_score, sum_max_score, f"{grade}%", total_execution_time])
+        dt2 = PrettyTable(["TestCases Available", "TestCases Passed", "Grade"])
+        dt2.title = "Compliance Level Normalized Weight Overall Report"
+        # dt2.add_row(["","", "", ""], divider=True)
+        dt2.add_row([total_test_cases_available, total_test_cases_passed, normalized_grade])
+
+        print(dt)
+        with open(self.test_result_file, 'a') as f:
+            f.write("\n" + str(dt))
+        with open(self.test_result_file, 'a') as f:
+            f.write("\n" + str(dt2))
+        print(dt2)
 
     def generate_domain_test_report(self):
         """
@@ -661,8 +759,10 @@ class TestRunner:
         It will have DomainID, Domain, TComplianceWeight, ComplianceScore, Grade and total
 
         """
-        dt = PrettyTable(["DomainID", "Domain", "Total Execution Time", "Testcases Run", "Testcases Passed", "TotalWeight", "TotalScore", "Grade"])
+        dt = PrettyTable(["Domain ID", "Domain", "TestCases Available","TestCases Executed", "Testcases Passed", "Total Weight", "Total Score", "Grade", "Total Execution Time"])
         dt.title = "Domain-wise Test Report"
+
+        domain_count = self.test_hierarchy.get_domains()
 
         executionTimes = [0, 0, 0, 0]
         testCases = [0, 0, 0, 0]
@@ -718,14 +818,14 @@ class TestRunner:
                 grade[j] = compScore[j]/compWeight[j]*100
                 grade[j] = round(grade[j], 2)
 
-        dt.add_row(["T", "Telemetry", timedelta(seconds=executionTimes[0]), 
-                    testCases[0], passedTests[0], compWeight[0], compScore[0], "{}%".format(grade[0])])
-        dt.add_row(["R", "RAS", timedelta(seconds=executionTimes[1]), 
-                    testCases[1], passedTests[1], compWeight[1], compScore[1], "{}%".format(grade[1])])
-        dt.add_row(["H", "Health Check", timedelta(seconds=executionTimes[2]), 
-                    testCases[2], passedTests[2], compWeight[2], compScore[2], "{}%".format(grade[2])])
-        dt.add_row(["F", "FW Update", timedelta(seconds=executionTimes[3]), 
-                    testCases[3], passedTests[3], compWeight[3], compScore[3], "{}%".format(grade[3])], divider=True)
+        dt.add_row(["T", "Telemetry", domain_count["Telemetry"],testCases[0], passedTests[0], 
+                    compWeight[0], compScore[0], "{}%".format(grade[0]), timedelta(seconds=executionTimes[0])])
+        dt.add_row(["R", "RAS", domain_count["Ras"],testCases[1], passedTests[1], 
+                    compWeight[1], compScore[1], "{}%".format(grade[1]), timedelta(seconds=executionTimes[1])])
+        dt.add_row(["H", "Health Check", domain_count["HealthCheck"],testCases[2], passedTests[2], 
+                    compWeight[2], compScore[2], "{}%".format(grade[2]), timedelta(seconds=executionTimes[2])])
+        dt.add_row(["F", "FW Update", domain_count["FWUpdate"],testCases[3], passedTests[3], 
+                    compWeight[3], compScore[3], "{}%".format(grade[3]), timedelta(seconds=executionTimes[3])], divider=True)
 
         executionTimetotal = sum(executionTimes)
         testCasesTotal = sum(testCases)
@@ -740,9 +840,8 @@ class TestRunner:
         
         gt = round(gradeTotal, 2)
 
-        dt.add_row(["Overall", "", timedelta(seconds=executionTimetotal),
-                    testCasesTotal, passedTestsTotal,
-                   compWeightTotal, compScoreTotal, "{}%".format(gt)], divider=True)
+        dt.add_row(["Total", "", "",testCasesTotal, passedTestsTotal,
+                   compWeightTotal, compScoreTotal, "{}%".format(gt), timedelta(seconds=executionTimetotal)], divider=True)
         with open(self.test_result_file, 'a') as f:
             f.write("\n" + str(dt))
         print(dt)

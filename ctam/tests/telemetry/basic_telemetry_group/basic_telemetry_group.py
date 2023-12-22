@@ -20,6 +20,7 @@ class BasicTelemetryTestGroup(TestGroup):
 
     tags: List[str] = []
     group_id : str = "GT1"
+    domain_name: str = "Telemetry"
     # exclude_tags: List[str] = []
 
     def __init__(self):

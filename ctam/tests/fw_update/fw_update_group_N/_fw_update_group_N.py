@@ -20,6 +20,7 @@ class FWUpdateTestGroupN(TestGroup):
 
     tags: List[str] = []
     group_id : str = "GFW1"
+    domain_name: str = "FWUpdate"
     # exclude_tags: List[str] = []
 
     def __init__(self):
