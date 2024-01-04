@@ -14,6 +14,9 @@
     "weighted_score": {
         "L0": 100, "L1": 50, "L2": 20, "L3": 0, "Others": 10
     },
+    "normalized_score": {
+        "L0": 50, "L1": 35, "L2": 15, "L3": 0
+    },
     "active_test_suite": [],
     "dev_test_suite": [],
     "full_compliance_test_suite": [],

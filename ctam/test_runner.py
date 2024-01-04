@@ -174,11 +174,12 @@ class TestRunner:
                 self.debug_mode = runner_config["debug_mode"]
                 self.console_log = runner_config["console_log"]
                 self.progress_bar = runner_config["progress_bar"]
-                self.weighted_scores = runner_config["weighted_score"]
-                self.normalized_scores = runner_config["normalized_score"]
-                normalized_values = list(self.normalized_scores.values())
-                if sum(normalized_values) != 100:
-                    raise Exception("Total Normalized score is not equal to 100. Please check test_runner.json for Normalized score.")
+                self.weighted_scores = runner_config.get("weighted_score", None)
+                self.normalized_scores = runner_config.get("normalized_score", None)
+                if self.normalized_scores:
+                    normalized_values = list(self.normalized_scores.values())
+                    if sum(normalized_values) != 100:
+                        raise Exception("Total Normalized score is not equal to 100. Please check test_runner.json for Normalized score.")
                 
                 
         else:
@@ -334,7 +335,8 @@ class TestRunner:
                 progress_thread = threading.Thread(target=self.display_progress_bar)
                 progress_thread.daemon = True
             data = self.test_hierarchy.get_compliance_test_cases()
-            self.comp_data = self.generate_normalized_compliance_data(data, "")
+            if self.normalized_scores:
+                self.comp_data = self.generate_normalized_compliance_data(data, "")
             group_status_set = set()
             group_result_set = set()
             if self.test_cases:
@@ -435,9 +437,10 @@ class TestRunner:
                                         TestCase.total_compliance_score, 
                                         TestCase.max_compliance_score,"{}%".format(gtotal)))
             self.generate_domain_test_report()
-            self.generate_compliance_level_test_report()
-            self.normalized_compliance_level_table()
-            
+            if self.weighted_scores:
+                self.generate_compliance_level_test_report()
+            if self.normalized_scores:
+                self.normalized_compliance_level_table()
             self.generate_test_report()
             time.sleep(1)
             if self.progress_bar and self.console_log is False:
@@ -485,7 +488,8 @@ class TestRunner:
                     msg = f"Test {test_instance.__class__.__name__} skipped due to tags. tags = {test_inc_tags}"
                     self.active_run.add_log(severity=LogSeverity.INFO, message=msg)
                     continue
-                self.__compliance_level_score(testcase=test_instance)
+                if self.weighted_scores:
+                    self.__compliance_level_score(testcase=test_instance)
                 # this exception block goal is to ensure test case teardown() is called even if setup() or run() fails
                 try:
                     test_starttime = time.perf_counter()
@@ -533,8 +537,10 @@ class TestRunner:
                                                    test_instance.score,                                              
                                                    TestResult(test_instance.result).name)
                     self.test_result_data.append(test_tuple)
-                    self.update_weighted_data(test_instance)
-                    self.update_normalized_compliance_data(test_instance)
+                    if self.weighted_scores:
+                        self.update_weighted_data(test_instance)
+                    if self.normalized_scores:
+                        self.update_normalized_compliance_data(test_instance)
                     self.score_logger.write(json.dumps(msg))
 
             grade = (
