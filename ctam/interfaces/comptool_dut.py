@@ -149,7 +149,7 @@ class CompToolDut(Dut):
 
     @property
     def user_pass(self):
-        return self.__user_name
+        return self.__user_pass
     
     @user_pass.setter
     def user_pass(self, value):
