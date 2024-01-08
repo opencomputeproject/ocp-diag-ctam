@@ -524,7 +524,7 @@ class FunctionalIfc:
         self.test_run().add_log(LogSeverity.INFO, msg)
         return JSONData
     
-    def ctam_activate_ac(self, check_time=False, gpu_check=True):
+    def ctam_activate_ac(self, check_time=False, gpu_check=True, fwupd_hyst_wait=True):
         """
         :Description:					Activate AC
         
@@ -568,8 +568,15 @@ class FunctionalIfc:
             else:
                 ActivationStatus = True
         
-            return ActivationStatus
-        return True
+        if fwupd_hyst_wait == True:
+            IdleWaitTime = self.dut().dut_config["IdleWaitTimeAfterFirmwareUpdate"]["value"]
+            msg = f"Execution will be delayed by {IdleWaitTime} seconds."
+            self.test_run().add_log(LogSeverity.INFO, msg)
+            time.sleep(IdleWaitTime)
+            msg = f"Execution is delayed successfully by {IdleWaitTime} seconds."
+            self.test_run().add_log(LogSeverity.INFO, msg)
+            
+        return True and ActivationStatus
     
     def RedfishTriggerDumpCollection(self, DiagnosticDataType, URI, OEMDiagnosticDataType=None):
         """
