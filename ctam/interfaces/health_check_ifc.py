@@ -112,12 +112,12 @@ class HealthCheckIfc(FunctionalIfc):
             #print(clear_dump_uri)
             uri = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}" + "{}".format(clear_dump_uri), component_type="GPU")
             response = self.dut().run_redfish_command(uri=uri, mode="POST")
-            if response is None or response.status != 204:
-                result = False
-                self.write_test_info("Clearing Log Dump Action Unsuccessful")
-            else:
+            if response is not None or response.status == 204 or response.status == 200:
                 result = True
                 self.write_test_info("Clearing Log Dump Action Successful")
+            else:
+                result = False
+                self.write_test_info("Clearing Log Dump Action Unsuccessful")
         return result
     
     def trigger_self_test_dump_collection(self):

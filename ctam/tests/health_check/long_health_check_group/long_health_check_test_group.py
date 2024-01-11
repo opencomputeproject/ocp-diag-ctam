@@ -20,6 +20,7 @@ class LongHealthCheckTestGroup(TestGroup):
 
     tags: List[str] = []
     group_id : str = "GH2"
+    domain_name: str = "HealthCheck"
     # exclude_tags: List[str] = []
 
     def __init__(self):

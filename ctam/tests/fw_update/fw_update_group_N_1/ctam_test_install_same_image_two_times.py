@@ -42,7 +42,8 @@ class CTAMTestInstallSameImageTwoTimes(TestCase):
     test_name: str = "CTAM Test Install Same Image Two Times"
     test_id: str = "F16"
     score_weight: int = 10
-    tags: List[str] = []
+    tags: List[str] = ["L1"]
+    compliance_level: str = "L1"
 
     def __init__(self, group: FWUpdateTestGroupNMinus1):
         """
@@ -140,12 +141,8 @@ class CTAMTestInstallSameImageTwoTimes(TestCase):
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():
-            if self.group.fw_update_ifc.ctam_activate_ac():
-                msg = f"{self.test_id} : AC Cycle Passed"
-                self.test_run().add_log(LogSeverity.DEBUG, msg)  
-            else:
-                msg = f"{self.test_id} : AC Cycle Failed"
-                self.test_run().add_log(LogSeverity.DEBUG, msg)
+            self.group.fw_update_ifc.ctam_delay_between_testcases()
+            step1.add_log(LogSeverity.INFO, f"Teardown delay completed.")
 
         # call super teardown last
         super().teardown()

@@ -6,6 +6,8 @@ import argparse
 import os
 import sys
 import traceback
+import json
+
 from pathlib import Path
 
 # until the folder structure gets fixed to a more pip/setuptools oriented format
@@ -69,6 +71,39 @@ def parse_args():
 
     return parser.parse_args()
 
+def get_exception_details(exec: Exception = ""):
+    """
+    :Description:                           It will trace back the exception object for getting
+                                            mode details from the exception
+
+    :param Exception exec:		            Exception object
+
+    :returns:                               A dict object for all exception details
+    :rtype:                                 Dict
+    """
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    temp = exc_tb
+    traceback_details = {}
+    while temp:
+        f_name = os.path.split(temp.tb_frame.f_code.co_filename)[1]
+        traceback_details.update(
+            {
+                f_name: {
+                    "filename": temp.tb_frame.f_code.co_filename,
+                    "lineno": temp.tb_lineno,
+                    "name": temp.tb_frame.f_code.co_name,
+                }
+            }
+        )
+        temp = temp.tb_next
+    traceback_details.update(
+        {
+            "type": exc_type.__name__,
+            "message": str(exec),  # or see traceback._some_str()
+        }
+    )
+    return traceback_details
+
 
 def main():
     args = parse_args()
@@ -88,8 +123,6 @@ def main():
             return 1, None, "Invalid workspace specified"
         required_workspace_files = [
             "dut_info.json",
-            "package_info.json",
-            "test_runner.json",
             "redfish_uri_config.json",
             ".netrc",
         ]
@@ -110,6 +143,7 @@ def main():
         net_rc = os.path.join(args.workspace, ".netrc")
         if args.Discovery:
             runner = TestRunner(
+                workspace_dir=args.workspace,
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
                 dut_info_json_file=dut_info_json,
@@ -122,6 +156,7 @@ def main():
 
         elif args.testcase:
             runner = TestRunner(
+                workspace_dir=args.workspace,
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
                 dut_info_json_file=dut_info_json,
@@ -132,6 +167,7 @@ def main():
             )
         elif args.testcase_sequence:
             runner = TestRunner(
+                workspace_dir=args.workspace,
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
                 dut_info_json_file=dut_info_json,
@@ -142,6 +178,7 @@ def main():
             )
         elif args.group:
             runner = TestRunner(
+                workspace_dir=args.workspace,
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
                 dut_info_json_file=dut_info_json,
@@ -152,6 +189,7 @@ def main():
             )
         elif args.group_sequence:
             runner = TestRunner(
+                workspace_dir=args.workspace,
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
                 dut_info_json_file=dut_info_json,
@@ -161,22 +199,25 @@ def main():
                 sequence_group_override=args.group_sequence,
             )
         else:
+            all_tests = test_hierarchy.get_all_tests()
             runner = TestRunner(
+                workspace_dir=args.workspace,
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
                 dut_info_json_file=dut_info_json,
                 package_info_json_file=package_info_json,
                 net_rc=net_rc,
                 redfish_uri_config_file=redfish_uri_config,
+                run_all_tests=all_tests
             )
 
         status_code, exit_string = runner.run()
         log_directory = os.path.relpath(runner.output_dir, os.getcwd())
         return status_code, log_directory, exit_string
 
-    except (NotImplementedError, Exception) as e:
-        exception_details = traceback.format_exc()
-        print(f"Test Run Failed: {exception_details}")
+    except (Exception, NotImplementedError) as e:
+        exception_details = get_exception_details(e)
+        print(f"Test Run Failed: {json.dumps(exception_details, indent=4)}")
         return 1, None, f"Test failed due to exception: {e}"
 
       

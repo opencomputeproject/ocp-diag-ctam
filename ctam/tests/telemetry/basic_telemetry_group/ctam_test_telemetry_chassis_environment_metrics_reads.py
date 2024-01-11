@@ -33,6 +33,7 @@ class CTAMTestTelemetryMRDListRead(TestCase):
     test_id: str = "T8"
     score_weight: int = 10
     tags: List[str] = []
+    compliance_level: str =""
 
     def __init__(self, group: BasicTelemetryTestGroup):
         """

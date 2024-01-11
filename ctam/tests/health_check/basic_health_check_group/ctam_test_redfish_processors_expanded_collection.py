@@ -40,6 +40,7 @@ class CTAMTestRedfishProcessorExpandedCollection(TestCase):
     test_id: str = "H51"
     score_weight: int = 10
     tags: List[str] = ["HCheck"]
+    compliance_level: str =""
 
     # exclude_tags: List[str] = ["NotCheck"]
 

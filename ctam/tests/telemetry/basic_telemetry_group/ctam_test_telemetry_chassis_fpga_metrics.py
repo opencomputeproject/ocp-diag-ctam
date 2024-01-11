@@ -33,6 +33,7 @@ class CTAMTestTelemetryChassisFpgaMetrics(TestCase):
     test_id: str = "T41"
     score_weight: int = 10
     tags: List[str] = []
+    compliance_level: str =""
 
     def __init__(self, group: BasicTelemetryTestGroup):
         """
@@ -63,6 +64,7 @@ class CTAMTestTelemetryChassisFpgaMetrics(TestCase):
         with step1.scope():
             if self.group.telemetry_ifc.ctam_get_chassis_fpga_metrics():
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Passed")
+    
             else:
                 step1.add_log(LogSeverity.FATAL, f"{self.test_id} : Failed")
                 result = False

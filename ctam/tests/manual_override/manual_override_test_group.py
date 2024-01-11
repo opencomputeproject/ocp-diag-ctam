@@ -21,6 +21,7 @@ class ManualOverrideTestGroup(TestGroup):
 
     tags: List[str] = []
     group_id : str = "GM1"
+    domain_name: str = "Manual"
 
     def __init__(self):
         """

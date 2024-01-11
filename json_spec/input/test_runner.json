@@ -11,11 +11,17 @@
     "exclude_tags": [],
     "test_sequence" : [],
     "group_sequence" : [],
-    "command_output_log_path": "",
-    "active_test_suite": "",
-    "dev_test_suite": [
-    ],
-    "full_compliance_test_suite": [
-    ],
+    "weighted_score": {
+        "L0": 100, "L1": 50, "L2": 20, "L3": 0, "Others": 10
+    },
+    "normalized_score": {
+        "L0": 50, "L1": 35, "L2": 15, "L3": 0
+    },
+    "active_test_suite": [],
+    "dev_test_suite": [],
+    "full_compliance_test_suite": [],
+    "regression_test_suite_0": ["F0","F1", "F63", "F64", "F8", "F88", "T0"],
+    "regression_test_suite_1": ["F0", "F1", "F23", "F26", "F28", "F27", "F22", "F25", "F18", "F32"],
+    "regression_test_suite_2": ["F0", "F1", "F16", "F19", "F55", "F62", "F89"],
     "test_uri_response_excel":"Excel file name for checking the response"
 }

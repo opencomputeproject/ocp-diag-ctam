@@ -38,6 +38,7 @@ class CTAMTestLogserviceDumpClearlog(TestCase):
     test_id: str = 'H96'
     score_weight:int = 10
     tags: List[str] = []
+    compliance_level: str =""
 
     def __init__(self, group: LongHealthCheckTestGroup):
         """

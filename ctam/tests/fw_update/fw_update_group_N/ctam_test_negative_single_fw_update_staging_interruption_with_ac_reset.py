@@ -3,7 +3,7 @@ Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Single FW update staging interruption with AC reset
+:Test Name:		CTAM Test Negative Single FW update staging interruption with AC reset
 :Test ID:		F62
 :Group Name:	fw_update
 :Score Weight:	10
@@ -41,7 +41,8 @@ class CTAMTestSingleFWUpdateStagingInterruptionWithACReset(TestCase):
     test_name: str = "CTAM Test Single FW update staging interruption with AC reset"
     test_id: str = "F62"
     score_weight: int = 10
-    tags: List[str] = []
+    tags: List[str] = ["Negative", "L3"]
+    compliance_level: str = "L3"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """

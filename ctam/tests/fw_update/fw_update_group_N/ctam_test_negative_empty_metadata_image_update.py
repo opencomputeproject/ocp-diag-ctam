@@ -41,7 +41,8 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
     test_name: str = "CTAM Test Negative Empty Metadata Image Update"
     test_id: str = "F26"
     score_weight: int = 10
-    tags: List[str] = ["Negative"]
+    tags: List[str] = ["Negative", "L2"]
+    compliance_level: str = "L2"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """
@@ -118,14 +119,6 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Push URI Targets Reset")
             else:
                 step1.add_log(LogSeverity.WARNING, f"{self.test_id} : Push URI Targets Reset - Failed")
-
-        step2 = self.test_run().add_step(f"{self.__class__.__name__}  teardown(), Step2")
-        with step2.scope():
-            if self.group.fw_update_ifc.ctam_activate_ac():
-                msg = f"{self.test_id} : AC Cycle Passed"
-                self.test_run().add_log(LogSeverity.DEBUG, msg)  
-            else:
-                msg = f"{self.test_id} : AC Cycle Failed"
-                self.test_run().add_log(LogSeverity.DEBUG, msg)
+        
         # call super teardown last
         super().teardown()

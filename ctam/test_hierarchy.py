@@ -14,6 +14,7 @@ import sys
 import os
 import ast
 from typing import List, Any
+from prettytable import PrettyTable
 
 
 class TestHierarchy:
@@ -135,6 +136,7 @@ class TestHierarchy:
             for file_name in files:
                 if file_name.endswith(".py"):
                     module_name = file_name[:-3]  # Remove the .py extension
+                    
                     module_path = os.path.join(root, file_name)
 
                     with open(module_path, "r") as f:
@@ -170,6 +172,7 @@ class TestHierarchy:
                     os.path.join(root, dir)
                 )  # add test group dirs to python search path
                 test_group_dir = os.path.join(root, dir)
+                
                 for filename in os.listdir(test_group_dir):
                     if filename.endswith(".py"):
                         with open(os.path.join(test_group_dir, filename), "r") as f:
@@ -235,27 +238,49 @@ class TestHierarchy:
         :param group_name: Name of group, defaults to None
         :type group_name: str, optional
         """
+        t = PrettyTable(["GroupID", "GroupName", "GroupTag", "TestCaseID", "TestCaseName", "TestCaseTag", "TestCaseWeightScore"])
+        t.title = "Test Case info table"
 
         def print_group_info(group_name, group_info):
-            print(f'\nGroup ID: {group_info["group_attributes"]["group_id"]}      Test Group Name: {group_name}')
+            total_cases = len(group_info["test_cases"])
+            if total_cases == 0:
+                t.add_row([group_info["group_attributes"]["group_id"], group_name, "", "", "", "", ""])
+                return
+            count = 0
+            # print(f'\nGroup ID: {group_info["group_attributes"]["group_id"]}      Test Group Name: {group_name}')
             for testcase in group_info["test_cases"]:
-                print(
-                    f'    Test Case ID: {testcase["attributes"]["test_id"]}      Test Case Name: {testcase["testcase_name"]}'
-                )
+                if count != total_cases//2:
+                    t.add_row(["", "", group_info["group_attributes"]["tags"],\
+                          testcase["attributes"]["test_id"], testcase["testcase_name"], testcase["attributes"]["tags"],\
+                             testcase["attributes"]["score_weight"]])
+                else:
+                    t.add_row([group_info["group_attributes"]["group_id"], group_name, group_info["group_attributes"]["tags"],\
+                          testcase["attributes"]["test_id"], testcase["testcase_name"], testcase["attributes"]["tags"],\
+                             testcase["attributes"]["score_weight"]])
+                count += 1
+                # print(
+                #     f'    Test Case ID: {testcase["attributes"]["test_id"]}      Test Case Name: {testcase["testcase_name"]}'
+                # )
 
         if group_name is None:
             # If no group name is specified, print all groups.
             for group_name, group_info in self.test_groups.items():
                 print_group_info(group_name, group_info)
+                t.add_row(["","","","","","",""], divider=True)
+                
         else:
             # Otherwise, print the specified group.
-            print(self.test_groups)
+            #print(self.test_groups)
             group_info = self._find_group(group_name)
             # group_info = self.test_groups.get(group_name)
             if group_info is not None:
                 print_group_info(group_name, group_info)
             else:
                 print(f"No test group named {group_name} found.")
+        
+        # print the table now
+        t.align = "l"
+        print(t)
 
     def _find_testcase(self, param):
         """
@@ -296,6 +321,30 @@ class TestHierarchy:
                 return group_info
         return None
 
+    def get_domains(self):
+        domains = {}
+        for group_name, group_info in self.test_groups.items():
+            d_name = group_info[
+                "group_attributes"
+            ].get("domain_name")
+            if d_name and d_name not in domains:
+                domains[d_name] = len(group_info["test_cases"])
+            elif d_name and d_name in domains:
+                domains[d_name] += len(group_info["test_cases"])
+        return domains
+    
+    def get_compliance_test_cases(self):
+        compliance_test_count = {}
+        for group_name, group_info in self.test_groups.items():
+            for testcase in group_info["test_cases"]:
+                # Check if the param matches the testcase name or the test_id
+                c_data = testcase["attributes"].get("compliance_level")
+                if c_data and c_data not in compliance_test_count:
+                    compliance_test_count[c_data] = 1
+                elif c_data and c_data in compliance_test_count:
+                    compliance_test_count[c_data] += 1     
+        return compliance_test_count  
+    
     def _instantiate_object(self, obj_info, class_name, init_param=None):
         """
         Used to instantiate a TestGroup or TestCase
@@ -446,3 +495,10 @@ class TestHierarchy:
                             raise
 
         return instances
+
+    def get_all_tests(self):
+        all_tests = []
+        for group_name, group_info in self.test_groups.items():
+            for testcase in group_info["test_cases"]:
+                all_tests.append(testcase["attributes"]["test_id"])
+        return all_tests

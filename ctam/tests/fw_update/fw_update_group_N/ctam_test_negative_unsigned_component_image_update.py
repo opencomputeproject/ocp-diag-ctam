@@ -41,7 +41,8 @@ class CTAMTestNegativeUnsignedImageUpdate(TestCase):
     test_name: str = "CTAM Test Negative Unsigned Image Update"
     test_id: str = "F18"
     score_weight: int = 10
-    tags: List[str] = ["Negative"]
+    tags: List[str] = ["Negative", "L2"]
+    compliance_level: str = "L2"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """
@@ -97,12 +98,7 @@ class CTAMTestNegativeUnsignedImageUpdate(TestCase):
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():
-            if self.group.fw_update_ifc.ctam_activate_ac():
-                msg = f"{self.test_id} : AC Cycle Passed"
-                self.test_run().add_log(LogSeverity.DEBUG, msg)  
-            else:
-                msg = f"{self.test_id} : AC Cycle Failed"
-                self.test_run().add_log(LogSeverity.DEBUG, msg)
+            pass
 
         # call super teardown last
         super().teardown()
