@@ -49,6 +49,9 @@ class UriBuilder:
         :return: formatted string
         :rtype: str
         """
-        uri = redfish_str.format(**self.redfish_uri_config.get(component_type, {}))
-        # print("URL: {}".format(uri))
+        try:
+            uri = redfish_str.format(**self.redfish_uri_config.get(component_type, {}))
+            # print("URL: {}".format(uri))
+        except:
+            return None
         return uri
