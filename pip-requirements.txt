@@ -8,14 +8,11 @@
 #  pip install -r pip-requirements.txt
 ##
 
-alive-progress
 ocptv
 prettytable
 redfish
 regex
 mypy
-black
-bumpver
 isort
 pip-tools
 pytest
