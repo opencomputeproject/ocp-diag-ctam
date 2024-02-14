@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation
+# Copyright (c) NVIDIA CORPORATION
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
@@ -16,6 +16,9 @@ sys.path.append(str(Path(__file__).resolve().parent))
 
 from test_hierarchy import TestHierarchy
 from test_runner import TestRunner
+
+from sys import exit
+from version import __version__
 
 
 def parse_args():
@@ -58,7 +61,7 @@ def parse_args():
     parser.add_argument(
         "-w",
         "--workspace",
-        required="-l" not in sys.argv and "--list" not in sys.argv,
+        required=not any(arg in sys.argv for arg in ["-l", "--list", "-v", "--version"]),
         help="Path to workspace directory that contains test run files",
     )
 
@@ -66,6 +69,13 @@ def parse_args():
         "-l",
         "--list",
         help="List all test cases. If combined with -G then list all cases of the chosen group ",
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "-v",
+        "--version",
+        help="Display current version of ctam",
         action="store_true",
     )
 
@@ -107,7 +117,6 @@ def get_exception_details(exec: Exception = ""):
 
 def main():
     args = parse_args()
-
     try:
         # builds hierarchy of test groups and associated test cases
         test_root_dir =  os.path.join(os.path.dirname(__file__), "tests")
@@ -117,10 +126,15 @@ def main():
         if args.list:
             test_hierarchy.print_test_groups_test_cases(args.group)
             return 0, None, "List of tests is printed"
-
+        
+        if args.version:
+            print(f"CTAM - version {__version__}")
+            exit()
+        
         if not os.path.isdir(args.workspace):
             print("Invalid workspace specified")
             return 1, None, "Invalid workspace specified"
+        
         required_workspace_files = [
             "dut_info.json",
             "redfish_uri_config.json",
@@ -135,6 +149,7 @@ def main():
             for file_name in missing_files:
                 print(f"The required file {file_name} does not exist in the workspace.")
             return 1, None, "Missing required files"
+        print(f"Version : {__version__}")
         print(f"WorkSpace : {args.workspace}")
         test_runner_json = os.path.join(args.workspace, "test_runner.json")
         dut_info_json = os.path.join(args.workspace, "dut_info.json")

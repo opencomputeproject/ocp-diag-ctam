@@ -9,7 +9,7 @@ Set-up
 - Pre-requisites for using SSH tunneling to connect to HMC:
 
     #. Install sshpass. In Ubuntu machine, run the following:
-        ``sudo apt-get install python3-tk sshpass``        
+        ``sudo apt-get install python3-tk sshpass jq``        
     #. Enable port-forwarding in HostBMC.
         
         1. On the HostBmc, there is file /etc/ssh/sshd_config. In this file, set the AllowTcpForwarding to yes.

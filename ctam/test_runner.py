@@ -36,6 +36,8 @@ from ocptv.output import (
 )
 from interfaces.comptool_dut import CompToolDut
 
+from version import __version__
+
 
 class TestRunner:
     """
@@ -293,7 +295,7 @@ class TestRunner:
         )
         tv.config(writer=self.writer)
 
-        self.active_run = tv.TestRun(name="CTAM Test Runner", version="1.0")
+        self.active_run = tv.TestRun(name="CTAM Test Runner", version=__version__)
         # FIXME: This needs to be fixed after system details 
         # if status_code:
         #     self.active_run.add_log(LogSeverity.INFO, "{}".format(self.system_details))
@@ -351,7 +353,6 @@ class TestRunner:
                         group_instance,
                         test_case_instances,
                     ) = self.test_hierarchy.instantiate_obj_for_testcase(test)
-
                     group_inc_tags = group_instance.tags
                     print("Group tags ", group_instance.tags)
                     # group_exc_tags = group_instance.exclude_tags
@@ -713,7 +714,7 @@ class TestRunner:
 
         """
         t = PrettyTable(["Test ID", "Test Name", "Execution Time", "TestCase Weight", "Test Score", "Test Result"])
-        t.title = "Test Result"
+        t.title = f"Test Result -  V {__version__}"
         t.add_rows(self.test_result_data[:len(self.test_result_data) - 1:])
         t.add_row(["", "", "", "", "", ""], divider=True)
         t.add_row(self.test_result_data[-1], divider=True)
