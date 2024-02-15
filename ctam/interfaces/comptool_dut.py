@@ -85,7 +85,6 @@ class CompToolDut(Dut):
         self.connection_ip_address = config["properties"]["ConnectionIPAddress"][
             "value"
         ]
-        # default_prefix = config["properties"]["DefaultPrefix"]["value"]
         self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
             self.connection_ip_address
         )
@@ -123,7 +122,7 @@ class CompToolDut(Dut):
 
         # TODO investigate storing FW update files via add_software_info() in super
         self.__connection_url = ("http://" if self.SshTunnel else "https://") + self.connection_ip_address
-        default_prefix = self.uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
+        self.default_prefix = self.uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
         self.redfish_ifc = redfish.redfish_client(
             self.__connection_url,
             username=self.__user_name,
