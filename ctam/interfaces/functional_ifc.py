@@ -15,7 +15,6 @@ import ast
 import shlex
 from datetime import datetime
 from typing import Optional, List
-from datetime import datetime
 import ocptv.output as tv
 from ocptv.output import LogSeverity
 

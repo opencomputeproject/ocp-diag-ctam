@@ -36,6 +36,8 @@ from ocptv.output import (
 )
 from interfaces.comptool_dut import CompToolDut
 
+from version import __version__
+
 
 class TestRunner:
     """
@@ -293,7 +295,7 @@ class TestRunner:
         )
         tv.config(writer=self.writer)
 
-        self.active_run = tv.TestRun(name="CTAM Test Runner", version="1.0")
+        self.active_run = tv.TestRun(name="CTAM Test Runner", version=__version__)
         # FIXME: This needs to be fixed after system details 
         # if status_code:
         #     self.active_run.add_log(LogSeverity.INFO, "{}".format(self.system_details))
@@ -302,6 +304,8 @@ class TestRunner:
         TestCase.SetUpAssociations(self.active_run, self.comp_tool_dut)
         TestGroup.SetUpAssociations(self.active_run, self.comp_tool_dut)
         FunctionalIfc.SetUpAssociations(self.active_run, self.comp_tool_dut)
+        
+        self.comp_tool_dut.set_up_connection()
 
         self.active_run.start(dut=tv.Dut(id="dut0"))
 
@@ -349,7 +353,6 @@ class TestRunner:
                         group_instance,
                         test_case_instances,
                     ) = self.test_hierarchy.instantiate_obj_for_testcase(test)
-
                     group_inc_tags = group_instance.tags
                     print("Group tags ", group_instance.tags)
                     # group_exc_tags = group_instance.exclude_tags
@@ -414,8 +417,6 @@ class TestRunner:
                     group_status_set.add(group_status)
                     group_result_set.add(group_result)
                     
-            if self.comp_tool_dut:
-                self.comp_tool_dut.clean_up()
             grade = (
                     TestCase.total_compliance_score / TestCase.max_compliance_score * 100
                     if TestCase.max_compliance_score != 0
@@ -449,9 +450,19 @@ class TestRunner:
                     
             status_code = 1 if group_result_set - {TestResult.PASS} else 0 # if there is any result other than PASS, status code repots failure
             exit_string = "Test execution failed" if group_status_set - {TestStatus.COMPLETE} else "Test execution is complete"
-            return status_code, exit_string
+            
         except KeyboardInterrupt:
-            return 1, "Test interrupted by user (KeyboardInterrupt)"
+            status_code, exit_string =  1, "Test interrupted by user (KeyboardInterrupt)"
+        except Exception as e:
+            exception_details = traceback.format_exc()
+            self.active_run.add_log(
+                severity=LogSeverity.FATAL, message=exception_details
+            )
+            status_code, exit_string =  1, f"Test failed due to execption: {repr(e)}"
+        finally:
+            if self.comp_tool_dut:
+                self.comp_tool_dut.clean_up()
+            return status_code, exit_string
         
         
     def _run_group_test_cases(self, group_instance, test_case_instances):
@@ -507,7 +518,7 @@ class TestRunner:
                         test_result == TestResult.FAIL
                     ):  # if any test fails, the group fails
                         group_result = TestResult.FAIL
-                except:
+                except:  
                     exception_details = traceback.format_exc()
                     self.active_run.add_log(
                         severity=LogSeverity.FATAL, message=exception_details
@@ -556,9 +567,15 @@ class TestRunner:
            
             group_status = TestStatus.COMPLETE
 
+        except KeyboardInterrupt:
+            self.active_run.add_log(
+                severity=LogSeverity.FATAL, message="Test interrupted by user (KeyboardInterrupt)"
+            )
+            group_status = TestStatus.ERROR
+            group_result = TestResult.FAIL
+            
         except (NotImplementedError, Exception) as e:
             exception_details = traceback.format_exc()
-            # FIXME: Throws error if the exception happens before setting active_run (e.g. in comptool_dut init)
             self.active_run.add_log(
                 severity=LogSeverity.FATAL, message=exception_details
             )
@@ -573,9 +590,28 @@ class TestRunner:
             return group_status, group_result
 
     def get_system_details(self):
-        self._start()
-        if self.comp_tool_dut:
-            self.comp_tool_dut.clean_up()
+        """
+        Method to perform System Discovery
+        
+        :return: status_code, exit_string
+        :rtype: int, str 
+        """
+        try:
+            self._start()
+            status_code, exit_string = 0, "System discovery is done"
+        except KeyboardInterrupt:
+            status_code, exit_string = 1, "Test interrupted by user (KeyboardInterrupt)"
+        except Exception as e:
+            exception_details = traceback.format_exc()
+            self.active_run.add_log(
+                severity=LogSeverity.FATAL, message=exception_details
+            )
+            status_code, exit_string = 1,  f"Test failed due to execption: {repr(e)}"
+        finally:
+            if self.comp_tool_dut:
+                self.comp_tool_dut.clean_up()
+            return status_code, exit_string
+            
 
     def update_weighted_data(self, test_instance):
         c_level = test_instance.compliance_level
@@ -678,7 +714,7 @@ class TestRunner:
 
         """
         t = PrettyTable(["Test ID", "Test Name", "Execution Time", "TestCase Weight", "Test Score", "Test Result"])
-        t.title = "Test Result"
+        t.title = f"Test Result -  V {__version__}"
         t.add_rows(self.test_result_data[:len(self.test_result_data) - 1:])
         t.add_row(["", "", "", "", "", ""], divider=True)
         t.add_row(self.test_result_data[-1], divider=True)
