@@ -17,6 +17,7 @@ mypy
 black
 bumpver
 isort
+pandas
 pip-tools
 pytest
 pytest-cov
