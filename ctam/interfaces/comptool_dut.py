@@ -85,6 +85,8 @@ class CompToolDut(Dut):
         self.connection_ip_address = config["properties"]["ConnectionIPAddress"][
             "value"
         ]
+        self.default_prefix = None
+        self.port_list = config["properties"]["SSHPortList"]["value"]
         self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
             self.connection_ip_address
         )
@@ -326,8 +328,11 @@ class CompToolDut(Dut):
         :return: None
         :rtype: None
         """
-        PortList = [18888, 18889]
-        for port in PortList:
+
+        if not self.port_list:
+            raise Exception(f"Expecting list of ports to ssh tunnelling, found none!")
+        
+        for port in self.port_list:
             ssh_cmd = "sshpass -p {ssh_password} ssh -4 -o StrictHostKeyChecking=no -fNT -L {binded_port}:{amc_ip}:80 {ssh_username}@{bmc_ip} -p 22".format(
                     ssh_password = self.__user_pass,
                     binded_port = port,
