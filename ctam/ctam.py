@@ -119,9 +119,7 @@ def main():
     args = parse_args()
     try:
         # builds hierarchy of test groups and associated test cases
-        test_root_dir =  os.path.join(os.path.dirname(__file__), "tests")
-        ifc_dir = os.path.join(os.path.dirname(__file__), "interfaces")
-        test_hierarchy = TestHierarchy(test_root_dir, ifc_dir)
+        #ms_internal_tests
 
         if args.list:
             test_hierarchy.print_test_groups_test_cases(args.group)
@@ -156,6 +154,28 @@ def main():
         package_info_json = os.path.join(args.workspace, "package_info.json")
         redfish_uri_config = os.path.join(args.workspace, "redfish_uri_config.json")
         net_rc = os.path.join(args.workspace, ".netrc")
+
+        # NOTE: We have added internal test directory as mandatory if 'internal_testing' is true in test runner json.
+        # NOTE: If internal_test is true in test runner json then both internal and external tests we can run, else we can continue our existing flow.
+        with open(test_runner_json, "r") as f:
+            test_runner_config = json.load(f)
+
+        internal_testing = test_runner_config.get("internal_testing", False)
+
+        ifc_dir = os.path.join(os.path.dirname(__file__), "interfaces")
+        ext_test_root_dir =  os.path.join(os.path.dirname(__file__), "tests")
+
+        if internal_testing:
+            int_test_root_dir =  os.path.join(os.path.dirname(__file__), "internal_tests")
+            test_root_dir =  [ext_test_root_dir, int_test_root_dir]
+            test_hierarchy = TestHierarchy(test_root_dir, ifc_dir)
+        else:
+            test_hierarchy = TestHierarchy(ext_test_root_dir, ifc_dir)
+
+        if args.list:
+            test_hierarchy.print_test_groups_test_cases(args.group)
+            return 0, None, "List of tests is printed"
+        
         if args.Discovery:
             runner = TestRunner(
                 workspace_dir=args.workspace,
