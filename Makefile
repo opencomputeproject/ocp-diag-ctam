@@ -9,7 +9,7 @@ DOCKER_IMAGE_TAG=pyinstaller-ctam
 DOCKER_CONTAINER_NAME=build-ctam
 
 build_image:
-	docker build --tag $(DOCKER_IMAGE_TAG) --build-arg LOCAL_DIR=$(PWD) .
+	docker build --tag $(DOCKER_IMAGE_TAG) .
 	docker run -it --name $(DOCKER_CONTAINER_NAME) $(DOCKER_IMAGE_TAG)
 	docker cp $(DOCKER_CONTAINER_NAME):/app/dist ./dist
 	docker rm -f $(DOCKER_CONTAINER_NAME)

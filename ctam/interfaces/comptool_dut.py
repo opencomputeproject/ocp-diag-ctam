@@ -21,7 +21,7 @@ import stat
 import shlex
 from os import path
 from alive_progress import alive_bar
-# import pandas as pd
+import pandas as pd
 
 from prettytable import PrettyTable
 from ocptv.output import Metadata
@@ -80,7 +80,7 @@ class CompToolDut(Dut):
         self.logger_path = logger_path
         self.test_info_logger = test_info_logger
         self.test_uri_response_check = test_uri_response_check
-        self.cwd = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        self.cwd = self.get_cwd()
         super().__init__(id, name, metadata)
         self.connection_ip_address = config["properties"]["ConnectionIPAddress"][
             "value"
@@ -103,7 +103,12 @@ class CompToolDut(Dut):
         
         self.redfish_ifc = None
         self.redfish_auth = config["properties"].get("AuthenticationRequired", {}).get("value", False)
-        
+    
+    def get_cwd(self):
+        cwd = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        return "" if cwd == "/tmp" else cwd
+
+
     def set_up_connection(self):
         """
         This method sets up connection to the DUT,
@@ -437,13 +442,3 @@ class CompToolDut(Dut):
             print("[FATAL] Exception occurred during system discovery. Please see below exception...")
             print(str(e))
             return ["[FATAL] Exception occurred during system discovery. Please see below exception...",str(e)], False
-        
-    
-    
-        
-
-
-
-
-
-

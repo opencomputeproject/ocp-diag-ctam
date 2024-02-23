@@ -631,14 +631,4 @@ class FWUpdateIfc(FunctionalIfc):
         msg = f"Execution is delayed successfully by {IdleWaitTime} seconds."
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return True
-                            
-                            
-                            
-                            
-                            
-                    
-                
-        
-        
-        
-    
+ 

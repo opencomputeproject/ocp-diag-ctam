@@ -75,6 +75,7 @@ class FunctionalIfc:
         Default init for now
         """
         pass
+    
 
     def get_JSONFWFilePayload_file(self, image_type="default", corrupted_component_id=None):
         """
@@ -263,7 +264,6 @@ class FunctionalIfc:
         elif image_type == "negate":
             self.test_run().add_log(LogSeverity.INFO, "Negative Test Case")
             json_fw_file_payload = ""
-
         return json_fw_file_payload
 
     def get_PLDMPkgJson_file(self, image_type="default"):
@@ -308,7 +308,6 @@ class FunctionalIfc:
                 self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Path", ""),
                 self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("JSON", ""),
             )
-            
         return pldm_json_file
 
     def ctam_getfi(self, expanded=0):
@@ -491,7 +490,9 @@ class FunctionalIfc:
             return 
         self.test_run().add_log(LogSeverity.INFO, json.dumps(command_to_run, indent=4))
         arguments = shlex.split(command_to_run)
-        subprocess.check_output(arguments, cwd=os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        cwd_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        cwd_path = None if cwd_path == "/tmp" else cwd_path
+        subprocess.check_output(arguments, cwd=cwd_path)
         time.sleep(self.dut().dut_config.get("PowerOffWaitTime", {}).get("value", 60))
         self.test_run().add_log(LogSeverity.INFO, "Power Off wait time done")
         command_to_run = self.dut().dut_config.get("PowerOnCommand", {}).get("value", "")
@@ -500,7 +501,7 @@ class FunctionalIfc:
             return 
         self.test_run().add_log(LogSeverity.INFO, json.dumps(command_to_run, indent=4))
         arguments = shlex.split(command_to_run)
-        subprocess.check_output(arguments, cwd=os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        subprocess.check_output(arguments, cwd=cwd_path)
         time.sleep(self.dut().dut_config.get("PowerOnWaitTime", {}).get("value", 300))
         self.test_run().add_log(LogSeverity.INFO, "Power ON wait time done")
         return
