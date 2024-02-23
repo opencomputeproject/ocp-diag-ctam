@@ -103,14 +103,11 @@ class TestRunner:
         self.console_log = True
         self.progress_bar = False
         self.package_config = package_info_json_file
-
         runner_config = self._get_test_runner_config(test_runner_json_file)
+
         with open(dut_info_json_file) as dut_info_json:
             self.dut_config = json.load(dut_info_json)
-
-        # with open(package_info_json_file) as package_info_json:
-        #     self.package_config = json.load(package_info_json)
-
+        
         with open(redfish_uri_config_file) as redfish_uri:
             self.redfish_uri_config = json.load(redfish_uri)
 
@@ -243,10 +240,10 @@ class TestRunner:
         self.cwd = os.path.dirname(os.path.dirname(__file__))
         self.dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
         if self.workspace_dir:
-            print("Output Dir is : ", self.output_dir)
             self.output_dir = os.path.join(
                 self.workspace_dir, self.output_dir, "TestRuns", testrun_name+"_{}".format(self.dt)
             )
+            print("Output Dir is : ", self.output_dir)
         else:
             self.output_dir = os.path.join(
                 "workspace", "TestRuns", testrun_name+"_{}".format(self.dt)
@@ -269,7 +266,8 @@ class TestRunner:
         self.test_result_file = os.path.join(self.output_dir, "TestReport_{}.log".format(self.dt))
         self.test_uri_response_check = None
         if self.response_check_name:
-            self.test_uri_response_check = os.path.join(self.cwd, "workspace", self.response_check_name)
+            cwd = "" if self.cwd == "/tmp" else self.cwd
+            self.test_uri_response_check = os.path.join(cwd, "workspace", self.response_check_name)
 
         self.comp_tool_dut = CompToolDut(
             id="actDut",
