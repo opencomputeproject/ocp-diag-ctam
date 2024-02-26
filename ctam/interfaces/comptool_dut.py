@@ -349,7 +349,7 @@ class CompToolDut(Dut):
                 self.BindedPort = port
                 break
         if self.BindedPort is None:
-            raise Exception(f"Failed to bind port! Please make sure the host machine has port forwarding enabled and there is at least one port available in {PortList}.")
+            raise Exception(f"Failed to bind port! Please make sure the host machine has port forwarding enabled and there is at least one port available in {self.port_list}.")
         msg = f"Binded port {self.BindedPort}"
         self.test_info_logger.log(msg)
         return

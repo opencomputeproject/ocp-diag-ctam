@@ -538,9 +538,7 @@ class PLDMUnpack:
             # Any value above 0x3F is invalid
             activation_val = comp_info["RequestedComponentActivationMethod"]
             if activation_val > 0x3F:
-                Util.cli_log(
-                    f"Found invalid value for RequestedComponentActivationMethod={activation_val}",
-                    True)
+                print(f"Found invalid value for RequestedComponentActivationMethod={activation_val}")
             comp_info["ComponentLocationOffset"] = int.from_bytes(
                 self.fwpkg_fd.read(4), byteorder='little', signed=False)
             comp_info["ComponentSize"] = int.from_bytes(self.fwpkg_fd.read(4),
