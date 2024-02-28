@@ -94,7 +94,7 @@ class CompToolDut(Dut):
         if not self.check_ping_status(self.connection_ip_address): # FIXME: Use logging method
             raise Exception("[FATAL] Unable to ping the ip address. Please check the IP is valid or not.")
         
-        self.BindedPort = None
+        self.binded_port = None
         self.AMCIPAddress = None
         self.SshTunnel = config["properties"].get("SshTunnel", {}).get("value", False)
         if self.SshTunnel:
@@ -122,7 +122,7 @@ class CompToolDut(Dut):
             if not self.AMCIPAddress:
                 raise Exception("AMCIPAddress must be provided when SSHTunnel is set to True.")
             self.setup_ssh_tunnel(self.AMCIPAddress)
-            self.connection_ip_address = "127.0.0.1:" + str(self.BindedPort) 
+            self.connection_ip_address = "127.0.0.1:" + str(self.binded_port) 
             self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
                 self.AMCIPAddress
             )
@@ -320,6 +320,20 @@ class CompToolDut(Dut):
 
         return self._console_log
     
+    def is_tunnel_established(self, port) -> bool:
+        """
+        Checks if a tunnel process is established at a given ports using nc command, 
+        throws error is port is not used
+
+        :return: port is used for tunneling
+        :rtype: boolean
+        """
+        try:
+            subprocess.run(['nc', '-z', 'localhost', str(port)], check=True)
+            return True
+        except subprocess.CalledProcessError:
+            return False
+
     def setup_ssh_tunnel(self, amc_ip_address):
         """
         Setup SSH Tunneling to AMC
@@ -340,17 +354,16 @@ class CompToolDut(Dut):
                     bmc_ip = self.connection_ip_address,
                     amc_ip = amc_ip_address,
                     )
-            process = subprocess.Popen(ssh_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            stdout_data, stderr_data = process.communicate()
-            if process.returncode != 0 or stderr_data:
-                msg = f"Failed to bind port {port}.\nReturnCode: {process.returncode}\nError: {stderr_data}\nTrying the next one..."
-                self.test_info_logger.log(msg)
-            else:
-                self.BindedPort = port
+            self.test_info_logger.log(f"Establishing tunnel at port: {port}")
+            subprocess.Popen(ssh_cmd, shell=True)
+            time.sleep(5)
+            if self.is_tunnel_established(port):
+                self.binded_port = port
                 break
-        if self.BindedPort is None:
+            self.test_info_logger.log(f"Failed to bind port {port}.")
+        if self.binded_port is None:
             raise Exception(f"Failed to bind port! Please make sure the host machine has port forwarding enabled and there is at least one port available in {self.port_list}.")
-        msg = f"Binded port {self.BindedPort}"
+        msg = f"SSH tunnel established at port: {self.binded_port}"
         self.test_info_logger.log(msg)
         return
     
@@ -362,7 +375,7 @@ class CompToolDut(Dut):
         :rtype: None
         """
         # First, find all the PIDs associated with the binded port
-        port_pid = ["lsof", "-t", "-i", ":{0}".format(self.BindedPort)] # ANother option is to add -sTCP:LISTEN
+        port_pid = ["lsof", "-t", "-i", ":{0}".format(self.binded_port)] # ANother option is to add -sTCP:LISTEN
         process = subprocess.Popen(port_pid, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate() 
         my_pid = os.getpid()
@@ -377,10 +390,10 @@ class CompToolDut(Dut):
                     self.test_info_logger.log(msg)
                 else:
                     self.test_info_logger.log("SSH tunnel is killed successfully!")
-                    self.BindedPort = None # Just for sanity in case of multi-threading
+                    self.binded_port = None # Just for sanity in case of multi-threading
                 
     def clean_up(self):
-        if self.BindedPort:
+        if self.binded_port:
             self.kill_ssh_tunnel()
         if self.redfish_auth:
             self.redfish_ifc.logout()
