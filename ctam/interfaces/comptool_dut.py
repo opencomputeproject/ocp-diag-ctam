@@ -21,6 +21,7 @@ import stat
 import shlex
 from os import path
 from alive_progress import alive_bar
+from sshtunnel import SSHTunnelForwarder
 # import pandas as pd
 
 from prettytable import PrettyTable
@@ -112,16 +113,23 @@ class CompToolDut(Dut):
         # Set up SSH Tunneling if requested
         if self.SshTunnel:
             # Set up port forwarding
+            
             if not self.AMCIPAddress:
                 raise Exception("AMCIPAddress must be provided when SSHTunnel is set to True.")
-            self.setup_ssh_tunnel(self.AMCIPAddress)
-            self.connection_ip_address = "127.0.0.1:" + str(self.BindedPort) 
+            self.ssh_tunnel = self.create_ssh_tunnel(ssh_port=22,
+                                   ssh_host=self.connection_ip_address,
+                                   ssh_username=self.__user_name,
+                                   ssh_password=self.__user_pass,
+                                   remote_host=self.AMCIPAddress,
+                                   remote_port=443)
+            # self.setup_ssh_tunnel(self.AMCIPAddress)
+            self.connection_ip_address = "127.0.0.1:" + str(self.ssh_tunnel.local_bind_port) 
             self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
                 self.AMCIPAddress
             )
 
         # TODO investigate storing FW update files via add_software_info() in super
-        self.__connection_url = ("http://" if self.SshTunnel else "https://") + self.connection_ip_address
+        self.__connection_url = ("https://" if self.SshTunnel else "https://") + self.connection_ip_address
         self.default_prefix = self.uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
         self.redfish_ifc = redfish.redfish_client(
             self.__connection_url,
@@ -313,6 +321,19 @@ class CompToolDut(Dut):
 
         return self._console_log
     
+    def create_ssh_tunnel(self, ssh_host, ssh_port, ssh_username, ssh_password, remote_host, remote_port):
+        ssh_tunnel = SSHTunnelForwarder(
+                    (ssh_host, ssh_port),
+                    ssh_username=ssh_username,
+                    ssh_password=ssh_password,
+                    remote_bind_address=(remote_host, remote_port)
+                    )
+        ssh_tunnel.start()
+        return ssh_tunnel
+    
+    def close_ssh_tunnel(self, ssh_tunnel):
+        ssh_tunnel.stop()
+    
     def setup_ssh_tunnel(self, amc_ip_address):
         """
         Setup SSH Tunneling to AMC
@@ -321,7 +342,8 @@ class CompToolDut(Dut):
         :return: None
         :rtype: None
         """
-        PortList = [18888, 18889]
+        PortList = [9999]
+        ssh_cmd = "sshpass -p {ssh_password} ssh -4 -o StrictHostKeyChecking=no -fNT -L {binded_port}:{amc_ip}:80 {ssh_username}@{bmc_ip} -p 22"
         for port in PortList:
             ssh_cmd = "sshpass -p {ssh_password} ssh -4 -o StrictHostKeyChecking=no -fNT -L {binded_port}:{amc_ip}:80 {ssh_username}@{bmc_ip} -p 22".format(
                     ssh_password = self.__user_pass,
@@ -343,7 +365,6 @@ class CompToolDut(Dut):
         msg = f"Binded port {self.BindedPort}"
         self.test_info_logger.log(msg)
         return
-    
     def kill_ssh_tunnel(self):
         """
         Kill SSH Tunneling to AMC
