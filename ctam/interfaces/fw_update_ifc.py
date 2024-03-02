@@ -14,25 +14,29 @@ from typing import Optional, List
 from interfaces.functional_ifc import FunctionalIfc
 from ocptv.output import LogSeverity
 from utils.json_utils import *
+try:
+    from internal_interfaces.fw_update_ifc_int import FwUpdateIfcInt as Meta
+except:
+    from utils.ctam_utils import MetaNull as Meta
 
 
-class FWUpdateIfc(FunctionalIfc):
+class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
     """
     API's related to general health check of the dut
     """
 
-    _instance: Optional["FWUpdateIfc"] = None
+    # _instance: Optional["FWUpdateIfc"] = None
 
-    def __new__(cls, *args, **kwargs):
-        """
-        ensure only 1 instance can be created
+    # def __new__(cls, *args, **kwargs):
+    #     """
+    #     ensure only 1 instance can be created
 
-        :return: instance
-        :rtype: FWUpdateIfc
-        """
-        if not isinstance(cls._instance, cls):
-            cls._instance = super(FWUpdateIfc, cls).__new__(cls, *args, **kwargs)
-        return cls._instance
+    #     :return: instance
+    #     :rtype: FWUpdateIfc
+    #     """
+    #     if not isinstance(cls._instance, cls):
+    #         cls._instance = super(FWUpdateIfc, cls).__new__(cls, *args, **kwargs)
+    #     return cls._instance
     
     def __init__(self):
         super().__init__()
@@ -44,17 +48,17 @@ class FWUpdateIfc(FunctionalIfc):
                                     "invalid_pkg_uuid", "invalid_device_uuid", "empty_metadata", \
                                     "corrupt_component", "unsigned_bundle"]
 
-    @classmethod
-    def get_instance(cls, *args, **kwargs):
-        """
-        if there is an existing instance, return it, otherwise create the singleton instance and return it
+    # @classmethod
+    # def get_instance(cls, *args, **kwargs):
+    #     """
+    #     if there is an existing instance, return it, otherwise create the singleton instance and return it
 
-        :return: instance
-        :rtype: FWUpdateIfc
-        """
-        if not isinstance(cls._instance, cls):
-            cls._instance = cls(*args, **kwargs)
-        return cls._instance
+    #     :return: instance
+    #     :rtype: FWUpdateIfc
+    #     """
+    #     if not isinstance(cls._instance, cls):
+    #         cls._instance = cls(*args, **kwargs)
+    #     return cls._instance
     
     def PLDMComponentVersions(self, image_type):
         """
@@ -622,15 +626,15 @@ class FWUpdateIfc(FunctionalIfc):
             self.test_run().add_log(LogSeverity.DEBUG, msg)    
         return ComponentVersions
     
-    def ctam_delay_between_testcases(self):
-        MyName = __name__ + "." + self.ctam_delay_between_testcases.__qualname__
-        IdleWaitTime = self.dut().dut_config["IdleWaitTimeAfterFirmwareUpdate"]["value"]
-        msg = f"Execution will be delayed by {IdleWaitTime} seconds."
-        self.test_run().add_log(LogSeverity.DEBUG, msg)
-        time.sleep(IdleWaitTime)
-        msg = f"Execution is delayed successfully by {IdleWaitTime} seconds."
-        self.test_run().add_log(LogSeverity.DEBUG, msg)
-        return True
+    # def ctam_delay_between_testcases(self):
+    #     MyName = __name__ + "." + self.ctam_delay_between_testcases.__qualname__
+    #     IdleWaitTime = self.dut().dut_config["IdleWaitTimeAfterFirmwareUpdate"]["value"]
+    #     msg = f"Execution will be delayed by {IdleWaitTime} seconds."
+    #     self.test_run().add_log(LogSeverity.INFO, msg)
+    #     time.sleep(IdleWaitTime)
+    #     msg = f"Execution is delayed successfully by {IdleWaitTime} seconds."
+    #     self.test_run().add_log(LogSeverity.INFO, msg)
+    #     return True
                             
                             
                             

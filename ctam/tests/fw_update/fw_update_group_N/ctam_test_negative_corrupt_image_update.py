@@ -81,6 +81,7 @@ class CTAMTestNegativeCorruptImageUpdate(TestCase):
                     f"{self.test_id} : FW Update Staging Initiated - Unexpected",
                 )
                 result = False
+                
         # ensure setting of self.result and self.score prior to calling super().run()
         self.result = TestResult.PASS if result else TestResult.FAIL
         if self.result == TestResult.PASS:

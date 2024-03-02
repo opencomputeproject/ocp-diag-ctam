@@ -127,10 +127,5 @@ class CTAMTestFullDeviceUpdateStagingTime(TestCase):
                         LogSeverity.INFO, f"{self.test_id} : Update Verification Failed"
                     )
 
-        step3 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...step3")
-        with step3.scope():
-            self.group.fw_update_ifc.ctam_delay_between_testcases()
-            step1.add_log(LogSeverity.INFO, f"Teardown delay completed.")
-
         # call super teardown last
         super().teardown()
