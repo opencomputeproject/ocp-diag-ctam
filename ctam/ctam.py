@@ -158,11 +158,13 @@ def main():
 
         internal_testing = test_runner_config.get("internal_testing", False)
 
-        ifc_dir = os.path.join(os.path.dirname(__file__), "interfaces")
-        ext_test_root_dir =  os.path.join(os.path.dirname(__file__), "tests")
+        test_ifc_root_dir = test_runner_config.get("test_ifc_override_dir", os.path.dirname(__file__))
+
+        ifc_dir = os.path.join(test_ifc_root_dir, "interfaces")
+        ext_test_root_dir =  os.path.join(test_ifc_root_dir, "tests")
 
         if internal_testing:
-            int_test_root_dir =  os.path.join(os.path.dirname(__file__), "internal_tests")
+            int_test_root_dir =  os.path.join(test_ifc_root_dir, "internal_tests")
             test_root_dir =  [ext_test_root_dir, int_test_root_dir]
             test_hierarchy = TestHierarchy(test_root_dir, ifc_dir)
         else:
