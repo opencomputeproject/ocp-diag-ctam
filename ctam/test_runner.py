@@ -283,10 +283,7 @@ class TestRunner:
             logger_path=self.output_dir
         )
         self.comp_tool_dut.current_test_name = "Initialization"
-        # FIXME: This needs to be fixed
-        # self.system_details, status_code = self.comp_tool_dut.GetSystemDetails()
-        # writer has to be configured prior to TestRun init
-
+        
 
         self.writer = LoggingWriter(
             self.output_dir, self.console_log, "OCPTV_"+testrun_name, "json", self.debug_mode
@@ -305,6 +302,15 @@ class TestRunner:
         
         self.comp_tool_dut.set_up_connection()
 
+        self.system_details, status_code = self.comp_tool_dut.GetSystemDetails()
+        if status_code:
+            # log system details
+            timestamp = datetime.now().strftime("%m-%d-%YT%H:%M:%S")
+            self.system_details_logger = LoggingWriter(
+                self.output_dir, self.console_log, "SystemDetails", "json", self.debug_mode
+            )
+            self.system_details_logger.write(json.dumps(self.system_details))
+        
         self.active_run.start(dut=tv.Dut(id="dut0"))
 
     def _end(self, run_status, run_result):
