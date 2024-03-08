@@ -419,10 +419,9 @@ class CompToolDut(Dut):
             MyName = __name__ + "." + self.GetSystemDetails.__qualname__
             able_to_get_system_details = True
             t = PrettyTable(["Component", "Value"])
-            system_detail_uri = self.uri_builder.format_uri(redfish_str="{BaseURI}{SystemURI}",
-                                                                component_type="GPU")
-            bmc_fw_inv_uri = self.uri_builder.format_uri(redfish_str="{BaseURI}{BMCFWInventory}/",
-                                                                component_type="BMC")
+            system_detail_uri = self.uri_builder.format_uri(redfish_str="{BaseURI}{SystemURI}", component_type="BMC")
+            bmc_fw_inv_uri = self.uri_builder.format_uri(
+                redfish_str="{BaseURI}{BMCFWInventory}/",component_type="BMC")
             system_details = self.run_redfish_command(system_detail_uri).dict
             bmc_fw_inv = self.run_redfish_command(bmc_fw_inv_uri).dict
             if system_details and ("error" not in system_details):
