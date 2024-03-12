@@ -67,7 +67,7 @@ class CTAMTestAcCyclesInLoop(TestCase):
         with step1.scope():
             for i in range(loops):
                 if result:
-                    if self.group.health_check_ifc.ctam_activate_ac(gpu_check=False):
+                    if self.group.health_check_ifc.ctam_activate_ac():
                         msg = f"{self.test_id} : AC Cycle Passed Loop {i}"
                         self.test_run().add_log(LogSeverity.DEBUG, msg)  
                     else:

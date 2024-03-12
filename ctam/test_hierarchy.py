@@ -97,13 +97,19 @@ class TestHierarchy:
                             if isinstance(n, (ast.Assign, ast.AnnAssign))
                             and isinstance(n.target, ast.Name)
                         }
-
-                        # Store testcase info along with module name and path
+                        # NOTE: browsing the list of test cases to find the group name it belongs using ast module only.
+                        group_name = ""
+                        for n in node.body:
+                            if isinstance(n, (ast.FunctionDef)):
+                                if n.name == "__init__":
+                                    args = [a.annotation for a in n.args.args]
+                                    group_name = args[1].id
                         test_info = {
                             "testcase_name": node.name,
                             "module_name": None,
                             "module_path": None,
                             "attributes": testcase_attributes,
+                            "group_name": group_name,
                         }
                         self.test_cases.append(test_info)  # store testcase information
 
@@ -160,48 +166,68 @@ class TestHierarchy:
 
     def _find_groups_and_cases(self):
         """
-        Walk directory structure and find TestGroups and TestCases
+        Walk directory structure and find TestGroups and TestCases. Then assign the test cases according to the groups it belongs to.
 
         :return: List of TestGroups which contains a list of TestCases for that group
         :rtype: List
         """
         visitor = self.ClassVisitor()
-        for root, dirs, _ in os.walk(self.test_root_dir):
-            for dir in dirs:
-                sys.path.append(
-                    os.path.join(root, dir)
-                )  # add test group dirs to python search path
-                test_group_dir = os.path.join(root, dir)
-                
-                for filename in os.listdir(test_group_dir):
-                    if filename.endswith(".py"):
-                        with open(os.path.join(test_group_dir, filename), "r") as f:
-                            try:
-                                tree = ast.parse(f.read())
-                                visitor.visit(tree)
-                                for (
-                                    class_name,
-                                    class_info,
-                                ) in visitor.test_groups.items():
-                                    if class_info["module_name"] is None:
-                                        class_info["module_name"] = filename[:-3]
-                                        class_info["module_path"] = test_group_dir
+        test_root_dirs = ""
+        if isinstance(self.test_root_dir, str):
+            test_root_dirs = [self.test_root_dir]
+        elif isinstance(self.test_root_dir, list):
+            test_root_dirs = self.test_root_dir
+        else:
+            print("[EXCEPTION]: Please provide proper test directories in string path or list of paths...")
+            raise Exception("[EXCEPTION]: Please provide proper test directories in string path or list of paths...")
+        for dir in test_root_dirs:
+            if not os.path.exists(dir):
+                print(f"[EXCEPTION]: Test directory does not exists: {dir}")
+                raise Exception(f"[EXCEPTION]: Test directory does not exists: {dir}")
+        for test_dir in test_root_dirs:
+            for root, dirs, _ in os.walk(test_dir):
+                for dir in dirs:
+                    sys.path.append(
+                        os.path.join(root, dir)
+                    )  # add test group dirs to python search path
+                    test_group_dir = os.path.join(root, dir)
+                    
+                    for filename in os.listdir(test_group_dir):
+                        if filename.endswith(".py"):
+                            with open(os.path.join(test_group_dir, filename), "r") as f:
+                                try:
+                                    tree = ast.parse(f.read())
+                                    visitor.visit(tree)
+                                    for (
+                                        class_name,
+                                        class_info,
+                                    ) in visitor.test_groups.items():
+                                        if class_info["module_name"] is None:
+                                            class_info["module_name"] = filename[:-3]
+                                            class_info["module_path"] = test_group_dir
 
-                                for testcase in visitor.test_cases:
-                                    if testcase["module_name"] is None:
-                                        testcase["module_name"] = filename[:-3]
-                                        testcase["module_path"] = test_group_dir
+                                    for testcase in visitor.test_cases:
+                                        if testcase["module_name"] is None:
+                                            testcase["module_name"] = filename[:-3]
+                                            testcase["module_path"] = test_group_dir
 
-                            except SyntaxError as e:
-                                print(f"Syntax error in file {filename}: {e}")
-                                raise
+                                except SyntaxError as e:
+                                    print(f"Syntax error in file {filename}: {e}")
+                                    raise
 
-                for testcase in visitor.test_cases:
-                    if visitor.current_group is not None:
-                        visitor.current_group["test_cases"].append(testcase)
+                    for group in visitor.test_groups:
+                        for test_case in visitor.test_cases:
+                            if test_case["group_name"] == visitor.test_groups[group]["group_name"] and test_case not in visitor.test_groups[group]["test_cases"]:
+                                visitor.test_groups[group]["test_cases"].append(test_case)
+                    # for testcase in visitor.test_cases:
+                    #     print(testcase["group_name"])
+                    #     if visitor.current_group is not None:
+                    #         visitor.current_group["test_cases"].append(testcase)
 
-                visitor.test_cases.clear()
-
+                # visitor.test_cases.clear()
+        for group in visitor.test_groups:
+            new_test_list = sorted(visitor.test_groups[group]["test_cases"], key=lambda x: int(x["attributes"]["test_id"][1:]))
+            visitor.test_groups[group]["test_cases"] = new_test_list
         return visitor.test_groups
 
     def print_test_groups_all_info(self):

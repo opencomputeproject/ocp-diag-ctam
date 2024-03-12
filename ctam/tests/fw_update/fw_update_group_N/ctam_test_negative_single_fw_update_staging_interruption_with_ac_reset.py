@@ -100,7 +100,7 @@ class CTAMTestSingleFWUpdateStagingInterruptionWithACReset(TestCase):
         if result:
             step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")  # type: ignore
             with step4.scope():
-                if self.group.fw_update_ifc.ctam_activate_ac():
+                if self.group.fw_update_ifc.ctam_activate_ac(fwupd_hyst_wait=False):
                     step4.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Activate, interrupting staging flow with reset")
                 else:
                     step4.add_log(LogSeverity.ERROR, f"{self.test_id} : FW Update Activation Failed")

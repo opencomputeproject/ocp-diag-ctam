@@ -114,6 +114,9 @@ class GitUtils():
                 print(f"Exception Occurred: {e}")
                 return False
     
+class MetaNull(type):
+    pass
+
 # def show_loading_bar():
 #     with alive_bar(0,theme="classic", stats=False) as bar:
 #         result = subprocess.run(shlex.split(run_command), capture_output=True)

@@ -130,11 +130,6 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
                     LogSeverity.WARNING,
                     f"{self.test_id} : FW Update Activation Failed",
                 )
-        
-        step2 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...step2")
-        with step2.scope():
-            self.group.fw_update_ifc.ctam_delay_between_testcases()
-            step1.add_log(LogSeverity.INFO, f"Teardown delay completed.")
 
         # call super teardown last
         super().teardown()

@@ -30,7 +30,7 @@
       "value": ""
     },
     "PowerOnCommand": {
-      "description": "Command to use to turn off the system",
+      "description": "Command to use to turn on the system",
       "type": "string",
       "value": ""
     },

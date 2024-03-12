@@ -61,7 +61,7 @@ def parse_args():
     parser.add_argument(
         "-w",
         "--workspace",
-        required=not any(arg in sys.argv for arg in ["-l", "--list", "-v", "--version"]),
+        required=not any(arg in sys.argv for arg in ["-v", "--version"]),
         help="Path to workspace directory that contains test run files",
     )
 
@@ -119,18 +119,12 @@ def main():
     args = parse_args()
     try:
         # builds hierarchy of test groups and associated test cases
-        test_root_dir =  os.path.join(os.path.dirname(__file__), "tests")
-        ifc_dir = os.path.join(os.path.dirname(__file__), "interfaces")
-        test_hierarchy = TestHierarchy(test_root_dir, ifc_dir)
+        #ms_internal_tests
 
-        if args.list:
-            test_hierarchy.print_test_groups_test_cases(args.group)
-            return 0, None, "List of tests is printed"
-        
         if args.version:
             print(f"CTAM - version {__version__}")
             exit()
-        
+
         if not os.path.isdir(args.workspace):
             print("Invalid workspace specified")
             return 1, None, "Invalid workspace specified"
@@ -156,6 +150,30 @@ def main():
         package_info_json = os.path.join(args.workspace, "package_info.json")
         redfish_uri_config = os.path.join(args.workspace, "redfish_uri_config.json")
         net_rc = os.path.join(args.workspace, ".netrc")
+
+        # NOTE: We have added internal test directory as mandatory if 'internal_testing' is true in test runner json.
+        # NOTE: If internal_test is true in test runner json then both internal and external tests we can run, else we can continue our existing flow.
+        with open(test_runner_json, "r") as f:
+            test_runner_config = json.load(f)
+
+        internal_testing = test_runner_config.get("internal_testing", False)
+
+        test_ifc_root_dir = test_runner_config.get("test_ifc_override_dir", os.path.dirname(__file__))
+
+        ifc_dir = os.path.join(test_ifc_root_dir, "interfaces")
+        ext_test_root_dir =  os.path.join(test_ifc_root_dir, "tests")
+
+        if internal_testing:
+            int_test_root_dir =  os.path.join(test_ifc_root_dir, "internal_tests")
+            test_root_dir =  [ext_test_root_dir, int_test_root_dir]
+            test_hierarchy = TestHierarchy(test_root_dir, ifc_dir)
+        else:
+            test_hierarchy = TestHierarchy(ext_test_root_dir, ifc_dir)
+
+        if args.list:
+            test_hierarchy.print_test_groups_test_cases(args.group)
+            return 0, None, "List of tests is printed"
+
         if args.Discovery:
             runner = TestRunner(
                 workspace_dir=args.workspace,
@@ -235,11 +253,11 @@ def main():
         print(f"Test Run Failed: {json.dumps(exception_details, indent=4)}")
         return 1, None, f"Test failed due to exception: {e}"
 
-      
+
 if __name__ == "__main__":
-    status_code, log_directory, exit_string = main() 
+    status_code, log_directory, exit_string = main()
     print("\nTest exited with status code*: {} - {}".format("FAIL" if status_code else "PASS", exit_string))
-    print(f"Log Directory: {log_directory}") 
+    print(f"Log Directory: {log_directory}")
     print("\n*Note: Return/Status Codes - PASS(0): All tests passed, FAIL(1): Execution/runtime failure or test failure\n")
     exit(status_code)
 
