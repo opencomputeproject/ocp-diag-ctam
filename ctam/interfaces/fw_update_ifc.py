@@ -379,7 +379,7 @@ class FWUpdateIfc(FunctionalIfc):
         FileName = BinPath
 
         URL = URI  # + '"' + FileName + '"'
-        if self.dut().SshTunnel \
+        if self.dut().ssh_tunnel_required \
             or self.dut().redfish_uri_config.get("GPU", {}).get("UnstructuredHttpPush", False):
             # Unstructured HTTP push update
             headers = {"Content-Type": "application/octet-stream"}
