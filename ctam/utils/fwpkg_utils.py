@@ -248,7 +248,7 @@ class FwpkgSignature:
         
         corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
         
-        if not corrupt_single_byte_in_package_signature(corrupted_package_path, 13, 255):
+        if not FwpkgSignature.corrupt_single_byte_in_package_signature(corrupted_package_path, 13, 255):
             print("Failed to corrupt the signature type")
             # delete the package
             os.remove(corrupted_package_path)
