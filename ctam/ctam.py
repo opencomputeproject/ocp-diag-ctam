@@ -121,9 +121,9 @@ def main():
         # builds hierarchy of test groups and associated test cases
         #ms_internal_tests
 
-        if args.list:
-            test_hierarchy.print_test_groups_test_cases(args.group)
-            return 0, None, "List of tests is printed"
+        # if args.list:
+        #     test_hierarchy.print_test_groups_test_cases(args.group)
+        #     return 0, None, "List of tests is printed"
         
         if args.version:
             print(f"CTAM - version {__version__}")
