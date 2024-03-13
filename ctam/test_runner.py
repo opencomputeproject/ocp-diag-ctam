@@ -302,14 +302,15 @@ class TestRunner:
         
         self.comp_tool_dut.set_up_connection()
 
-        self.system_details, status_code = self.comp_tool_dut.GetSystemDetails()
-        if status_code:
-            # log system details
-            timestamp = datetime.now().strftime("%m-%d-%YT%H:%M:%S")
-            self.system_details_logger = LoggingWriter(
-                self.output_dir, self.console_log, "SystemDetails", "json", self.debug_mode
-            )
-            self.system_details_logger.write(json.dumps(self.system_details))
+        # FIXME: need to standardized details
+        # self.system_details, status_code = self.comp_tool_dut.GetSystemDetails()
+        # if status_code:
+        #     # log system details
+        #     timestamp = datetime.now().strftime("%m-%d-%YT%H:%M:%S")
+        #     self.system_details_logger = LoggingWriter(
+        #         self.output_dir, self.console_log, "SystemDetails", "json", self.debug_mode
+        #     )
+        #     self.system_details_logger.write(json.dumps(self.system_details))
         
         self.active_run.start(dut=tv.Dut(id="dut0"))
 

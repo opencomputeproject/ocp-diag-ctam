@@ -83,6 +83,7 @@ class CompToolDut(Dut):
         ]
         self.default_prefix = None
         self.port_list = config["properties"]["SSHPortList"]["value"]
+        self.remote_port = config["properties"]["SSHRemotePort"]["value"]
         self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
             self.connection_ip_address
         )
@@ -315,20 +316,6 @@ class CompToolDut(Dut):
     def is_console_log(self) -> bool:
         return self._console_log
     
-    def is_tunnel_established(self, port) -> bool:
-        """
-        Checks if a tunnel process is established at a given ports using nc command, 
-        throws error is port is not used
-
-        :return: port is used for tunneling
-        :rtype: boolean
-        """
-        try:
-            subprocess.run(['nc', '-z', 'localhost', str(port)], check=True)
-            return True
-        except subprocess.CalledProcessError:
-            return False
-
     def create_tunnel(self, local_port, remote_host, remote_port, ssh_host, ssh_port, ssh_username, ssh_password):
         try:
             return True, SSHTunnelForwarder(
@@ -360,7 +347,7 @@ class CompToolDut(Dut):
             raise Exception(f"Expecting list of ports to ssh tunnelling, found none!")
         
         for port in self.port_list:
-            status, self.ssh_tunnel = self.create_tunnel(local_port=port, remote_host=amc_ip_address, remote_port=80, 
+            status, self.ssh_tunnel = self.create_tunnel(local_port=port, remote_host=amc_ip_address, remote_port=self.remote_port, 
                                              ssh_host=self.connection_ip_address, ssh_port=22,
                                             ssh_username=self.__user_name, ssh_password=self.__user_pass)
             if status:
