@@ -103,14 +103,11 @@ class TestRunner:
         self.console_log = True
         self.progress_bar = False
         self.package_config = package_info_json_file
-
         runner_config = self._get_test_runner_config(test_runner_json_file)
+
         with open(dut_info_json_file) as dut_info_json:
             self.dut_config = json.load(dut_info_json)
-
-        # with open(package_info_json_file) as package_info_json:
-        #     self.package_config = json.load(package_info_json)
-
+        
         with open(redfish_uri_config_file) as redfish_uri:
             self.redfish_uri_config = json.load(redfish_uri)
 
@@ -243,10 +240,10 @@ class TestRunner:
         self.cwd = os.path.dirname(os.path.dirname(__file__))
         self.dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
         if self.workspace_dir:
-            print("Output Dir is : ", self.output_dir)
             self.output_dir = os.path.join(
                 self.workspace_dir, self.output_dir, "TestRuns", testrun_name+"_{}".format(self.dt)
             )
+            print("Output Dir is : ", self.output_dir)
         else:
             self.output_dir = os.path.join(
                 "workspace", "TestRuns", testrun_name+"_{}".format(self.dt)
@@ -269,7 +266,8 @@ class TestRunner:
         self.test_result_file = os.path.join(self.output_dir, "TestReport_{}.log".format(self.dt))
         self.test_uri_response_check = None
         if self.response_check_name:
-            self.test_uri_response_check = os.path.join(self.cwd, "workspace", self.response_check_name)
+            cwd = "" if self.cwd == "/tmp" else self.cwd
+            self.test_uri_response_check = os.path.join(cwd, "workspace", self.response_check_name)
 
         self.comp_tool_dut = CompToolDut(
             id="actDut",
@@ -285,10 +283,7 @@ class TestRunner:
             logger_path=self.output_dir
         )
         self.comp_tool_dut.current_test_name = "Initialization"
-        # FIXME: This needs to be fixed
-        # self.system_details, status_code = self.comp_tool_dut.GetSystemDetails()
-        # writer has to be configured prior to TestRun init
-
+        
 
         self.writer = LoggingWriter(
             self.output_dir, self.console_log, "OCPTV_"+testrun_name, "json", self.debug_mode
@@ -307,6 +302,16 @@ class TestRunner:
         
         self.comp_tool_dut.set_up_connection()
 
+        # FIXME: need to standardized details
+        # self.system_details, status_code = self.comp_tool_dut.GetSystemDetails()
+        # if status_code:
+        #     # log system details
+        #     timestamp = datetime.now().strftime("%m-%d-%YT%H:%M:%S")
+        #     self.system_details_logger = LoggingWriter(
+        #         self.output_dir, self.console_log, "SystemDetails", "json", self.debug_mode
+        #     )
+        #     self.system_details_logger.write(json.dumps(self.system_details))
+        
         self.active_run.start(dut=tv.Dut(id="dut0"))
 
     def _end(self, run_status, run_result):

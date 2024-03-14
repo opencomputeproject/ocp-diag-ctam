@@ -14,38 +14,25 @@
       "type": "bool",
       "value": false
     },
-    "SSHTunneling":{
-      "description": "",
-      "type": "bool",
-      "value":true
+    "SSHPortList":{
+      "description": "List of ports to connect to via ssh tunnelling",
+      "type": "list",
+      "value": [18888, 18889]
     },
-    "SSHHost":{
-      "value":""
-    },
-    "SSHPort":{
+    "Protocol":{
+      "description": "User can now give https or http",
+      "type": "str",
       "value": ""
     },
-    "RemoteHost":{
-      "value":""
-    },
-    "RemotePort":{
-      "value": ""
-    },
-    "LocalHost":{
-      "value":""
-    },
-    "LocalPort":{
-      "value": ""
+    "SSHRemotePort":{
+      "description": "Remote Redfish connection port",
+      "type": "int",
+      "value": 80
     },
     "AuthenticationRequired": {
       "description": "Indicates if REST API authentication is required by the Redfish service",
       "type": "bool",
       "value": false
-    },
-    "BMCUserName": {
-      "description": "Username for service entry login",
-      "type": "string",
-      "value": ""
     },
     "PowerOffCommand": {
       "description": "Command to use to turn off the system",
@@ -57,28 +44,8 @@
       "type": "string",
       "value": ""
     },
-    "BMCIPAddress": {
-      "description": "IP Address of Service Entry point to be used",
-      "type": "string",
-      "value": ""
-    },
     "AMCIPAddress": {
       "description": "IP Address of AMC (i.e. HMC) to be used",
-      "type": "string",
-      "value": ""
-    },
-    "RMBMCIPAddress": {
-      "description": "IP Address of Service Entry point to be used",
-      "type": "string",
-      "value": ""
-    },
-    "RMIPAddress": {
-      "description": "IP Address of Service Entry point to be used",
-      "type": "string",
-      "value": ""
-    },
-    "BMCNodeNumber": {
-      "description": "Needed only for Host Controller based setups",
       "type": "string",
       "value": ""
     },
@@ -91,16 +58,6 @@
       "description": "Wait time (in seconds) during FW Activation post reset cycle",
       "type": "int",
       "value": 300
-    },
-    "DebugMode": {
-      "description": "",
-      "type": "bool",
-      "value": true
-    },
-    "Acc Type": {
-      "description": "Options are GPU_BB & Discrete_GFX for now",
-      "type": "string",
-      "value": "GPU_BB"
     },
     "FwStagingTimeMax": {
       "description": "Maximum time in seconds taken by staging (copy) phase of full device FW update",
@@ -120,10 +77,8 @@
   },
   "required": [
     "ConnectionTo",
-    "Acc Type",
     "PowerOffCommand",
     "PowerOnCommand",
-    "DebugMode",
     "PowerOffWaitTime",
     "PowerOnWaitTime",
     "FwStagingTimeMax",

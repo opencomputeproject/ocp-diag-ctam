@@ -4,31 +4,26 @@ Copyright (c) NVIDIA CORPORATION
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
-
 """
+
 import os
-import sys
 import typing as ty
 import redfish
-import netrc
 import subprocess
 import platform
 import json
 import time
 from datetime import datetime
-import shutil
-import stat
-import shlex
-from os import path
-from alive_progress import alive_bar
-from sshtunnel import SSHTunnelForwarder
-# import pandas as pd
+
+import pandas as pd
 
 from prettytable import PrettyTable
 from ocptv.output import Metadata
 from ocptv.output import Dut
 
 from interfaces.uri_builder import UriBuilder
+# from sshtunnel import SSHTunnelForwarder, HandlerSSHTunnelForwarderError
+from utils.ssh_tunnel_utils import SSHTunnel
 
 
 class CompToolDut(Dut):
@@ -81,91 +76,61 @@ class CompToolDut(Dut):
         self.logger_path = logger_path
         self.test_info_logger = test_info_logger
         self.test_uri_response_check = test_uri_response_check
-        self.MSFTSSHTunnel = config["properties"].get("SSHTunneling", {}).get("value", False)
-        self.ssh_tunnel_obj = None
-        self.cwd = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        self.cwd = self.get_cwd()
         super().__init__(id, name, metadata)
         self.connection_ip_address = config["properties"]["ConnectionIPAddress"][
             "value"
         ]
+        self.default_prefix = None
+        self.port_list = config["properties"]["SSHPortList"]["value"]
+        self.protocol = config["properties"]["Protocol"]["value"]
+        self.remote_port = config["properties"]["SSHRemotePort"]["value"]
         self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
             self.connection_ip_address
         )
         
         
-        self.BindedPort = None
+        self.binded_port = None
         self.AMCIPAddress = None
-        self.SshTunnel = config["properties"].get("SshTunnel", {}).get("value", False)
-        if self.SshTunnel:
+        self.ssh_tunnel_required = config["properties"].get("SshTunnel", {}).get("value", False)
+        if self.ssh_tunnel_required:
             self.AMCIPAddress = config["properties"].get("AMCIPAddress", {}).get("value", None)
             if not self.AMCIPAddress:
                 raise Exception("AMCIPAddress must be provided when SSHTunnel is set to True.")
             self.AMCIPAddress = config["properties"].get("AMCIPAddress", {}).get("value", None)
         
-        if self.MSFTSSHTunnel:
-            self.RemoteHost = config["properties"].get("RemoteHost", {}).get("value", None)
-            self.RemotePort = config["properties"].get("RemotePort", {}).get("value", 443)
-            self.SSHHost = config["properties"].get("SSHHost", {}).get("value", None)
-            self.SSHPort = config["properties"].get("SSHPort", {}).get("value", 22)
-            self.LocalHost = config["properties"].get("LocalHost", {}).get("value", "127.0.0.1")
-            self.LocalPort = config["properties"].get("LocalPort", {}).get("value", 9999)
-        
         self.redfish_ifc = None
         self.redfish_auth = config["properties"].get("AuthenticationRequired", {}).get("value", False)
-        
+        self.ssh_tunnel = SSHTunnel(self.test_info_logger)
+    
+    def get_cwd(self):
+        cwd = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        return "" if cwd == "/tmp" else cwd
+
+
     def set_up_connection(self):
         """
         This method sets up connection to the DUT,
         which includes ssh_tunneling, Redfish client setup and login if needed
         """
         self.__connection_url = "https://" + self.connection_ip_address
-        __connection_ip = ""
-        __connection_port = ""
-        __connection_protocol = "https"
         # Set up SSH Tunneling if requested
-        if self.SshTunnel:
+        if self.ssh_tunnel_required:
             # Set up port forwarding
             if not self.AMCIPAddress:
                 raise Exception("AMCIPAddress must be provided when SSHTunnel is set to True.")
-            self.setup_ssh_tunnel(self.AMCIPAddress)
+            self.binded_port = self.ssh_tunnel.setup_ssh_tunnel(remote_host=self.AMCIPAddress, remote_port=self.remote_port,
+                                             ssh_host=self.connection_ip_address, ssh_port=22,
+                                             ssh_username=self.user_name, ssh_password=self.user_pass,
+                                             local_port=self.port_list)
+            
+            self.connection_ip_address = "127.0.0.1:" + str(self.binded_port) 
             self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
                 self.AMCIPAddress
             )
-            __connection_ip = "127.0.0.1"
-            __connection_port =  str(self.BindedPort)
-            __connection_protocol = ("http://" if self.SshTunnel else "https://")
         
-        if self.MSFTSSHTunnel:
-            # Set up port forwarding
-            
-            if not self.RemoteHost or not self.SSHHost:
-                raise Exception("Either of one from this is missing [RemoteHost, SSHHost]. \
-                    Please check dut info if any value is missing.")
-
-            self.__ssh_username, _, self.__ssh_userpass = self.net_rc.authenticators(
-                self.SSHHost
-            )
-            self.ssh_tunnel_obj = self.create_ssh_tunnel(ssh_port=self.SSHPort,
-                                   ssh_host=self.SSHHost,
-                                   ssh_username=self.__ssh_username,
-                                   ssh_password=self.__ssh_userpass,
-                                   remote_bind_address=(self.RemoteHost,self.RemotePort),
-                                   local_bind_address=(self.LocalHost,self.LocalPort),
-                                   )
-            __connection_ip = self.ssh_tunnel_obj.local_bind_host
-            __connection_port =  str(self.ssh_tunnel_obj.local_bind_port)
-            __connection_protocol = "https://"
-            self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
-                self.RemoteHost
-            )
-            
-        if not self.check_ping_status(__connection_ip if __connection_ip else self.connection_ip_address): # FIXME: Use logging method
-            raise Exception("[FATAL] Unable to ping the ip address. Please check the IP is valid or not.")
-        
-        if __connection_ip and __connection_port and __connection_protocol:
-            self.connection_ip_address = "{}:{}".format( __connection_ip, __connection_port) 
-            self.__connection_url = __connection_protocol + self.connection_ip_address
         # TODO investigate storing FW update files via add_software_info() in super
+        self.__connection_url = f"{self.protocol}://" + self.connection_ip_address
         self.default_prefix = self.uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
         self.redfish_ifc = redfish.redfish_client(
             self.__connection_url,
@@ -290,7 +255,6 @@ class CompToolDut(Dut):
                     "ResponseCode": f"Unexpected status: {response.status}",
                     "Response": response.text,
                     })
-            # msg.update({"TimeTaken": time_taken})
         except Exception as e:
             msg.update({
             "ResponseCode": None,
@@ -354,107 +318,11 @@ class CompToolDut(Dut):
     
     @property
     def is_console_log(self) -> bool:
-
         return self._console_log
     
-    def create_ssh_tunnel(self, ssh_host:str, ssh_port:int, ssh_username:str, ssh_password:str, remote_bind_address:tuple, local_bind_address:tuple):
-        """Create a ssh tunnel from local to remote using SSH Tunneling
-
-        Args:
-            ssh_host (str): ssh host ip address
-            ssh_port (int): ssh port
-            ssh_username (str): username to connect to ssh
-            ssh_password (str): password to connect to ssh
-            remote_bind_address (tuple): (remote ip address, remote port)
-            local_bind_address (tuple): (local ip address, local port)
-
-        Returns:
-            _type_: ssh tunnel object after creating ssh tunneling
-        """
-        try:
-            self.test_info_logger.log("Creating SSH Tunneling for remote host: {} with port: {} through ssh ip: {} with port: {} from local ip: {} with port: {}".format(
-                *remote_bind_address, ssh_host, ssh_port, *local_bind_address
-            ))
-            ssh_tunnel = SSHTunnelForwarder(
-                        (ssh_host, ssh_port),
-                        ssh_username=ssh_username,
-                        ssh_password=ssh_password,
-                        remote_bind_address=remote_bind_address,
-                        local_bind_address=local_bind_address
-                        )
-            ssh_tunnel.start()
-            self.test_info_logger.log("Established and Started SSH Tunneling with IP: {} and Port: {}".format(*ssh_tunnel.local_bind_address))
-            return ssh_tunnel
-        except Exception as e:
-            msg = "[EXCEPTION]: Exception occurred during ssh tunneling. {}".format(str(e))
-            self.test_info_logger.log(msg)
-            raise Exception(msg)
-    
-    def stop_ssh_tunnel(self, ssh_tunnel):
-        self.test_info_logger.log("Stopping the SSH Tunneling with IP: {} and Port: {}".format(*ssh_tunnel.local_bind_address))
-        ssh_tunnel.stop()
-    
-    def setup_ssh_tunnel(self, amc_ip_address):
-        """
-        Setup SSH Tunneling to AMC
-
-        :raises Exception: failed port forwarding/ssh tunneling
-        :return: None
-        :rtype: None
-        """
-        PortList = [18888, 18889]
-        for port in PortList:
-            ssh_cmd = "sshpass -p {ssh_password} ssh -4 -o StrictHostKeyChecking=no -fNT -L {binded_port}:{amc_ip}:80 {ssh_username}@{bmc_ip} -p 22".format(
-                    ssh_password = self.__user_pass,
-                    binded_port = port,
-                    ssh_username = self.__user_name,
-                    bmc_ip = self.connection_ip_address,
-                    amc_ip = amc_ip_address,
-                    )
-            process = subprocess.Popen(ssh_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            stdout_data, stderr_data = process.communicate()
-            if process.returncode != 0 or stderr_data:
-                msg = f"Failed to bind port {port}.\nReturnCode: {process.returncode}\nError: {stderr_data}\nTrying the next one..."
-                self.test_info_logger.log(msg)
-            else:
-                self.BindedPort = port
-                break
-        if self.BindedPort is None:
-            raise Exception(f"Failed to bind port! Please make sure the host machine has port forwarding enabled and there is at least one port available in {PortList}.")
-        msg = f"Binded port {self.BindedPort}"
-        self.test_info_logger.log(msg)
-        return
-    
-    def kill_ssh_tunnel(self):
-        """
-        Kill SSH Tunneling to AMC
-
-        :return: None
-        :rtype: None
-        """
-        # First, find all the PIDs associated with the binded port
-        port_pid = ["lsof", "-t", "-i", ":{0}".format(self.BindedPort)] # ANother option is to add -sTCP:LISTEN
-        process = subprocess.Popen(port_pid, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate() 
-        my_pid = os.getpid()
-        for this_pid in list(filter(None, stdout.decode().strip().split('\n'))):
-            # Make sure to not kill this running process
-            if int(this_pid) != my_pid:
-                kill_cmd = "kill {}".format(this_pid)
-                process = subprocess.Popen(kill_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-                stdout_data, stderr_data = process.communicate()
-                if process.returncode != 0 or stderr_data:
-                    msg = f"WARNING: Couldn't close the port forwarding! {kill_cmd}\nReturnCode: {process.returncode}\nError: {stderr_data}"
-                    self.test_info_logger.log(msg)
-                else:
-                    self.test_info_logger.log("SSH tunnel is killed successfully!")
-                    self.BindedPort = None # Just for sanity in case of multi-threading
-                
     def clean_up(self):
-        if self.ssh_tunnel_obj:
-            self.stop_ssh_tunnel(self.ssh_tunnel_obj)
-        if self.BindedPort:
-            self.kill_ssh_tunnel()
+        if self.binded_port:
+            self.ssh_tunnel.kill_ssh_tunnel()
         if self.redfish_auth:
             self.redfish_ifc.logout()
             self.test_info_logger.log("Redfish logout is successful.")
@@ -464,8 +332,7 @@ class CompToolDut(Dut):
         response = os.system(f'ping {p} 1 ' + ip_address)
         if response == 0:
             return True
-        else:
-            return False
+        return False
         
     
     def GetSystemDetails(self, print_details=0): # FIXME: Use logging method and fix the uri
@@ -479,10 +346,9 @@ class CompToolDut(Dut):
             MyName = __name__ + "." + self.GetSystemDetails.__qualname__
             able_to_get_system_details = True
             t = PrettyTable(["Component", "Value"])
-            system_detail_uri = self.uri_builder.format_uri(redfish_str="{BaseURI}{SystemURI}",
-                                                                component_type="GPU")
-            bmc_fw_inv_uri = self.uri_builder.format_uri(redfish_str="{BaseURI}{BMCFWInventory}/",
-                                                                component_type="BMC")
+            system_detail_uri = self.uri_builder.format_uri(redfish_str="{BaseURI}{SystemURI}", component_type="BMC")
+            bmc_fw_inv_uri = self.uri_builder.format_uri(
+                redfish_str="{BaseURI}{BMCFWInventory}/",component_type="BMC")
             system_details = self.run_redfish_command(system_detail_uri).dict
             bmc_fw_inv = self.run_redfish_command(bmc_fw_inv_uri).dict
             if system_details and ("error" not in system_details):
@@ -514,19 +380,8 @@ class CompToolDut(Dut):
                 able_to_get_system_details = False
             if able_to_get_system_details and print_details:
                 print(t)
-            #    self.logger.info(t)
             return [system_details, bmc_fw_inv], able_to_get_system_details
         except Exception as e:
             print("[FATAL] Exception occurred during system discovery. Please see below exception...")
             print(str(e))
             return ["[FATAL] Exception occurred during system discovery. Please see below exception...",str(e)], False
-        
-    
-    
-        
-
-
-
-
-
-

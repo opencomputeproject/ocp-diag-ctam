@@ -8,23 +8,23 @@
 #  pip install -r pip-requirements.txt
 ##
 
-alive-progress
 ocptv
 prettytable
 redfish
 regex
 mypy
-black
-bumpver
 isort
+pandas
 pip-tools
 pytest
 pytest-cov
+pyOpenSSL
 requests
 requests-ntlm
 requests-toolbelt
 requests-unixsocket
 alive_progress>=3.1.4
+sshtunnel
 Sphinx
 sphinx-rtd-theme
 sphinx_autodoc_typehints
