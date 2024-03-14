@@ -93,6 +93,16 @@
       "description": "Wait time (in seconds) for runtime execution delay",
       "type": "int",
       "value": 300
+    },
+    "SSHPortList":{
+      "description": "List of ports to connect to via ssh tunnelling",
+      "type": "list",
+      "value": [18888, 18889]
+    },
+    "SSHRemotePort":{
+      "description": "Remote Redfish connection port",
+      "type": "int",
+      "value": 80
     }
   },
   "required": [

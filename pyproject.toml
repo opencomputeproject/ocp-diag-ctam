@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ocptv-ctam"
-version = "0.0.1"
+version = "0.1.0"
 description = "Compliance Tool for Accelerator Management"
 readme = "README.md"
 authors = [
@@ -58,7 +58,7 @@ push = false
 
 [tool.bumpver.file_patterns]
 "pyproject.toml" = ['^current_version = "{version}"', '^version = "{version}"']
-"ctam/__init__.py" = ['^__version__ = "{version}"']
+"ctam/version.py" = ['^__version__ = "{version}"']
 
 [tool.black]
 line-length = 120

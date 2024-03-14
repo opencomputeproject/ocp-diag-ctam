@@ -3,14 +3,8 @@
 # LICENSE file in the root directory of this source tree.
 #
 
-# get current directory
-export current_dir="$LOCAL_DIR_ENV"
-
-# path to binary
-dist_dir="${current_dir}/dist"
-
 # pyinstaller command to make binary
-pyinstaller_cmd="pyinstaller --add-data=/app/ctam:. --name ctam.build --paths=/app/ctam  --onefile ctam/ctam.py --runtime-tmpdir ${dist_dir}"
+pyinstaller_cmd="pyinstaller --add-data=/app/ctam:. --name ctam.build --paths=/app/ctam  --onefile ctam/ctam.py --workpath /tmp --distpath dist --exclude-module sqlite3"
 
 # static to make one executable
 staticx_cmd="staticx ./dist/ctam.build ./dist/ctam"

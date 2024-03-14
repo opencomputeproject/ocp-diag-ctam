@@ -15,10 +15,6 @@ RUN apt-get update
 
 RUN apt-get install python3-pip  zlib1g-dev scons -y
 
-ARG  LOCAL_DIR
-
-ENV  LOCAL_DIR_ENV=$LOCAL_DIR
-
 WORKDIR /app
 
 COPY . /app

@@ -78,7 +78,6 @@ def parse_args():
         help="Display current version of ctam",
         action="store_true",
     )
-
     return parser.parse_args()
 
 def get_exception_details(exec: Exception = ""):
@@ -93,6 +92,7 @@ def get_exception_details(exec: Exception = ""):
     """
     exc_type, exc_obj, exc_tb = sys.exc_info()
     temp = exc_tb
+
     traceback_details = {}
     while temp:
         f_name = os.path.split(temp.tb_frame.f_code.co_filename)[1]
@@ -136,7 +136,7 @@ def main():
         ]
 
         missing_files = [
-            file for file in required_workspace_files if not os.path.isfile(os.path.join(args.workspace, file))
+            file_name for file_name in required_workspace_files if not os.path.isfile(os.path.join(args.workspace, file_name))
         ]
 
         if missing_files:
@@ -260,3 +260,4 @@ if __name__ == "__main__":
     print(f"Log Directory: {log_directory}")
     print("\n*Note: Return/Status Codes - PASS(0): All tests passed, FAIL(1): Execution/runtime failure or test failure\n")
     exit(status_code)
+

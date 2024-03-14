@@ -75,6 +75,7 @@ class FunctionalIfc:
         Default init for now
         """
         pass
+    
 
     def get_JSONFWFilePayload_file(self, image_type="default", corrupted_component_id=None):
         """
@@ -263,7 +264,6 @@ class FunctionalIfc:
         elif image_type == "negate":
             self.test_run().add_log(LogSeverity.INFO, "Negative Test Case")
             json_fw_file_payload = ""
-
         return json_fw_file_payload
 
     def get_PLDMPkgJson_file(self, image_type="default"):
@@ -308,7 +308,6 @@ class FunctionalIfc:
                 self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Path", ""),
                 self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("JSON", ""),
             )
-            
         return pldm_json_file
 
     def ctam_getfi(self, expanded=0):
@@ -406,6 +405,11 @@ class FunctionalIfc:
         msg = f"The Redfish Command URI is : {ctam_getus_uri} \nThe Response for this command is : {data}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return data
+    
+    def get_events(self):
+        ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU")
+        response = self.dut().run_redfish_command(uri=ctam_getes_uri)
+        return response.dict, ctam_getes_uri
 
     def ctam_getes(self, path=None):
         """
@@ -413,21 +417,26 @@ class FunctionalIfc:
         :returns:	        JSON Data after running Redfish command
         :rtype:             JSON Dict
         """
+
         MyName = __name__ + "." + self.ctam_getes.__qualname__
 
         if path == "Subscriptions":
-            ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU")
-            response = self.dut().run_redfish_command(uri=ctam_getes_uri)
-            data = response.dict
-            members = data["Members"]
             SubscriptionsList = []
-            if len(members) != 0:
-                for index, member in enumerate(members):
-                    memberId = member["@odata.id"].split('/')[-1].strip()
-                    ctam_getsid_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU")
-                    ctam_getsid_uri = ctam_getsid_uri + "/" + memberId
-                    response = self.dut().run_redfish_command(uri=ctam_getsid_uri)
-                    SubscriptionsList.append(memberId)
+            response, ctam_getes_uri = self.get_events()
+            members = response["Members"]
+            if not members:
+                # create event if members are empty
+                self.ctam_create_es(
+                destination="https://172.17.0.202:8081/redfish/v1/RedfishEvents/EventReceiver/5",
+                RegistryPrefixes="ResourceEvent", Context="rm_server_5", Protocol="Redfish")
+                response, _ = self.get_events()
+                members = response["Members"]
+            for  member in members:
+                memberId = member["@odata.id"].split('/')[-1].strip()
+                ctam_getsid_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU")
+                ctam_getsid_uri = ctam_getsid_uri + "/" + memberId
+                response = self.dut().run_redfish_command(uri=ctam_getsid_uri)
+                SubscriptionsList.append(memberId)
             data = SubscriptionsList
         else:
             ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService", component_type="GPU")
@@ -438,13 +447,13 @@ class FunctionalIfc:
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return data
 
-    def ctam_createes(self, destination, RegistryPrefixes, Context, Protocol):
+    def ctam_create_es(self, destination, RegistryPrefixes, Context, Protocol):
         """
         :Description:       Create a subscription
         :returns:	        JSON Data after running Redfish command
         :rtype:             JSON Dict
         """
-        MyName = __name__ + "." + self.ctam_createes.__qualname__
+        MyName = __name__ + "." + self.ctam_create_es.__qualname__
 
         ctam_uri = self.dut().uri_builder.format_uri(
             redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU"
@@ -484,23 +493,23 @@ class FunctionalIfc:
         :rtype:              None
         """
         MyName = __name__ + "." + self.NodeACReset.__qualname__
-        command_to_run = ""
-        command_to_run = self.dut().dut_config.get("PowerOffCommand", {}).get("value", "")
-        if not command_to_run:
-            self.test_run().add_log(LogSeverity.INFO, "Please provide the command in dut info for running power off.")
+        power_off_command = self.dut().dut_config.get("PowerOffCommand", {}).get("value", "")
+        power_on_command = self.dut().dut_config.get("PowerOnCommand", {}).get("value", "")
+        if not power_off_command or not power_on_command:
+            self.test_run().add_log(LogSeverity.INFO, "Please provide both power on and power off command in dut config!")
             return 
-        self.test_run().add_log(LogSeverity.INFO, json.dumps(command_to_run, indent=4))
-        arguments = shlex.split(command_to_run)
-        subprocess.check_output(arguments, cwd=os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        # execute power off
+        self.test_run().add_log(LogSeverity.INFO, json.dumps(power_off_command, indent=4))
+        arguments = shlex.split(power_off_command)
+        cwd_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        cwd_path = None if cwd_path == "/tmp" else cwd_path
+        subprocess.check_output(arguments, cwd=cwd_path)
         time.sleep(self.dut().dut_config.get("PowerOffWaitTime", {}).get("value", 60))
         self.test_run().add_log(LogSeverity.INFO, "Power Off wait time done")
-        command_to_run = self.dut().dut_config.get("PowerOnCommand", {}).get("value", "")
-        if not command_to_run:
-            self.test_run().add_log(LogSeverity.INFO, "Please provide the power on command in dut info to run.")
-            return 
-        self.test_run().add_log(LogSeverity.INFO, json.dumps(command_to_run, indent=4))
-        arguments = shlex.split(command_to_run)
-        subprocess.check_output(arguments, cwd=os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        # execute power on
+        self.test_run().add_log(LogSeverity.INFO, json.dumps(power_on_command, indent=4))
+        arguments = shlex.split(power_on_command)
+        subprocess.check_output(arguments, cwd=cwd_path)
         time.sleep(self.dut().dut_config.get("PowerOnWaitTime", {}).get("value", 300))
         self.test_run().add_log(LogSeverity.INFO, "Power ON wait time done")
         return
@@ -807,6 +816,7 @@ class FunctionalIfc:
                             result = False
                             break
         return result
+
     def ctam_getepc(self, expanded=1):
         """
         :Description:       Get Expanded Processor Collection
@@ -829,6 +839,7 @@ class FunctionalIfc:
         msg = f"Command is : {ctam_getepc_uri} \nThe Response is : {data}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return data
+    
 
     def ctam_deles(self):
         """
@@ -843,6 +854,11 @@ class FunctionalIfc:
         subscriptionList = self.ctam_getes("Subscriptions")
         self.test_run().add_log(LogSeverity.INFO, "subscriptionList is {}\n".format(subscriptionList))
         # FIXME: Handle when subscriptionList is empty
+        if not subscriptionList:
+            self.ctam_create_es(
+                destination="https://172.17.0.202:8081/redfish/v1/RedfishEvents/EventReceiver/5",
+                RegistryPrefixes="ResourceEvent", Context="rm_server_5", Protocol="Redfish")
+            subscriptionList = self.ctam_getes("Subscriptions")
         ctam_getes_uri = ctam_getes_uri + "/" + subscriptionList[-1]
         response = self.dut().run_redfish_command(uri=ctam_getes_uri, mode="DELETE")
         status = response.status
