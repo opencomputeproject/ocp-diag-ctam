@@ -59,18 +59,18 @@ def parse_args():
     parser.add_argument("-d", "--Discovery", help="Perform System Discovery", action="store_true")
 
     parser.add_argument(
-        "-w",
-        "--workspace",
-        required=not any(arg in sys.argv for arg in ["-v", "--version"]),
-        help="Path to workspace directory that contains test run files",
-    )
-
-    parser.add_argument(
         "-l",
         "--list",
         help="List all test cases. If combined with -G then list all cases of the chosen group ",
         action="store_true",
     )
+    parser.add_argument(
+        "-w",
+        "--workspace",
+        required=not any(arg in sys.argv for arg in ["-l", "--list", "-v", "--version"]),
+        help="Path to workspace directory that contains test run files",
+    )
+
 
     parser.add_argument(
         "-v",
@@ -125,13 +125,20 @@ def main():
         print(f"CTAM - version {__version__}")
         exit()
 
-    if not os.path.isdir(args.workspace):
+    if not args.workspace:
+        ifc_dir = os.path.join(os.path.dirname(__file__), "interfaces")
+        ext_test_root_dir =  os.path.join(os.path.dirname(__file__), "tests")
+        test_hierarchy = TestHierarchy(ext_test_root_dir, ifc_dir)
+        if args.list:
+            test_hierarchy.print_test_groups_test_cases(args.group)
+            return 0, None, "List of tests is printed"
         print("Invalid workspace specified")
         return 1, None, "Invalid workspace specified"
 
     required_workspace_files = [
         "dut_info.json",
         "redfish_uri_config.json",
+        "test_runner.json",
         ".netrc",
     ]
 
