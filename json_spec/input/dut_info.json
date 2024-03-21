@@ -9,25 +9,30 @@
       "type": "string",
       "value": ""
     },
-    "SshTunnel": {
+    "SSHTunnel": {
       "description": "Indicates if the user wants to communicate through SSH tunnel",
       "type": "bool",
       "value": false
     },
-    "SSHPortList":{
-      "description": "List of ports to connect to via ssh tunnelling",
+    "SSHTunnelPortList":{
+      "description": "List of ports to connect to via SSH tunnelling",
       "type": "list",
-      "value": [18888, 18889]
+      "value": [9999, 5555]
     },
-    "Protocol":{
+    "SSHTunnelProtocol":{
       "description": "User can now give https or http",
       "type": "str",
       "value": ""
     },
-    "SSHRemotePort":{
-      "description": "Remote Redfish connection port",
+    "SSHTunnelRemotePort":{
+      "description": "Remote Redfish connection port to be used while SSH tunnelling",
       "type": "int",
       "value": 80
+    },
+    "SSHTunnelRemoteIPAddress": {
+      "description": "IP Address of Remote Port of the SSH tunnel to be used",
+      "type": "string",
+      "value": ""
     },
     "AuthenticationRequired": {
       "description": "Indicates if REST API authentication is required by the Redfish service",
@@ -41,11 +46,6 @@
     },
     "PowerOnCommand": {
       "description": "Command to use to turn on the system",
-      "type": "string",
-      "value": ""
-    },
-    "AMCIPAddress": {
-      "description": "IP Address of AMC (i.e. HMC) to be used",
       "type": "string",
       "value": ""
     },

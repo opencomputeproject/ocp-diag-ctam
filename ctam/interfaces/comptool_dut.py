@@ -82,22 +82,22 @@ class CompToolDut(Dut):
             "value"
         ]
         self.default_prefix = None
-        self.port_list = config["properties"]["SSHPortList"]["value"]
-        self.protocol = config["properties"]["Protocol"]["value"]
-        self.remote_port = config["properties"]["SSHRemotePort"]["value"]
+        self.port_list = config["properties"]["SSHTunnelPortList"]["value"]
+        self.protocol = config["properties"]["SSHTunnelProtocol"]["value"]
+        self.remote_port = config["properties"]["SSHTunnelRemotePort"]["value"]
         self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
             self.connection_ip_address
         )
         
         
         self.binded_port = None
-        self.AMCIPAddress = None
-        self.ssh_tunnel_required = config["properties"].get("SshTunnel", {}).get("value", False)
+        self.SSHTunnelRemoteIPAddress = None
+        self.ssh_tunnel_required = config["properties"].get("SSHTunnel", {}).get("value", False)
         if self.ssh_tunnel_required:
-            self.AMCIPAddress = config["properties"].get("AMCIPAddress", {}).get("value", None)
-            if not self.AMCIPAddress:
-                raise Exception("AMCIPAddress must be provided when SSHTunnel is set to True.")
-            self.AMCIPAddress = config["properties"].get("AMCIPAddress", {}).get("value", None)
+            self.SSHTunnelRemoteIPAddress = config["properties"].get("SSHTunnelRemoteIPAddress", {}).get("value", None)
+            if not self.SSHTunnelRemoteIPAddress:
+                raise Exception("SSHTunnelRemoteIPAddress must be provided when SSHTunnel is set to True.")
+            #self.AMCIPAddress = config["properties"].get("AMCIPAddress", {}).get("value", None) TODO - Commented for now, can we remove this? 
         
         self.redfish_ifc = None
         self.redfish_auth = config["properties"].get("AuthenticationRequired", {}).get("value", False)
@@ -117,16 +117,16 @@ class CompToolDut(Dut):
         # Set up SSH Tunneling if requested
         if self.ssh_tunnel_required:
             # Set up port forwarding
-            if not self.AMCIPAddress:
-                raise Exception("AMCIPAddress must be provided when SSHTunnel is set to True.")
-            self.binded_port = self.ssh_tunnel.setup_ssh_tunnel(remote_host=self.AMCIPAddress, remote_port=self.remote_port,
+            if not self.SSHTunnelRemoteIPAddress:#TODO - Is this needed again? 
+                raise Exception("SSHTunnelRemoteIPAddress must be provided when SSHTunnel is set to True.")
+            self.binded_port = self.ssh_tunnel.setup_ssh_tunnel(remote_host=self.SSHTunnelRemoteIPAddress, remote_port=self.remote_port,
                                              ssh_host=self.connection_ip_address, ssh_port=22,
                                              ssh_username=self.user_name, ssh_password=self.user_pass,
                                              local_port=self.port_list)
             
             self.connection_ip_address = "127.0.0.1:" + str(self.binded_port) 
             self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
-                self.AMCIPAddress
+                self.SSHTunnelRemoteIPAddress
             )
         
         # TODO investigate storing FW update files via add_software_info() in super
