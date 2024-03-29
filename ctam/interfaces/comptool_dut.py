@@ -14,7 +14,8 @@ import platform
 import json
 import time
 from datetime import datetime
-
+import requests
+from requests.auth import HTTPBasicAuth
 import pandas as pd
 
 from prettytable import PrettyTable
@@ -88,7 +89,7 @@ class CompToolDut(Dut):
         self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
             self.connection_ip_address
         )
-        
+        self.multipart_form_data = self.default_prefix = self.uri_builder.format_uri(redfish_str="{MultiPartFormData}", component_type="GPU")
         
         self.binded_port = None
         self.SSHTunnelRemoteIPAddress = None
@@ -253,6 +254,93 @@ class CompToolDut(Dut):
             else:
                 msg.update({
                     "ResponseCode": f"Unexpected status: {response.status}",
+                    "Response": response.text,
+                    })
+        except Exception as e:
+            msg.update({
+            "ResponseCode": None,
+            "Response":f"FATAL: Exception occurred while running redfish command - {e}",
+            })
+        finally:                         
+            self.logger.write(json.dumps(msg))
+            return response
+        
+    
+    def run_request_command(self, uri, mode="GET", body=None, headers=None, timeout=None, files=None, verify=False):
+        """
+        This method is for running redfish commands according to mode and log the output into
+        a formatted log file and return the response
+        
+        :param uri: uri for redfish connection
+        :type uri: str
+        :param mode: Mode for fetching data or updating
+        :type mode: str
+        :param body: body for requests
+        :type body: ty.Optional[dict], optional
+        :param header: header for requests, defaults to None
+        :type metadata: ty.Optional[dict], optional
+
+        :return: response for requests
+        :rtype: response object or None in case of failure
+        """
+        try:
+            start_time = time.time()
+            response = None
+            msg = {
+                    "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                    "TestName": self.current_test_name,
+                    "URI": uri,
+            }
+            url = self.connection_url + uri
+            kwargs = {"path": uri, "headers": headers}
+            auth = HTTPBasicAuth(self.user_name, self.user_pass)
+            if timeout is not None:
+                kwargs.update({"timeout": timeout})
+                
+            if mode == "POST":
+                msg.update({"Method":"POST"})
+                #msg.update({"Method":"POST","Data":"{}".format(body),}) # FIXME: It floods the logs. Do we need to log the entire body? 
+                kwargs.update({"body": body})
+                response = requests.post(url=url, data=body, files=files, headers=headers, auth=auth, verify=verify) # path=uri, body=body, headers=headers
+            elif mode == "PATCH":
+                msg.update({"Mode":"PATCH","Data":"{}".format(body),})
+                kwargs.update({"body": body})
+                response = requests.patch(url=url, data=body, files=files, headers=headers, auth=auth, verify=verify) # path=uri, body=body, headers=headers
+            elif mode == "GET":
+                msg.update({"Method":"GET",})
+                response = requests.get(url=url, data=body, files=files, headers=headers, auth=auth, verify=verify)# path=uri, headers=headers
+            elif mode == "DELETE":
+                msg.update({"Method":"DELETE",})
+                response = requests.delete(url=url, data=body, files=files, headers=headers, auth=auth, verify=verify) # path=uri, headers=headers   
+            
+            end_time = time.time()
+            time_difference_seconds = end_time - start_time
+            time_difference = datetime.utcfromtimestamp(time_difference_seconds) - datetime.utcfromtimestamp(0)
+            hours, remainder = divmod(time_difference.seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            milliseconds = int(time_difference.microseconds / 1000)
+            formatted_time = "{:02d}H:{:02d}M:{:02d}S:{:03d}MS".format(hours, minutes, seconds, milliseconds)
+            
+            msg.update({"ResponseTime": "{}".format(formatted_time)})
+
+            if response.status_code in range (200,204) and response.text: # FIXME: Add error handling in case the request fails
+                msg.update({
+                    "ResponseCode": response.status_code,
+                    "Response":response.json(), # FIXME: self-test report cannot be converted to dict # FIXED: Throws error in some cases when response.dict is used and the response body is empty
+                    }) 
+            elif response.status_code in range (200,204):
+                msg.update({
+                    "ResponseCode": response.status_code,
+                    "Response":"Success but no response body",
+                    })
+            elif response.status_code > 300: 
+                msg.update({
+                    "ResponseCode": response.status_code,
+                    "Response":f"Unexpected Response: {response.text}",
+                    })
+            else:
+                msg.update({
+                    "ResponseCode": f"Unexpected status: {response.status_code}",
                     "Response": response.text,
                     })
         except Exception as e:
