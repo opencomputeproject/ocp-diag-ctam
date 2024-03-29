@@ -389,9 +389,9 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 # Unstructured HTTP push update
                 headers = {"Content-Type": "application/octet-stream"}
                 body = open(FileName, "rb").read()
-            response = self.dut().run_redfish_command(uri=URL, mode="POST", body=body, headers=headers)
-            JSONData = response.dict
-        else:
+                response = self.dut().run_redfish_command(uri=URL, mode="POST", body=body, headers=headers)
+                JSONData = response.dict
+        if self.dut().multipart_form_data:
             if self.dut().ssh_tunnel_required:
                 headers = None
                 body = {}
