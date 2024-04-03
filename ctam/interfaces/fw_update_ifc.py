@@ -166,7 +166,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             self.ctam_pushtargets()
         JSONFWFilePayload = self.get_JSONFWFilePayload_file(image_type=image_type, corrupted_component_id=corrupted_component_id)
         if not os.path.isfile(JSONFWFilePayload):
-            self.test_run().add_log(LogSeverity.DEBUG, f"Package file not found!!!")
+            self.test_run().add_log(LogSeverity.DEBUG, f"Package file not found at path {JSONFWFilePayload}!!!")
             return False
         if self.dut().is_debug_mode():
             print(JSONFWFilePayload)

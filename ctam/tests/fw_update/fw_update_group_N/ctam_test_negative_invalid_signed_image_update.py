@@ -12,7 +12,7 @@ LICENSE file in the root directory of this source tree.
 				The expectation is for staging to fail when this is attempted. 
 				The image is provided by the vendor	and it has a section in package_info.json
 
-:Usage 1:		python ctam.py -w ..\workspace -t F2
+:Usage 1:		python ctam.py -w ..\workspace -t F22
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Invalid Signed Image Update"
 
 """
