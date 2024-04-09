@@ -14,7 +14,8 @@ import platform
 import json
 import time
 from datetime import datetime
-
+import requests
+from requests.auth import HTTPBasicAuth
 import pandas as pd
 
 from prettytable import PrettyTable
@@ -22,8 +23,8 @@ from ocptv.output import Metadata
 from ocptv.output import Dut
 
 from interfaces.uri_builder import UriBuilder
-from sshtunnel import SSHTunnelForwarder, HandlerSSHTunnelForwarderError
-
+# from sshtunnel import SSHTunnelForwarder, HandlerSSHTunnelForwarderError
+from utils.ssh_tunnel_utils import SSHTunnel
 
 
 class CompToolDut(Dut):
@@ -82,27 +83,26 @@ class CompToolDut(Dut):
             "value"
         ]
         self.default_prefix = None
-        self.port_list = config["properties"]["SSHPortList"]["value"]
-        self.remote_port = config["properties"]["SSHRemotePort"]["value"]
+        self.port_list = config["properties"]["SSHTunnelPortList"]["value"]
+        self.protocol = config["properties"]["SSHTunnelProtocol"]["value"]
+        self.remote_port = config["properties"]["SSHTunnelRemotePort"]["value"]
         self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
             self.connection_ip_address
         )
-        
-        if not self.check_ping_status(self.connection_ip_address): # FIXME: Use logging method
-            raise Exception("[FATAL] Unable to ping the ip address. Please check the IP is valid or not.")
+        self.multipart_form_data = self.default_prefix = self.uri_builder.format_uri(redfish_str="{MultiPartFormData}", component_type="GPU")
         
         self.binded_port = None
-        self.AMCIPAddress = None
-        self.ssh_tunnel_required = config["properties"].get("SshTunnel", {}).get("value", False)
+        self.SSHTunnelRemoteIPAddress = None
+        self.ssh_tunnel_required = config["properties"].get("SSHTunnel", {}).get("value", False)
         if self.ssh_tunnel_required:
-            self.AMCIPAddress = config["properties"].get("AMCIPAddress", {}).get("value", None)
-            if not self.AMCIPAddress:
-                raise Exception("AMCIPAddress must be provided when SSHTunnel is set to True.")
-            self.AMCIPAddress = config["properties"].get("AMCIPAddress", {}).get("value", None)
+            self.SSHTunnelRemoteIPAddress = config["properties"].get("SSHTunnelRemoteIPAddress", {}).get("value", None)
+            if not self.SSHTunnelRemoteIPAddress:
+                raise Exception("SSHTunnelRemoteIPAddress must be provided when SSHTunnel is set to True.")
+            #self.AMCIPAddress = config["properties"].get("AMCIPAddress", {}).get("value", None) TODO - Commented for now, can we remove this? 
         
         self.redfish_ifc = None
         self.redfish_auth = config["properties"].get("AuthenticationRequired", {}).get("value", False)
-        self.ssh_tunnel = None
+        self.ssh_tunnel = SSHTunnel(self.test_info_logger)
     
     def get_cwd(self):
         cwd = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -114,19 +114,24 @@ class CompToolDut(Dut):
         This method sets up connection to the DUT,
         which includes ssh_tunneling, Redfish client setup and login if needed
         """
+        self.__connection_url = "https://" + self.connection_ip_address
         # Set up SSH Tunneling if requested
         if self.ssh_tunnel_required:
             # Set up port forwarding
-            if not self.AMCIPAddress:
-                raise Exception("AMCIPAddress must be provided when SSHTunnel is set to True.")
-            self.setup_ssh_tunnel(self.AMCIPAddress)
+            if not self.SSHTunnelRemoteIPAddress:#TODO - Is this needed again? 
+                raise Exception("SSHTunnelRemoteIPAddress must be provided when SSHTunnel is set to True.")
+            self.binded_port = self.ssh_tunnel.setup_ssh_tunnel(remote_host=self.SSHTunnelRemoteIPAddress, remote_port=self.remote_port,
+                                             ssh_host=self.connection_ip_address, ssh_port=22,
+                                             ssh_username=self.user_name, ssh_password=self.user_pass,
+                                             local_port=self.port_list)
+            
             self.connection_ip_address = "127.0.0.1:" + str(self.binded_port) 
             self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
-                self.AMCIPAddress
+                self.SSHTunnelRemoteIPAddress
             )
-
+        
         # TODO investigate storing FW update files via add_software_info() in super
-        self.__connection_url = ("http://" if self.ssh_tunnel_required else "https://") + self.connection_ip_address
+        self.__connection_url = f"{self.protocol}://" + self.connection_ip_address
         self.default_prefix = self.uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
         self.redfish_ifc = redfish.redfish_client(
             self.__connection_url,
@@ -259,6 +264,93 @@ class CompToolDut(Dut):
         finally:                         
             self.logger.write(json.dumps(msg))
             return response
+        
+    
+    def run_request_command(self, uri, mode="GET", body=None, headers=None, timeout=None, files=None, verify=False):
+        """
+        This method is for running redfish commands according to mode and log the output into
+        a formatted log file and return the response
+        
+        :param uri: uri for redfish connection
+        :type uri: str
+        :param mode: Mode for fetching data or updating
+        :type mode: str
+        :param body: body for requests
+        :type body: ty.Optional[dict], optional
+        :param header: header for requests, defaults to None
+        :type metadata: ty.Optional[dict], optional
+
+        :return: response for requests
+        :rtype: response object or None in case of failure
+        """
+        try:
+            start_time = time.time()
+            response = None
+            msg = {
+                    "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                    "TestName": self.current_test_name,
+                    "URI": uri,
+            }
+            url = self.connection_url + uri
+            kwargs = {"path": uri, "headers": headers}
+            auth = HTTPBasicAuth(self.user_name, self.user_pass)
+            if timeout is not None:
+                kwargs.update({"timeout": timeout})
+                
+            if mode == "POST":
+                msg.update({"Method":"POST"})
+                #msg.update({"Method":"POST","Data":"{}".format(body),}) # FIXME: It floods the logs. Do we need to log the entire body? 
+                kwargs.update({"body": body})
+                response = requests.post(url=url, data=body, files=files, headers=headers, auth=auth, verify=verify) # path=uri, body=body, headers=headers
+            elif mode == "PATCH":
+                msg.update({"Mode":"PATCH","Data":"{}".format(body),})
+                kwargs.update({"body": body})
+                response = requests.patch(url=url, data=body, files=files, headers=headers, auth=auth, verify=verify) # path=uri, body=body, headers=headers
+            elif mode == "GET":
+                msg.update({"Method":"GET",})
+                response = requests.get(url=url, data=body, files=files, headers=headers, auth=auth, verify=verify)# path=uri, headers=headers
+            elif mode == "DELETE":
+                msg.update({"Method":"DELETE",})
+                response = requests.delete(url=url, data=body, files=files, headers=headers, auth=auth, verify=verify) # path=uri, headers=headers   
+            
+            end_time = time.time()
+            time_difference_seconds = end_time - start_time
+            time_difference = datetime.utcfromtimestamp(time_difference_seconds) - datetime.utcfromtimestamp(0)
+            hours, remainder = divmod(time_difference.seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            milliseconds = int(time_difference.microseconds / 1000)
+            formatted_time = "{:02d}H:{:02d}M:{:02d}S:{:03d}MS".format(hours, minutes, seconds, milliseconds)
+            
+            msg.update({"ResponseTime": "{}".format(formatted_time)})
+
+            if response.status_code in range (200,204) and response.text: # FIXME: Add error handling in case the request fails
+                msg.update({
+                    "ResponseCode": response.status_code,
+                    "Response":response.json(), # FIXME: self-test report cannot be converted to dict # FIXED: Throws error in some cases when response.dict is used and the response body is empty
+                    }) 
+            elif response.status_code in range (200,204):
+                msg.update({
+                    "ResponseCode": response.status_code,
+                    "Response":"Success but no response body",
+                    })
+            elif response.status_code > 300: 
+                msg.update({
+                    "ResponseCode": response.status_code,
+                    "Response":f"Unexpected Response: {response.text}",
+                    })
+            else:
+                msg.update({
+                    "ResponseCode": f"Unexpected status: {response.status_code}",
+                    "Response": response.text,
+                    })
+        except Exception as e:
+            msg.update({
+            "ResponseCode": None,
+            "Response":f"FATAL: Exception occurred while running redfish command - {e}",
+            })
+        finally:                         
+            self.logger.write(json.dumps(msg))
+            return response
 
     def check_uri_response(self, uri, response):
         if not self.test_uri_response_check:
@@ -316,66 +408,9 @@ class CompToolDut(Dut):
     def is_console_log(self) -> bool:
         return self._console_log
     
-    def create_tunnel(self, local_port, remote_host, remote_port, ssh_host, ssh_port, ssh_username, ssh_password):
-        try:
-            return True, SSHTunnelForwarder(
-                    (ssh_host, ssh_port),
-                    ssh_username=ssh_username,
-                    ssh_password=ssh_password,
-                    remote_bind_address=(remote_host, remote_port),
-                    local_bind_address=('localhost', local_port),
-                    )
-        except HandlerSSHTunnelForwarderError:
-            self.test_info_logger.log(f"Port {ssh_host} is already in use. Skipping..")
-            return False, None
-        except Exception as error:
-            print(error)
-            return False, None
-
-    def setup_ssh_tunnel(self, amc_ip_address):
-        """
-        Setup SSH Tunneling to AMC
-
-        :raises Exception: failed port forwarding/ssh tunneling
-        :return: None
-        :rtype: None
-        """
-        if self.ssh_tunnel:
-            return
-
-        if not self.port_list:
-            raise Exception(f"Expecting list of ports to ssh tunnelling, found none!")
-        
-        for port in self.port_list:
-            status, self.ssh_tunnel = self.create_tunnel(local_port=port, remote_host=amc_ip_address, remote_port=self.remote_port, 
-                                             ssh_host=self.connection_ip_address, ssh_port=22,
-                                            ssh_username=self.__user_name, ssh_password=self.__user_pass)
-            if status:
-                self.binded_port = port
-                self.ssh_tunnel.start()
-                break
-            self.test_info_logger.log(f"Failed to bind port {port}.")
-        if self.binded_port is None:
-            raise Exception(f"Failed to bind port! Please make sure the host machine has port forwarding enabled and there is at least one port available in {self.port_list}.")
-        msg = f"SSH tunnel established at port: {self.binded_port}"
-        self.test_info_logger.log(msg)
-        return
-    
-    def kill_ssh_tunnel(self):
-        """
-        Kill SSH Tunneling to AMC
-
-        :return: None
-        :rtype: None
-        """
-        if self.ssh_tunnel:
-            self.ssh_tunnel.close()
-            self.test_info_logger.log("SSH tunnel is killed successfully!")
-            self.binded_port = None
-                
     def clean_up(self):
         if self.binded_port:
-            self.kill_ssh_tunnel()
+            self.ssh_tunnel.kill_ssh_tunnel()
         if self.redfish_auth:
             self.redfish_ifc.logout()
             self.test_info_logger.log("Redfish logout is successful.")

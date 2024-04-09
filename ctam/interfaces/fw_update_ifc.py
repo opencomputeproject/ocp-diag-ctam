@@ -381,23 +381,37 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         """
         MyName = __name__ + "." + self.RedFishFWUpdate.__qualname__
         FileName = BinPath
-
+        JSONData = {}
         URL = URI  # + '"' + FileName + '"'
-        if self.dut().ssh_tunnel_required \
-            or self.dut().redfish_uri_config.get("GPU", {}).get("UnstructuredHttpPush", False):
+        if (self.dut().ssh_tunnel_required \
+            or self.dut().redfish_uri_config.get("GPU", {}).get("UnstructuredHttpPush", False)):
             # Unstructured HTTP push update
-            headers = {"Content-Type": "application/octet-stream"}
-            body = open(FileName, "rb").read()
+            if self.dut().multipart_form_data:
+                headers = None
+                body = {}
+                files=[
+                    ('UpdateFile',(FileName,open(FileName,'rb'),'application/octet-stream'))
+                    ]
+                response = self.dut().run_request_command(uri=URL, mode="POST", body=body, headers=headers, files=files)
+                JSONData = response.json()
+            else:
+                headers = {"Content-Type": "application/octet-stream"}
+                body = open(FileName, "rb").read()
+                response = self.dut().run_redfish_command(uri=URL, mode="POST", body=body, headers=headers)
+                JSONData = response.dict
         else:
-            headers = {"Content-Type": "multipart/form-data"}
-            body = {}
-            body["UpdateFile"] = (
-                FileName,
-                open(FileName, "rb"),
-                "application/octet-stream",
-            )
-        response = self.dut().run_redfish_command(uri=URL, mode="POST", body=body, headers=headers)
-        JSONData = response.dict
+                headers = {"Content-Type": "multipart/form-data"}
+                body = {}
+                # files=[
+                #     ('UpdateFile',(FileName,open(FileName,'rb'),'application/octet-stream'))
+                #     ]
+                body["UpdateFile"] = (
+                    FileName,
+                    open(FileName, "rb"),
+                    "application/octet-stream",
+                )
+                response = self.dut().run_redfish_command(uri=URL, mode="POST", body=body, headers=headers)
+                JSONData = response.dict
         msg = "{0}: RedFish Input: {1} Result: {2}".format(MyName, FileName, JSONData)
         # msg_2 = "FW Update URL = {}".format(URL)
         self.test_run().add_log(LogSeverity.DEBUG, msg)

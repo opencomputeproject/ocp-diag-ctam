@@ -59,18 +59,18 @@ def parse_args():
     parser.add_argument("-d", "--Discovery", help="Perform System Discovery", action="store_true")
 
     parser.add_argument(
-        "-w",
-        "--workspace",
-        required=not any(arg in sys.argv for arg in ["-v", "--version"]),
-        help="Path to workspace directory that contains test run files",
-    )
-
-    parser.add_argument(
         "-l",
         "--list",
         help="List all test cases. If combined with -G then list all cases of the chosen group ",
         action="store_true",
     )
+    parser.add_argument(
+        "-w",
+        "--workspace",
+        required=not any(arg in sys.argv for arg in ["-l", "--list", "-v", "--version"]),
+        help="Path to workspace directory that contains test run files",
+    )
+
 
     parser.add_argument(
         "-v",
@@ -117,141 +117,148 @@ def get_exception_details(exec: Exception = ""):
 
 def main():
     args = parse_args()
-    try:
-        # builds hierarchy of test groups and associated test cases
-        #ms_internal_tests
+    # try:
+    # builds hierarchy of test groups and associated test cases
+    #ms_internal_tests
 
-        if args.version:
-            print(f"CTAM - version {__version__}")
-            exit()
+    if args.version:
+        print(f"CTAM - version {__version__}")
+        exit()
 
-        if not os.path.isdir(args.workspace):
-            print("Invalid workspace specified")
-            return 1, None, "Invalid workspace specified"
-
-        required_workspace_files = [
-            "dut_info.json",
-            "redfish_uri_config.json",
-            ".netrc",
-        ]
-
-        missing_files = [
-            file_name for file_name in required_workspace_files if not os.path.isfile(os.path.join(args.workspace, file_name))
-        ]
-
-        if missing_files:
-            for file_name in missing_files:
-                print(f"The required file {file_name} does not exist in the workspace.")
-            return 1, None, "Missing required files"
-        print(f"Version : {__version__}")
-        print(f"WorkSpace : {args.workspace}")
-        test_runner_json = os.path.join(args.workspace, "test_runner.json")
-        dut_info_json = os.path.join(args.workspace, "dut_info.json")
-        package_info_json = os.path.join(args.workspace, "package_info.json")
-        redfish_uri_config = os.path.join(args.workspace, "redfish_uri_config.json")
-        net_rc = os.path.join(args.workspace, ".netrc")
-
-        # NOTE: We have added internal test directory as mandatory if 'internal_testing' is true in test runner json.
-        # NOTE: If internal_test is true in test runner json then both internal and external tests we can run, else we can continue our existing flow.
-        with open(test_runner_json, "r") as f:
-            test_runner_config = json.load(f)
-
-        internal_testing = test_runner_config.get("internal_testing", False)
-
-        test_ifc_root_dir = test_runner_config.get("test_ifc_override_dir", os.path.dirname(__file__))
-
-        ifc_dir = os.path.join(test_ifc_root_dir, "interfaces")
-        ext_test_root_dir =  os.path.join(test_ifc_root_dir, "tests")
-
-        if internal_testing:
-            int_test_root_dir =  os.path.join(test_ifc_root_dir, "internal_tests")
-            test_root_dir =  [ext_test_root_dir, int_test_root_dir]
-            test_hierarchy = TestHierarchy(test_root_dir, ifc_dir)
-        else:
-            test_hierarchy = TestHierarchy(ext_test_root_dir, ifc_dir)
-
+    if not args.workspace:
+        ifc_dir = os.path.join(os.path.dirname(__file__), "interfaces")
+        ext_test_root_dir =  os.path.join(os.path.dirname(__file__), "tests")
+        test_hierarchy = TestHierarchy(ext_test_root_dir, ifc_dir)
         if args.list:
             test_hierarchy.print_test_groups_test_cases(args.group)
             return 0, None, "List of tests is printed"
+        print("Invalid workspace specified")
+        return 1, None, "Invalid workspace specified"
 
-        if args.Discovery:
-            runner = TestRunner(
-                workspace_dir=args.workspace,
-                test_hierarchy=test_hierarchy,
-                test_runner_json_file=test_runner_json,
-                dut_info_json_file=dut_info_json,
-                package_info_json_file=package_info_json,
-                redfish_uri_config_file=redfish_uri_config,
-                net_rc=net_rc,
-            )
-            status_code, exit_string = runner.get_system_details()
-            return status_code, None, exit_string
+    required_workspace_files = [
+        "dut_info.json",
+        "redfish_uri_config.json",
+        "test_runner.json",
+        ".netrc",
+    ]
 
-        elif args.testcase:
-            runner = TestRunner(
-                workspace_dir=args.workspace,
-                test_hierarchy=test_hierarchy,
-                test_runner_json_file=test_runner_json,
-                dut_info_json_file=dut_info_json,
-                package_info_json_file=package_info_json,
-                redfish_uri_config_file=redfish_uri_config,
-                net_rc=net_rc,
-                single_test_override=args.testcase,
-            )
-        elif args.testcase_sequence:
-            runner = TestRunner(
-                workspace_dir=args.workspace,
-                test_hierarchy=test_hierarchy,
-                test_runner_json_file=test_runner_json,
-                dut_info_json_file=dut_info_json,
-                package_info_json_file=package_info_json,
-                redfish_uri_config_file=redfish_uri_config,
-                net_rc=net_rc,
-                sequence_test_override=args.testcase_sequence,
-            )
-        elif args.group:
-            runner = TestRunner(
-                workspace_dir=args.workspace,
-                test_hierarchy=test_hierarchy,
-                test_runner_json_file=test_runner_json,
-                dut_info_json_file=dut_info_json,
-                package_info_json_file=package_info_json,
-                redfish_uri_config_file=redfish_uri_config,
-                net_rc=net_rc,
-                single_group_override=args.group,
-            )
-        elif args.group_sequence:
-            runner = TestRunner(
-                workspace_dir=args.workspace,
-                test_hierarchy=test_hierarchy,
-                test_runner_json_file=test_runner_json,
-                dut_info_json_file=dut_info_json,
-                package_info_json_file=package_info_json,
-                redfish_uri_config_file=redfish_uri_config,
-                net_rc=net_rc,
-                sequence_group_override=args.group_sequence,
-            )
-        else:
-            all_tests = test_hierarchy.get_all_tests()
-            runner = TestRunner(
-                workspace_dir=args.workspace,
-                test_hierarchy=test_hierarchy,
-                test_runner_json_file=test_runner_json,
-                dut_info_json_file=dut_info_json,
-                package_info_json_file=package_info_json,
-                net_rc=net_rc,
-                redfish_uri_config_file=redfish_uri_config,
-                run_all_tests=all_tests
-            )
+    missing_files = [
+        file_name for file_name in required_workspace_files if not os.path.isfile(os.path.join(args.workspace, file_name))
+    ]
 
-        status_code, exit_string = runner.run()
-        log_directory = os.path.relpath(runner.output_dir, os.getcwd())
-        return status_code, log_directory, exit_string
+    if missing_files:
+        for file_name in missing_files:
+            print(f"The required file {file_name} does not exist in the workspace.")
+        return 1, None, "Missing required files"
+    print(f"Version : {__version__}")
+    print(f"WorkSpace : {args.workspace}")
+    test_runner_json = os.path.join(args.workspace, "test_runner.json")
+    dut_info_json = os.path.join(args.workspace, "dut_info.json")
+    package_info_json = os.path.join(args.workspace, "package_info.json")
+    redfish_uri_config = os.path.join(args.workspace, "redfish_uri_config.json")
+    net_rc = os.path.join(args.workspace, ".netrc")
 
-    except (Exception, NotImplementedError) as e:
-        exception_details = get_exception_details(e)
-        print(f"Test Run Failed: {json.dumps(exception_details, indent=4)}")
-        return 1, None, f"Test failed due to exception: {e}"
+    # NOTE: We have added internal test directory as mandatory if 'internal_testing' is true in test runner json.
+    # NOTE: If internal_test is true in test runner json then both internal and external tests we can run, else we can continue our existing flow.
+    with open(test_runner_json, "r") as f:
+        test_runner_config = json.load(f)
+
+    internal_testing = test_runner_config.get("internal_testing", False)
+
+    test_ifc_root_dir = test_runner_config.get("test_ifc_override_dir", os.path.dirname(__file__))
+
+    ifc_dir = os.path.join(test_ifc_root_dir, "interfaces")
+    ext_test_root_dir =  os.path.join(test_ifc_root_dir, "tests")
+
+    if internal_testing:
+        int_test_root_dir =  os.path.join(test_ifc_root_dir, "internal_tests")
+        test_root_dir =  [ext_test_root_dir, int_test_root_dir]
+        test_hierarchy = TestHierarchy(test_root_dir, ifc_dir)
+    else:
+        test_hierarchy = TestHierarchy(ext_test_root_dir, ifc_dir)
+
+    if args.list:
+        test_hierarchy.print_test_groups_test_cases(args.group)
+        return 0, None, "List of tests is printed"
+
+    if args.Discovery:
+        runner = TestRunner(
+            workspace_dir=args.workspace,
+            test_hierarchy=test_hierarchy,
+            test_runner_json_file=test_runner_json,
+            dut_info_json_file=dut_info_json,
+            package_info_json_file=package_info_json,
+            redfish_uri_config_file=redfish_uri_config,
+            net_rc=net_rc,
+        )
+        status_code, exit_string = runner.get_system_details()
+        return status_code, None, exit_string
+
+    elif args.testcase:
+        runner = TestRunner(
+            workspace_dir=args.workspace,
+            test_hierarchy=test_hierarchy,
+            test_runner_json_file=test_runner_json,
+            dut_info_json_file=dut_info_json,
+            package_info_json_file=package_info_json,
+            redfish_uri_config_file=redfish_uri_config,
+            net_rc=net_rc,
+            single_test_override=args.testcase,
+        )
+    elif args.testcase_sequence:
+        runner = TestRunner(
+            workspace_dir=args.workspace,
+            test_hierarchy=test_hierarchy,
+            test_runner_json_file=test_runner_json,
+            dut_info_json_file=dut_info_json,
+            package_info_json_file=package_info_json,
+            redfish_uri_config_file=redfish_uri_config,
+            net_rc=net_rc,
+            sequence_test_override=args.testcase_sequence,
+        )
+    elif args.group:
+        runner = TestRunner(
+            workspace_dir=args.workspace,
+            test_hierarchy=test_hierarchy,
+            test_runner_json_file=test_runner_json,
+            dut_info_json_file=dut_info_json,
+            package_info_json_file=package_info_json,
+            redfish_uri_config_file=redfish_uri_config,
+            net_rc=net_rc,
+            single_group_override=args.group,
+        )
+    elif args.group_sequence:
+        runner = TestRunner(
+            workspace_dir=args.workspace,
+            test_hierarchy=test_hierarchy,
+            test_runner_json_file=test_runner_json,
+            dut_info_json_file=dut_info_json,
+            package_info_json_file=package_info_json,
+            redfish_uri_config_file=redfish_uri_config,
+            net_rc=net_rc,
+            sequence_group_override=args.group_sequence,
+        )
+    else:
+        all_tests = test_hierarchy.get_all_tests()
+        runner = TestRunner(
+            workspace_dir=args.workspace,
+            test_hierarchy=test_hierarchy,
+            test_runner_json_file=test_runner_json,
+            dut_info_json_file=dut_info_json,
+            package_info_json_file=package_info_json,
+            net_rc=net_rc,
+            redfish_uri_config_file=redfish_uri_config,
+            run_all_tests=all_tests
+        )
+
+    status_code, exit_string = runner.run()
+    log_directory = os.path.relpath(runner.output_dir, os.getcwd())
+    return status_code, log_directory, exit_string
+
+    # except (Exception, NotImplementedError) as e:
+    #     exception_details = get_exception_details(e)
+    #     print(f"Test Run Failed: {json.dumps(exception_details, indent=4)}")
+    #     return 1, None, f"Test failed due to exception: {e}"
 
 
 if __name__ == "__main__":
