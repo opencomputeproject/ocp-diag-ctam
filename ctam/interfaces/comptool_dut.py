@@ -114,7 +114,6 @@ class CompToolDut(Dut):
         This method sets up connection to the DUT,
         which includes ssh_tunneling, Redfish client setup and login if needed
         """
-        self.__connection_url = "https://" + self.connection_ip_address
         # Set up SSH Tunneling if requested
         if self.ssh_tunnel_required:
             # Set up port forwarding
@@ -411,7 +410,7 @@ class CompToolDut(Dut):
     def clean_up(self):
         if self.binded_port:
             self.ssh_tunnel.kill_ssh_tunnel()
-        if self.redfish_auth:
+        if self.redfish_auth and self.redfish_ifc:
             self.redfish_ifc.logout()
             self.test_info_logger.log("Redfish logout is successful.")
 
