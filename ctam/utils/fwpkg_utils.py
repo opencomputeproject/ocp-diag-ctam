@@ -14,12 +14,22 @@ import shutil
 import uuid
 import math
 
-def copy_fwpkg(golden_fwpkg_path):
+
+def copy_fwpkg(golden_fwpkg_path, clear_signature=False, signature_struct_bytes=1024):
     # Make a copy of the given fwpkg
     corrupted_package =  os.path.join(os.path.dirname(golden_fwpkg_path), "corrupted-pkg.fwpkg")
     corrupted_package_path = shutil.copy(golden_fwpkg_path, corrupted_package)
+    if clear_signature:
+        try:
+            with open(corrupted_package_path, 'r+b') as file:
+                file.seek(-signature_struct_bytes, os.SEEK_END)
+                file.write(bytearray(signature_struct_bytes))
+            print("Signature cleared successfully!")
+        except Exception as e:
+            print(f"Error in clearing the package signature: {e}")
     return corrupted_package_path
-    
+
+
 class PLDMFwpkg:
     """
     Methods related to PLDM fwpkg in general
@@ -75,7 +85,8 @@ class PLDMFwpkg:
         return corrupted_package_path
     
     @staticmethod
-    def corrupt_component_image_in_pkg(golden_fwpkg_path, component_id=None, metadata_size=4096):
+    def corrupt_component_image_in_pkg(golden_fwpkg_path, component_id=None, metadata_size=4096, 
+                                       has_signature=False, singature_struct_bytes=1024):
         """
         :Description:                       Corrupt image/payload of any component in the PLDM bundle.
                                             If component_id is provided, corrupt the respective component's image.
@@ -87,7 +98,7 @@ class PLDMFwpkg:
         :returns:                           Path to corrupted package. None if corruption fails. 
         :rtype:                             str
         """
-        corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
+        corrupted_package_path = copy_fwpkg(golden_fwpkg_path, has_signature, singature_struct_bytes)
         
         pldm_parser = PLDMUnpack(corrupted_package_path)
         if result := pldm_parser.parse_pldm_package():
@@ -156,7 +167,7 @@ class PLDMFwpkg:
         return corrupted_package_path
     
     @staticmethod
-    def corrupt_device_record_uuid_in_pkg(golden_fwpkg_path):
+    def corrupt_device_record_uuid_in_pkg(golden_fwpkg_path, has_signature=False, singature_struct_bytes=None):
         """
         :Description:                       Corrupt UUID of all devices in the FirmwareDeviceIDRecords section
 
@@ -165,7 +176,7 @@ class PLDMFwpkg:
         :returns:                           Path to corrupted package. None if corruption fails. 
         :rtype:                             str
         """
-        corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
+        corrupted_package_path = copy_fwpkg(golden_fwpkg_path, has_signature, singature_struct_bytes)
         
         pldm_parser = PLDMUnpack(corrupted_package_path)
         result = pldm_parser.corrupt_device_record_uuid_in_pkg()
