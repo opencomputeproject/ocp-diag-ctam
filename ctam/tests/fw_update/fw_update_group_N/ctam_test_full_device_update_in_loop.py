@@ -80,8 +80,8 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
 
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
-            status, _, task_uri =self.group.fw_update_ifc.ctam_stage_fw(
-                wait_for_stage_completion=False, return_msg=True
+            status, _, task_id =self.group.fw_update_ifc.ctam_stage_fw(
+                wait_for_stage_completion=False
             )
             if status:
                 step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
@@ -97,7 +97,7 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
             unexpected_error = False
             disturb_count = 1
             while keep_disturbing:
-                status, msg, _ = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup", return_msg=True)
+                status, msg, _ = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup")
                 if status:
                     keep_disturbing = False
                     step3.add_log(
@@ -124,12 +124,12 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
                     LogSeverity.ERROR,
                     f"{self.test_id} : FW Update Disturb was successful in first shot - Not Expected",
                 )
-            if unexpected_error and task_uri:
+            if unexpected_error and task_id:
                 step3.add_log(
                     LogSeverity.ERROR,
                     f"{self.test_id} : FW Update Failed with Unexpected error - Waiting for pervious FW staging to be completed",
                 )
-                status = self.group.fw_update_ifc.wait_for_staging(TaskID=task_uri)
+                status, json_data = self.group.fw_update_ifc.ctam_monitor_task(TaskID=task_id)
                 
 
         if result or unexpected_error:

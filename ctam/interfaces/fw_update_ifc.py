@@ -145,7 +145,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
     def ctam_stage_fw(
         self, partial=0, image_type="default", wait_for_stage_completion=True,
         corrupted_component_id=None, corrupted_component_list=[],
-        check_time=False, return_task_id=False, return_msg = False
+        check_time=False
     ):
         """
         :Description:							Stage Firmware
@@ -155,10 +155,9 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         :param corrupted_component_id:          ComponentIdentifier of the component image to be corrupted for specific negative tests
         :param corrupted_component_list:        List component names (Ids) which are corrupted
         :param check_time:                      Check the staging time does not exceed maximum time per spec
-        :param return_task_id:                  Return the task id of the FW update staging task.
 
-        :returns:				    			StageFWOOB_Status or StageFWOOB_Status, return_task_id 
-        :rtype: 								Bool or (Bool, Bool)
+        :returns:				    			StageFWOOB_Status, StageFWOOB_Status_message, return_task_id 
+        :rtype: 								Bool, str, str
         """
         MyName = __name__ + "." + self.ctam_stage_fw.__qualname__
         StartTime = time.time()
@@ -168,7 +167,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         JSONFWFilePayload = self.get_JSONFWFilePayload_file(image_type=image_type, corrupted_component_id=corrupted_component_id)
         if not os.path.isfile(JSONFWFilePayload):
             self.test_run().add_log(LogSeverity.DEBUG, f"Package file not found!!!")
-            return False
+            return False, "", ""
         if self.dut().is_debug_mode():
             print(JSONFWFilePayload)
         uri = self.dut().uri_builder.format_uri(
@@ -184,41 +183,14 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             self.test_run().add_log(LogSeverity.DEBUG, f"{MyName}  {JSONData}")
         stage_msg = ""
         FwUpdTaskID = JSONData.get("Id")
-        TaskIDURI = None
         if "error" not in JSONData:
-            # TaskIDURI = JSONData["@odata.id"]
             if wait_for_stage_completion:
-                TaskID = JSONData["Id"]
-
                 if self.dut().is_debug_mode():
-                    self.test_run().add_log(LogSeverity.DEBUG, TaskID)
+                    self.test_run().add_log(LogSeverity.DEBUG, FwUpdTaskID)
                 DeployTime = time.time()
                 FwStagingTimeMax = self.dut().dut_config["FwStagingTimeMax"]["value"]
-                StageFWOOB_Status, JSONData = self.ctam_monitor_task(TaskID)
-                # v1_str = self.dut().uri_builder.format_uri(
-                #     redfish_str="{GPUMC}" + "{}".format(TaskID), component_type="GPU"
-                # )
-                # response = self.dut().run_redfish_command(uri=v1_str)
-                # JSONData = response.dict
-
-                # while JSONData["TaskState"] == "Running" \
-                #         and (not check_time or (check_time and (time.time() - StagingStartTime) <= FwStagingTimeMax)):
-                #     response = self.dut().run_redfish_command(uri=v1_str)
-                #     JSONData = response.dict
-                #     if self.dut().is_debug_mode():
-                #         print(
-                #             f"GPU FW Update Percentage_completion = {JSONData['PercentComplete']}"
-                #         )
-                #     msg = f"GPU FW Update Percentage_completion = {JSONData['PercentComplete']}"
-                #     self.test_run().add_log(LogSeverity.DEBUG, msg)
-
-                #     time.sleep(30)
+                StageFWOOB_Status, JSONData = self.ctam_monitor_task(FwUpdTaskID)
                 EndTime = time.time()
-                # if JSONData["TaskState"] == "Completed" and JSONData["TaskStatus"] == "OK":
-                #     StageFWOOB_Status = True
-                # else:
-                #     StageFWOOB_Status = False
-                    
                 if check_time and (EndTime - StagingStartTime) > FwStagingTimeMax:
                     msg = f"FW copy operation exceeded the maximum time {FwStagingTimeMax} seconds."
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
@@ -259,12 +231,13 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         else:
             error_check = JSONData.get("error", None)
             if error_check and image_type != "large":
-                message = JSONData.get("error", {}).get("message", "")
-                if message.lower() != "in progress.".lower():
-                    if return_msg:
-                        StageFWOOB_Status = False
-                        stage_msg = "UnexpectedMessage"
-                        # return False, 
+                message = JSONData.get("error", {}).get("@Message.ExtendedInfo", {}).get("MessageId", "")
+                if not message:
+                    message = JSONData.get("error", {}).get("code", "")
+                
+                if message.split(".")[-1].lower() != "UpdateInProgress".lower():
+                    StageFWOOB_Status = False
+                    stage_msg = "UnexpectedMessage"
             if image_type == "large":
                 GPULargeFWMessage = "{GPULargeFWMessage}".format(**self.dut().redfish_uri_config.get("GPU"))
                 if GPULargeFWMessage in JSONData["error"] or GPULargeFWMessage in JSONData["error"].get("message", {}) : # FIXME: Temp fix to make it work in both MSFT and Nvidia systems
@@ -278,12 +251,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
 
                 StageFWOOB_Status = False
-        if return_task_id:
-            return StageFWOOB_Status, FwUpdTaskID
-        elif return_msg:
-            return StageFWOOB_Status, stage_msg, FwUpdTaskID
-        else:
-            return StageFWOOB_Status
+        return StageFWOOB_Status, stage_msg, FwUpdTaskID
 
     def ctam_fw_update_verify(self, image_type="default", corrupted_component_id=None):
         """
@@ -664,26 +632,3 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
     #     msg = f"Execution is delayed successfully by {IdleWaitTime} seconds."
     #     self.test_run().add_log(LogSeverity.INFO, msg)
     #     return True
-        #     time.sleep(30)
-        # EndTime = time.time()
-        # if JSONData["TaskState"] == "Completed" and JSONData["TaskStatus"] == "OK":
-        #     StageFWOOB_Status = True
-        # else:
-        #     StageFWOOB_Status = False
-    
-        #     time.sleep(30)
-        # EndTime = time.time()
-        # if JSONData["TaskState"] == "Completed" and JSONData["TaskStatus"] == "OK":
-        #     StageFWOOB_Status = True
-        # else:
-        #     StageFWOOB_Status = False
-                        
-        # if check_time and (EndTime - StagingStartTime) > FwStagingTimeMax:
-        #     msg = f"FW copy operation exceeded the maximum time {FwStagingTimeMax} seconds."
-        #     self.test_run().add_log(LogSeverity.DEBUG, msg)
-        #     StageFWOOB_Status = False
-        # return JSONData, StageFWOOB_Status        if check_time and (EndTime - StagingStartTime) > FwStagingTimeMax:
-        #     msg = f"FW copy operation exceeded the maximum time {FwStagingTimeMax} seconds."
-        #     self.test_run().add_log(LogSeverity.DEBUG, msg)
-        #     StageFWOOB_Status = False
-        # return JSONData, StageFWOOB_Status

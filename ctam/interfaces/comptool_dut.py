@@ -89,7 +89,8 @@ class CompToolDut(Dut):
         self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
             self.connection_ip_address
         )
-        self.multipart_form_data = self.default_prefix = self.uri_builder.format_uri(redfish_str="{MultiPartFormData}", component_type="GPU")
+        # self.default_prefix = self.uri_builder.format_uri(redfish_str="{MultiPartFormData}", component_type="GPU")
+        self.multipart_form_data = self.uri_builder.format_uri(redfish_str="{MultiPartFormData}", component_type="GPU")
         
         self.binded_port = None
         self.SSHTunnelRemoteIPAddress = None
