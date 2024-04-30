@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ocptv-ctam"
-version = "0.1.0"
+version = "0.2.0"
 description = "Compliance Tool for Accelerator Management"
 readme = "README.md"
 authors = [
@@ -49,7 +49,7 @@ packages = ["ocptv_ctam"]
 ocptv_ctam = "ctam"
 
 [tool.bumpver]
-current_version = "0.0.1"
+current_version = "0.2.0"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "bump version {old_version} -> {new_version}"
 commit = true

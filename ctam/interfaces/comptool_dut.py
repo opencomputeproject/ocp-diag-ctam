@@ -82,15 +82,14 @@ class CompToolDut(Dut):
         self.connection_ip_address = config["properties"]["ConnectionIPAddress"][
             "value"
         ]
-        self.default_prefix = None
+        self.default_prefix = self.uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
         self.port_list = config["properties"]["SSHTunnelPortList"]["value"]
         self.protocol = config["properties"]["SSHTunnelProtocol"]["value"]
         self.remote_port = config["properties"]["SSHTunnelRemotePort"]["value"]
         self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
             self.connection_ip_address
         )
-        self.multipart_form_data = self.default_prefix = self.uri_builder.format_uri(redfish_str="{MultiPartFormData}", component_type="GPU")
-        
+        self.multipart_form_data = redfish_uri_config.get("GPU", {}).get("MultiPartFormData", False)
         self.binded_port = None
         self.SSHTunnelRemoteIPAddress = None
         self.ssh_tunnel_required = config["properties"].get("SSHTunnel", {}).get("value", False)
@@ -131,7 +130,6 @@ class CompToolDut(Dut):
         
         # TODO investigate storing FW update files via add_software_info() in super
         self.__connection_url = f"{self.protocol}://" + self.connection_ip_address
-        self.default_prefix = self.uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
         self.redfish_ifc = redfish.redfish_client(
             self.__connection_url,
             username=self.__user_name,
