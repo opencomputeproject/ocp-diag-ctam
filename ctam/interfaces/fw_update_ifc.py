@@ -383,8 +383,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         FileName = BinPath
         JSONData = {}
         URL = URI  # + '"' + FileName + '"'
-        if (self.dut().ssh_tunnel_required \
-            or self.dut().redfish_uri_config.get("GPU", {}).get("UnstructuredHttpPush", False)):
+        if self.dut().redfish_uri_config.get("GPU", {}).get("UnstructuredHttpPush", False):
             # Unstructured HTTP push update
             if self.dut().multipart_form_data:
                 headers = None
@@ -402,9 +401,6 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         else:
                 headers = {"Content-Type": "multipart/form-data"}
                 body = {}
-                # files=[
-                #     ('UpdateFile',(FileName,open(FileName,'rb'),'application/octet-stream'))
-                #     ]
                 body["UpdateFile"] = (
                     FileName,
                     open(FileName, "rb"),
