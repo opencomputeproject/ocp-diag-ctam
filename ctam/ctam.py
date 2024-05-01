@@ -57,6 +57,8 @@ def parse_args():
     )
 
     parser.add_argument("-d", "--Discovery", help="Perform System Discovery", action="store_true")
+    
+    # parser.add_argument("-x", "--Discovery", help="Perform System Discovery", action="store_true")
 
     parser.add_argument(
         "-l",
@@ -156,6 +158,7 @@ def main():
     dut_info_json = os.path.join(args.workspace, "dut_info.json")
     package_info_json = os.path.join(args.workspace, "package_info.json")
     redfish_uri_config = os.path.join(args.workspace, "redfish_uri_config.json")
+    redfish_response_config = os.path.join(args.workspace, "redfish_response.json")
     net_rc = os.path.join(args.workspace, ".netrc")
 
     # NOTE: We have added internal test directory as mandatory if 'internal_testing' is true in test runner json.
@@ -189,6 +192,7 @@ def main():
             dut_info_json_file=dut_info_json,
             package_info_json_file=package_info_json,
             redfish_uri_config_file=redfish_uri_config,
+            redfish_response_config_file=redfish_response_config,
             net_rc=net_rc,
         )
         status_code, exit_string = runner.get_system_details()
@@ -202,6 +206,7 @@ def main():
             dut_info_json_file=dut_info_json,
             package_info_json_file=package_info_json,
             redfish_uri_config_file=redfish_uri_config,
+            redfish_response_config_file=redfish_response_config,
             net_rc=net_rc,
             single_test_override=args.testcase,
         )
@@ -213,6 +218,7 @@ def main():
             dut_info_json_file=dut_info_json,
             package_info_json_file=package_info_json,
             redfish_uri_config_file=redfish_uri_config,
+            redfish_response_config_file=redfish_response_config,
             net_rc=net_rc,
             sequence_test_override=args.testcase_sequence,
         )
@@ -224,6 +230,7 @@ def main():
             dut_info_json_file=dut_info_json,
             package_info_json_file=package_info_json,
             redfish_uri_config_file=redfish_uri_config,
+            redfish_response_config_file=redfish_response_config,
             net_rc=net_rc,
             single_group_override=args.group,
         )
@@ -235,6 +242,7 @@ def main():
             dut_info_json_file=dut_info_json,
             package_info_json_file=package_info_json,
             redfish_uri_config_file=redfish_uri_config,
+            redfish_response_config_file=redfish_response_config,
             net_rc=net_rc,
             sequence_group_override=args.group_sequence,
         )
@@ -248,6 +256,7 @@ def main():
             package_info_json_file=package_info_json,
             net_rc=net_rc,
             redfish_uri_config_file=redfish_uri_config,
+            redfish_response_config_file=redfish_response_config,
             run_all_tests=all_tests
         )
 

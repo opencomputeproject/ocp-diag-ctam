@@ -52,6 +52,7 @@ class TestRunner:
         dut_info_json_file,
         package_info_json_file,
         redfish_uri_config_file,
+        redfish_response_config_file,
         net_rc,
         single_test_override=None,
         sequence_test_override=None,
@@ -103,6 +104,7 @@ class TestRunner:
         self.console_log = True
         self.progress_bar = False
         self.package_config = package_info_json_file
+        self.redfish_response_config = None
         runner_config = self._get_test_runner_config(test_runner_json_file)
 
         with open(dut_info_json_file) as dut_info_json:
@@ -115,6 +117,10 @@ class TestRunner:
             self.redfish_uri_config = json.load(redfish_uri)
 
         self.net_rc = netrc.netrc(net_rc)
+        
+        if redfish_response_config_file:
+            with open(redfish_response_config_file) as resp_file:
+                self.redfish_response_config = json.load(resp_file)
 
         # use override output directory if specified in test_runner.json, otherwise
         # use TestRuns directory below workspace directory
@@ -280,6 +286,7 @@ class TestRunner:
             logger=dut_logger,
             test_info_logger=test_info_logger,
             test_uri_response_check=self.test_uri_response_check,
+            redfish_response_config=self.redfish_response_config,
             logger_path=self.output_dir
         )
         self.comp_tool_dut.current_test_name = "Initialization"

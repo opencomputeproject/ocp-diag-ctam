@@ -231,13 +231,17 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         else:
             error_check = JSONData.get("error", None)
             if error_check and image_type != "large":
-                message = JSONData.get("error", {}).get("@Message.ExtendedInfo", {}).get("MessageId", "")
+                message = JSONData.get("error", {}).get("@Message.ExtendedInfo", {})[0].get("MessageId", "")
+                print("message is : ", message)
                 if not message:
                     message = JSONData.get("error", {}).get("code", "")
-                
-                if message.split(".")[-1].lower() != "UpdateInProgress".lower():
-                    StageFWOOB_Status = False
-                    stage_msg = "UnexpectedMessage"
+                print("message is 01: ", message)
+                resp_msg = self.dut().redfish_response_config.get("UpdateProgress", "UnexpectedMessage")
+                if resp_msg:
+                    if message.split(".")[-1].lower() != resp_msg.lower():
+                        StageFWOOB_Status = False
+                        stage_msg = "UnexpectedMessage"
+                        
             if image_type == "large":
                 GPULargeFWMessage = "{GPULargeFWMessage}".format(**self.dut().redfish_uri_config.get("GPU"))
                 if GPULargeFWMessage in JSONData["error"] or GPULargeFWMessage in JSONData["error"].get("message", {}) : # FIXME: Temp fix to make it work in both MSFT and Nvidia systems
