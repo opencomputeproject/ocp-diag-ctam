@@ -49,7 +49,7 @@ class CompToolDut(Dut):
         logger,
         test_info_logger,
         test_uri_response_check,
-        redfish_response_config,
+        redfish_response_messages,
         logger_path,
         name: ty.Optional[str] = None,
         metadata: ty.Optional[Metadata] = None,
@@ -78,7 +78,7 @@ class CompToolDut(Dut):
         self.logger_path = logger_path
         self.test_info_logger = test_info_logger
         self.test_uri_response_check = test_uri_response_check
-        self.redfish_response_config = redfish_response_config
+        self.redfish_response_messages = redfish_response_messages
         self.cwd = self.get_cwd()
         super().__init__(id, name, metadata)
         self.connection_ip_address = config["properties"]["ConnectionIPAddress"][

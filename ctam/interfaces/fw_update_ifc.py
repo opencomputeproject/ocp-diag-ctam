@@ -236,7 +236,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 if not message:
                     message = JSONData.get("error", {}).get("code", "")
                 print("message is 01: ", message)
-                resp_msg = self.dut().redfish_response_config.get("UpdateProgress", "UnexpectedMessage")
+                resp_msg = self.dut().redfish_response_messages.get("UpdateProgress_Message", "UnexpectedMessage")
                 if resp_msg:
                     if message.split(".")[-1].lower() != resp_msg.lower():
                         StageFWOOB_Status = False
