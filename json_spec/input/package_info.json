@@ -10,7 +10,9 @@
     "Package": "",
     "Version": "",
     "JSON": "",
-    "Vendor": ""
+    "Vendor": "",
+    "HasSignature": "",
+    "SignatureStructBytes": ""
   },
   "GPU_FW_IMAGE_OLD": {
     "Path": "workspace",

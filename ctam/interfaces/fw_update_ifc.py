@@ -166,7 +166,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             self.ctam_pushtargets()
         JSONFWFilePayload = self.get_JSONFWFilePayload_file(image_type=image_type, corrupted_component_id=corrupted_component_id)
         if not os.path.isfile(JSONFWFilePayload):
-            self.test_run().add_log(LogSeverity.DEBUG, f"Package file not found!!!")
+            self.test_run().add_log(LogSeverity.DEBUG, f"Package file not found at path {JSONFWFilePayload}!!!")
             return False, "", ""
         if self.dut().is_debug_mode():
             print(JSONFWFilePayload)
@@ -369,8 +369,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         FileName = BinPath
         JSONData = {}
         URL = URI  # + '"' + FileName + '"'
-        if (self.dut().ssh_tunnel_required \
-            or self.dut().redfish_uri_config.get("GPU", {}).get("UnstructuredHttpPush", False)):
+        if self.dut().redfish_uri_config.get("GPU", {}).get("UnstructuredHttpPush", False):
             # Unstructured HTTP push update
             if self.dut().multipart_form_data:
                 headers = None
@@ -388,9 +387,6 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         else:
                 headers = {"Content-Type": "multipart/form-data"}
                 body = {}
-                # files=[
-                #     ('UpdateFile',(FileName,open(FileName,'rb'),'application/octet-stream'))
-                #     ]
                 body["UpdateFile"] = (
                     FileName,
                     open(FileName, "rb"),

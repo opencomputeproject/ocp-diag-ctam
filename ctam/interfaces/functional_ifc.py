@@ -90,65 +90,64 @@ class FunctionalIfc:
         # FIXME: Refactor.. Lots of repeated code
         # if not self.dut().package_config:
         #     raise Exception("Please provide data in package config file to run this test case...")
+        has_signature = self.dut().package_config.get("GPU_FW_IMAGE", {}).get("HasSignature", "")
+        singature_struct_bytes = self.dut().package_config.get("GPU_FW_IMAGE", {}).get("SignatureStructBytes", "")
+        package_config = self.dut().package_config
+        cwd = self.dut().cwd
         if image_type == "default":
-            json_fw_file_payload = os.path.join(
-                self.dut().cwd,
-                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
-                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+            return os.path.join(
+                cwd,
+                package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
             )
         elif image_type == "large":
-            if self.dut().package_config.get("GPU_FW_IMAGE_LARGE", {}).get("Package", "") != "":
-                json_fw_file_payload = os.path.join(
-                    self.dut().cwd,
-                    self.dut().package_config.get("GPU_FW_IMAGE_LARGE", {}).get("Path", ""),
-                    self.dut()
-                    .package_config.get("GPU_FW_IMAGE_LARGE", {})
-                    .get("Package", ""),
+            if package_config.get("GPU_FW_IMAGE_LARGE", {}).get("Package", "") != "":
+                return os.path.join(
+                    cwd,
+                    package_config.get("GPU_FW_IMAGE_LARGE", {}).get("Path", ""),
+                    package_config.get("GPU_FW_IMAGE_LARGE", {}).get("Package", ""),
                 )
             else:
                 golden_fwpkg_path = os.path.join(
-                    self.dut().cwd,
-                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
-                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+                    cwd,
+                    package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                    package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
                 )
                 JSONData = self.ctam_getus()
                 max_bundle_size = JSONData.get("MaxImageSizeBytes") # FIXME: Do we need a default?
-                json_fw_file_payload = PLDMFwpkg.make_large_package(golden_fwpkg_path, max_bundle_size)
+                return PLDMFwpkg.make_large_package(golden_fwpkg_path, max_bundle_size)
                 
         elif image_type == "invalid_sign":
-            if self.dut().package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {}).get("Package", "") != "":
-                json_fw_file_payload = os.path.join(
-                    self.dut().cwd,
-                    self.dut()
-                    .package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {})
-                    .get("Path", ""),
-                    self.dut()
-                    .package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {})
-                    .get("Package", ""),
+            if package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {}).get("Package", "") != "":
+                return os.path.join(
+                    cwd,
+                    package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {}).get("Path", ""),
+                    package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {}).get("Package", ""),
                 )
             else:
                 golden_fwpkg_path = os.path.join(
-                    self.dut().cwd,
-                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
-                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+                    cwd,
+                    package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                    package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
                 )
-                json_fw_file_payload = FwpkgSignature.invalidate_signature_in_pkg(golden_fwpkg_path)
+                return FwpkgSignature.invalidate_signature_in_pkg(golden_fwpkg_path)
             
         elif image_type == "invalid_pkg_uuid":
             golden_fwpkg_path = os.path.join(
-                self.dut().cwd,
-                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
-                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+                cwd,
+                package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
             )
-            json_fw_file_payload = PLDMFwpkg.corrupt_package_UUID(golden_fwpkg_path)
+            return PLDMFwpkg.corrupt_package_UUID(golden_fwpkg_path)
             
         elif image_type == "invalid_device_uuid":
             golden_fwpkg_path = os.path.join(
-                self.dut().cwd,
-                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
-                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+                cwd,
+                package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
             )
-            json_fw_file_payload = PLDMFwpkg.corrupt_device_record_uuid_in_pkg(golden_fwpkg_path)
+            return PLDMFwpkg.corrupt_device_record_uuid_in_pkg(golden_fwpkg_path,
+                                                                               has_signature, singature_struct_bytes)
         
         elif image_type == "empty_metadata":
             if corrupted_component_id is None:
@@ -156,23 +155,19 @@ class FunctionalIfc:
             msg = f"Corrupted component ID: {corrupted_component_id}"
             self.test_run().add_log(LogSeverity.DEBUG, msg)
             golden_fwpkg_path = os.path.join(
-                self.dut().cwd,
-                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
-                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+                cwd,
+                package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
             )
-            metadata_size = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("MetadataSizeBytes", 4096)
-            json_fw_file_payload = PLDMFwpkg.clear_component_metadata_in_pkg(golden_fwpkg_path, corrupted_component_id, metadata_size)
+            metadata_size = package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("MetadataSizeBytes", 4096)
+            return PLDMFwpkg.clear_component_metadata_in_pkg(golden_fwpkg_path, corrupted_component_id, metadata_size)
         
         elif image_type == "corrupt_component":
-            if self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Package", "") != "":
-                json_fw_file_payload = os.path.join(
-                    self.dut().cwd,
-                    self.dut()
-                    .package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {})
-                    .get("Path", ""),
-                    self.dut()
-                    .package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {})
-                    .get("Package", ""),
+            if package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Package", "") != "":
+                return os.path.join(
+                    cwd,
+                    package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Path", ""),
+                    package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Package", ""),
                 )
             else:
                 if corrupted_component_id is None:
@@ -180,91 +175,73 @@ class FunctionalIfc:
                 msg = f"Corrupted component ID: {corrupted_component_id}"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
                 golden_fwpkg_path = os.path.join(
-                    self.dut().cwd,
-                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
-                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+                    cwd,
+                    package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                    package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
                 )
-                json_fw_file_payload = PLDMFwpkg.clear_component_image_in_pkg(golden_fwpkg_path, corrupted_component_id)
+                return PLDMFwpkg.clear_component_image_in_pkg(golden_fwpkg_path, corrupted_component_id)
         
         elif image_type == "backup":
-            json_fw_file_payload = os.path.join(
-                self.dut().cwd,
-                self.dut()
-                .package_config.get("GPU_FW_IMAGE_BACKUP", {})
-                .get("Path", ""),
-                self.dut()
-                .package_config.get("GPU_FW_IMAGE_BACKUP", {})
-                .get("Package", ""),
+            return os.path.join(
+                cwd,
+                package_config.get("GPU_FW_IMAGE_BACKUP", {}).get("Path", ""),
+                package_config.get("GPU_FW_IMAGE_BACKUP", {}).get("Package", ""),
             )
         elif image_type == "old_version":
-            json_fw_file_payload = os.path.join(
-                self.dut().cwd,
-                self.dut().package_config.get("GPU_FW_IMAGE_OLD", {}).get("Path", ""),
-                self.dut()
-                .package_config.get("GPU_FW_IMAGE_OLD", {})
-                .get("Package", ""),
+            return os.path.join(
+                cwd,
+                package_config.get("GPU_FW_IMAGE_OLD", {}).get("Path", ""),
+                package_config.get("GPU_FW_IMAGE_OLD", {}).get("Package", ""),
             )
 
         elif image_type == "unsigned_component_image":
             # As of now, there is no suitable way to update the component's signature on-the-fly.
             # So vendor needs to provide a bundle with an unsigned component image
-            json_fw_file_payload = os.path.join(
-                self.dut().cwd,
-                self.dut()
-                .package_config.get("GPU_FW_IMAGE_UNSIGNED_COMPONENT", {})
-                .get("Path", ""),
-                self.dut()
-                .package_config.get("GPU_FW_IMAGE_UNSIGNED_COMPONENT", {})
-                .get("Package", ""),
+            return os.path.join(
+                cwd,
+                package_config.get("GPU_FW_IMAGE_UNSIGNED_COMPONENT", {}).get("Path", ""),
+                package_config.get("GPU_FW_IMAGE_UNSIGNED_COMPONENT", {}).get("Package", ""),
             )
                 
         elif image_type == "unsigned_bundle":
-            if self.dut().package_config.get("GPU_FW_IMAGE_UNSIGNED_BUNDLE", {}).get("Package", "") != "":
-                json_fw_file_payload = os.path.join(
-                    self.dut().cwd,
-                    self.dut()
-                    .package_config.get("GPU_FW_IMAGE_UNSIGNED_BUNDLE", {})
-                    .get("Path", ""),
-                    self.dut()
-                    .package_config.get("GPU_FW_IMAGE_UNSIGNED_BUNDLE", {})
-                    .get("Package", ""),
+            if package_config.get("GPU_FW_IMAGE_UNSIGNED_BUNDLE", {}).get("Package", "") != "":
+                return os.path.join(
+                    cwd,
+                    package_config.get("GPU_FW_IMAGE_UNSIGNED_BUNDLE", {}).get("Path", ""),
+                    package_config.get("GPU_FW_IMAGE_UNSIGNED_BUNDLE", {}).get("Package", ""),
                 )
             else:
                 golden_fwpkg_path = os.path.join(
-                    self.dut().cwd,
-                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
-                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+                    cwd,
+                    package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                    package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
                 )
-                json_fw_file_payload = FwpkgSignature.clear_signature_in_pkg(golden_fwpkg_path)
+                return FwpkgSignature.clear_signature_in_pkg(golden_fwpkg_path)
         
         elif image_type == "corrupt":
-            if self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT", {}).get("Package", "") != "":
-                json_fw_file_payload = os.path.join(
-                self.dut().cwd,
-                self.dut()
-                .package_config.get("GPU_FW_IMAGE_CORRUPT", {})
-                .get("Path", ""),
-                self.dut()
-                .package_config.get("GPU_FW_IMAGE_CORRUPT", {})
-                .get("Package", ""),
+            if package_config.get("GPU_FW_IMAGE_CORRUPT", {}).get("Package", "") != "":
+                return os.path.join(
+                cwd,
+                package_config.get("GPU_FW_IMAGE_CORRUPT", {}).get("Path", ""),
+                package_config.get("GPU_FW_IMAGE_CORRUPT", {}).get("Package", ""),
                 )
             else:
-                if corrupted_component_id is None:
-                    corrupted_component_id = self.ctam_get_component_to_be_corrupted()
+                corrupted_component_id = self.ctam_get_component_to_be_corrupted() if corrupted_component_id is None else corrupted_component_id
                 msg = f"Corrupted component ID: {corrupted_component_id}"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
                 golden_fwpkg_path = os.path.join(
-                    self.dut().cwd,
-                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
-                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
+                    cwd,
+                    package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                    package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
                 )
-                metadata_size = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("MetadataSizeBytes", 4096)
-                json_fw_file_payload = PLDMFwpkg.corrupt_component_image_in_pkg(golden_fwpkg_path, corrupted_component_id, metadata_size)
+                metadata_size = package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("MetadataSizeBytes", 4096)
+                return PLDMFwpkg.corrupt_component_image_in_pkg(golden_fwpkg_path, corrupted_component_id, metadata_size,
+                                                                has_signature, singature_struct_bytes)
                 
         elif image_type == "negate":
             self.test_run().add_log(LogSeverity.INFO, "Negative Test Case")
-            json_fw_file_payload = ""
-        return json_fw_file_payload
+            return ""
+        return ""
 
     def get_PLDMPkgJson_file(self, image_type="default"):
         """

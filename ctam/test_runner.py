@@ -105,6 +105,7 @@ class TestRunner:
         self.progress_bar = False
         self.package_config = package_info_json_file
         self.redfish_response_messages = {}
+        self.single_test_override = single_test_override
         runner_config = self._get_test_runner_config(test_runner_json_file)
 
         with open(dut_info_json_file) as dut_info_json:
@@ -245,15 +246,13 @@ class TestRunner:
         # If up then establish the connection and the discovery 
         self.cwd = os.path.dirname(os.path.dirname(__file__))
         self.dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+        test_dir = f'Tags-{"-".join(self.include_tags_set)}' if self.include_tags_set  and not self.single_test_override else testrun_name+"_{}".format(self.dt)
+
         if self.workspace_dir:
-            self.output_dir = os.path.join(
-                self.workspace_dir, self.output_dir, "TestRuns", testrun_name+"_{}".format(self.dt)
-            )
-            print("Output Dir is : ", self.output_dir)
+            self.output_dir = os.path.join(self.workspace_dir, self.output_dir, "TestRuns", test_dir)
         else:
-            self.output_dir = os.path.join(
-                "workspace", "TestRuns", testrun_name+"_{}".format(self.dt)
-            )
+            self.output_dir = os.path.join("workspace", "TestRuns", test_dir)
+        print("Output Dir is : ", self.output_dir)
        
         self.cmd_output_dir = os.path.join(self.output_dir, "RedfishCommandDetails")
         if not os.path.exists(self.output_dir):
@@ -507,7 +506,7 @@ class TestRunner:
                     tags,
                     self.exclude_tags_set,
                 )
-                if not valid:
+                if not valid and not self.single_test_override:
                     msg = f"Test {test_instance.__class__.__name__} skipped due to tags. tags = {test_inc_tags}"
                     self.active_run.add_log(severity=LogSeverity.INFO, message=msg)
                     continue
