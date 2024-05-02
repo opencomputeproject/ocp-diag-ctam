@@ -96,7 +96,8 @@ class CTAMTestNegativeUpdateWithIllegalTargets(TestCase):
         if result:
             step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
             with step3.scope():
-                if self.group.fw_update_ifc.ctam_stage_fw(partial=1):
+                status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1)
+                if status:
                     step3.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
                 else:
                     step3.add_log(

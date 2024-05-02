@@ -49,6 +49,7 @@ class CompToolDut(Dut):
         logger,
         test_info_logger,
         test_uri_response_check,
+        redfish_response_messages,
         logger_path,
         name: ty.Optional[str] = None,
         metadata: ty.Optional[Metadata] = None,
@@ -77,6 +78,7 @@ class CompToolDut(Dut):
         self.logger_path = logger_path
         self.test_info_logger = test_info_logger
         self.test_uri_response_check = test_uri_response_check
+        self.redfish_response_messages = redfish_response_messages
         self.cwd = self.get_cwd()
         super().__init__(id, name, metadata)
         self.connection_ip_address = config["properties"]["ConnectionIPAddress"][
@@ -89,7 +91,8 @@ class CompToolDut(Dut):
         self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
             self.connection_ip_address
         )
-        self.multipart_form_data = self.default_prefix = self.uri_builder.format_uri(redfish_str="{MultiPartFormData}", component_type="GPU")
+        # self.default_prefix = self.uri_builder.format_uri(redfish_str="{MultiPartFormData}", component_type="GPU")
+        self.multipart_form_data = self.uri_builder.format_uri(redfish_str="{MultiPartFormData}", component_type="GPU")
         
         self.binded_port = None
         self.SSHTunnelRemoteIPAddress = None
