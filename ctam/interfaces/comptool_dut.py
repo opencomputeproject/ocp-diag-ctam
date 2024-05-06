@@ -48,6 +48,7 @@ class CompToolDut(Dut):
         console_log: bool,
         logger,
         test_info_logger,
+        workspace_dir,
         test_uri_response_check,
         redfish_response_messages,
         logger_path,
@@ -75,6 +76,7 @@ class CompToolDut(Dut):
         self.current_test_name = ""
         self.net_rc = net_rc
         self.logger = logger
+        self.workspace_dir = workspace_dir
         self.logger_path = logger_path
         self.test_info_logger = test_info_logger
         self.test_uri_response_check = test_uri_response_check

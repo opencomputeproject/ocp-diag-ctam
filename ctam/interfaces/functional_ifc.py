@@ -604,9 +604,8 @@ class FunctionalIfc:
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         
         dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        dump_tarball_path = os.path.join(
-                self.dut().cwd, 
-                "workspace",
+        dump_tarball_path = os.path.join( 
+                self.dut().workspace_dir,
                 "{}_dump.tar.xz".format(dt))
         response =  self.dut().run_redfish_command(uri=URL, timeout=60)
         try:
@@ -615,9 +614,8 @@ class FunctionalIfc:
             # Unzip the .tar file
             import tarfile
             dump = tarfile.open(dump_tarball_path)
-            DumpPath = os.path.join(
-                self.dut().cwd, 
-                "workspace", 
+            DumpPath = os.path.join( 
+                self.dut().workspace_dir, 
                 "{}_dump".format(dt))
             dump.extractall(DumpPath) # This will create a directory if it's not present already.
             dump.close()
