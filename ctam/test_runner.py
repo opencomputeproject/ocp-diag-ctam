@@ -286,7 +286,8 @@ class TestRunner:
             test_info_logger=test_info_logger,
             test_uri_response_check=self.test_uri_response_check,
             redfish_response_messages=self.redfish_response_messages,
-            logger_path=self.output_dir
+            logger_path=self.output_dir,
+            workspace_dir=self.workspace_dir
         )
         self.comp_tool_dut.current_test_name = "Initialization"
         
