@@ -183,6 +183,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             self.test_run().add_log(LogSeverity.DEBUG, f"{MyName}  {JSONData}")
         stage_msg = ""
         FwUpdTaskID = JSONData.get("Id")
+        StageFWOOB_Status = False
         if "error" not in JSONData:
             if wait_for_stage_completion:
                 if self.dut().is_debug_mode():
