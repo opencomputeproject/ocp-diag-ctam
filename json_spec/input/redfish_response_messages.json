@@ -1,3 +1,4 @@
 {
-    "UpdateProgress_Message":"UpdateInProgress"
+    "UpdateProgress_Message":"UpdateInProgress",
+    "LargeFWImageUpdate": "PayloadTooLarge"
 }

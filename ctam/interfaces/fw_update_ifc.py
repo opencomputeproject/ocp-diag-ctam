@@ -233,22 +233,26 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             error_check = JSONData.get("error", None)
             if error_check and image_type != "large":
                 message = JSONData.get("error", {}).get("@Message.ExtendedInfo", {})[0].get("MessageId", "")
-                print("message is : ", message)
                 if not message:
                     message = JSONData.get("error", {}).get("code", "")
-                print("message is 01: ", message)
                 resp_msg = self.dut().redfish_response_messages.get("UpdateProgress_Message", "UnexpectedMessage")
                 if resp_msg:
                     if message.split(".")[-1].lower() != resp_msg.lower():
                         StageFWOOB_Status = False
                         stage_msg = "UnexpectedMessage"
-                        
+            
             if image_type == "large":
-                GPULargeFWMessage = "{GPULargeFWMessage}".format(**self.dut().redfish_uri_config.get("GPU"))
-                if GPULargeFWMessage in JSONData["error"] or GPULargeFWMessage in JSONData["error"].get("message", {}) : # FIXME: Temp fix to make it work in both MSFT and Nvidia systems
-                    StageFWOOB_Status = True
-                else:
-                    StageFWOOB_Status = False
+                message = JSONData.get("error", {}).get("@Message.ExtendedInfo", {})[0].get("MessageId", "")
+                if not message:
+                    message = JSONData.get("error", {}).get("code", "")
+                resp_msg = self.dut().redfish_response_messages.get("LargeFWImageUpdate", "PayloadTooLarge")
+                if resp_msg:
+                    if message.split(".")[-1].lower() != resp_msg.lower():
+                        StageFWOOB_Status = False
+                        stage_msg = "UnexpectedMessage"
+                    else:
+                        StageFWOOB_Status = True
+        
             elif not image_type in self.NegativeTestImages:
                 msg = "Staging failed with incorrect error message {}".format(
                     JSONData["error"]
