@@ -128,7 +128,7 @@ def main():
             exit()
 
         default_config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "json_spec", "input")
-        print(os.path.exists(default_config_path), "FILE LOCATION")
+        default_config_path = default_config_path.replace('/tmp/', '') if default_config_path.startswith('/tmp/') else default_config_path 
         if not args.workspace:
             ifc_dir = os.path.join(os.path.dirname(__file__), "interfaces")
             ext_test_root_dir =  os.path.join(os.path.dirname(__file__), "tests")
