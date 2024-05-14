@@ -85,9 +85,9 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
 
         step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3_{corrupted_component_list[0]}")  # type: ignore
         with step3.scope():
-            if self.group.fw_update_ifc.ctam_stage_fw(
-                partial=1, image_type="empty_metadata", corrupted_component_id=corrupted_component_id
-            ):
+            status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="empty_metadata", 
+                                                                                 corrupted_component_id=corrupted_component_id)
+            if status:
                 step3.add_log(
                     LogSeverity.INFO,
                     f"{self.test_id} : FW Update Stage Initiation Failed as Expected",
@@ -119,6 +119,15 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Push URI Targets Reset")
             else:
                 step1.add_log(LogSeverity.WARNING, f"{self.test_id} : Push URI Targets Reset - Failed")
+            
+        step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")
+        with step2.scope():
+            if self.group.fw_update_ifc.ctam_activate_ac(gpu_check=False, fwupd_hyst_wait=False):
+                msg = f"{self.test_id} : AC Cycle Passed"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)  
+            else:
+                msg = f"{self.test_id} : AC Cycle Failed"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)
         
         # call super teardown last
         super().teardown()

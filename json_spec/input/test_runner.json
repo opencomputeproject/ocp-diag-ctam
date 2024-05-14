@@ -24,5 +24,6 @@
     "regression_test_suite_0": ["F0","F1", "F63", "F64", "F8", "F88", "T0"],
     "regression_test_suite_1": ["F0", "F1", "F23", "F26", "F28", "F27", "F22", "F25", "F18", "F32"],
     "regression_test_suite_2": ["F0", "F1", "F16", "F19", "F55", "F62", "F89"],
+    "regression_test_suite_3": ["F0","F1", "F8", "F16", "F18", "F22", "F23", "F24", "F25", "F26", "F27", "F28", "F32", "F55", "F63", "F64", "F88", "R1", "R2", "R3", "T0", "T2", "T4"],
     "test_uri_response_excel":"Excel file name for checking the response"
 }

@@ -25,7 +25,8 @@
         "HttpPushUriTargets": "",
         "specific_targets": "",
 		"UnstructuredHttpPush": false,
-        "MultiPartFormData": true // we can make it false to use our regular flow.
+        "MultiPartFormData": true,
+        "TaskServiceURI": "/TaskService/Tasks/"
     },
     "BMC": {
         "BaseURI": "",

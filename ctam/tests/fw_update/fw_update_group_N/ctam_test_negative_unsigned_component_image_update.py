@@ -70,7 +70,8 @@ class CTAMTestNegativeUnsignedImageUpdate(TestCase):
         result = True
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="unsigned_component_image"):
+            status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="unsigned_component_image")
+            if status:
                 step1.add_log(
                     LogSeverity.INFO,
                     f"{self.test_id} : FW Update Stage Initiation Failed as Expected",

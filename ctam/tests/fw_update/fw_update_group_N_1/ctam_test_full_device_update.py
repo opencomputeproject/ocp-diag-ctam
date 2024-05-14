@@ -78,7 +78,8 @@ class CTAMTestFullDeviceUpdate(TestCase):
 
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
-            if self.group.fw_update_ifc.ctam_stage_fw():
+            status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw()
+            if status:
                 step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
             else:
                 step2.add_log(

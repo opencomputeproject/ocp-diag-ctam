@@ -78,9 +78,8 @@ class CTAMTestFullDeviceUpdateInterruptionWithSingleDeviceUpdate(TestCase):
 
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
-            fwupd_status, fwupd_task_id = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup", 
-                                                                                 wait_for_stage_completion=False,
-                                                                                 return_task_id=True)
+            fwupd_status, _, fwupd_task_id = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup", 
+                                                                                 wait_for_stage_completion=False)
             if fwupd_status:
                 step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
             else:
@@ -105,7 +104,8 @@ class CTAMTestFullDeviceUpdateInterruptionWithSingleDeviceUpdate(TestCase):
                     if result:
                         step2_device = self.test_run().add_step(f"{self.__class__.__name__} run(), step2_{device}")  # type: ignore
                         with step2_device.scope():
-                            if self.group.fw_update_ifc.ctam_stage_fw(partial=1):
+                            status, _, _ = self.group.fw_update_ifc.ctam_stage_fw(partial=1)
+                            if status:
                                 step2_device.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged - Unexpected")
                                 result = False
                             else:

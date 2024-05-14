@@ -10,6 +10,7 @@ import ast
 import os
 import importlib.util
 import inspect
+import re
 import sys
 import os
 import ast
@@ -226,7 +227,7 @@ class TestHierarchy:
 
                 # visitor.test_cases.clear()
         for group in visitor.test_groups:
-            new_test_list = sorted(visitor.test_groups[group]["test_cases"], key=lambda x: int(x["attributes"]["test_id"][1:]))
+            new_test_list = sorted(visitor.test_groups[group]["test_cases"], key=lambda x: int(re.findall('\d+\.\d+|\d+', x["attributes"]["test_id"])[0]))
             visitor.test_groups[group]["test_cases"] = new_test_list
         return visitor.test_groups
 

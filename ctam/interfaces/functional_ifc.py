@@ -285,6 +285,7 @@ class FunctionalIfc:
                 self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Path", ""),
                 self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("JSON", ""),
             )
+            
         return pldm_json_file
 
     def ctam_getfi(self, expanded=0):
@@ -603,9 +604,8 @@ class FunctionalIfc:
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         
         dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        dump_tarball_path = os.path.join(
-                self.dut().cwd, 
-                "workspace",
+        dump_tarball_path = os.path.join( 
+                self.dut().workspace_dir,
                 "{}_dump.tar.xz".format(dt))
         response =  self.dut().run_redfish_command(uri=URL, timeout=60)
         try:
@@ -614,9 +614,8 @@ class FunctionalIfc:
             # Unzip the .tar file
             import tarfile
             dump = tarfile.open(dump_tarball_path)
-            DumpPath = os.path.join(
-                self.dut().cwd, 
-                "workspace", 
+            DumpPath = os.path.join( 
+                self.dut().workspace_dir, 
                 "{}_dump".format(dt))
             dump.extractall(DumpPath) # This will create a directory if it's not present already.
             dump.close()
@@ -631,7 +630,7 @@ class FunctionalIfc:
             print(str(e))
             return None
     
-    def ctam_monitor_task(self, TaskID):
+    def ctam_monitor_task(self, TaskID=""):
         """
         :Description:       CTAM Monitor a Task
         :param TaskID       Task ID of TaskService/Tasks (for accelerator management) to monitor
@@ -639,8 +638,15 @@ class FunctionalIfc:
         :rtype:             Tuple
         """
         Task_Completed = False
+        JSONData = {}
+        if not TaskID:
+            # need to implement the flow for no task uri
+            self.test_run().add_log(LogSeverity.DEBUG,
+                    "No Task ID provided."
+                )
+            return Task_Completed, JSONData
         TaskURI = self.dut().uri_builder.format_uri(
-            redfish_str="{BaseURI}/TaskService/Tasks/" + "{}".format(TaskID), component_type="GPU"
+            redfish_str="{BaseURI}{TaskServiceURI}" + "{}".format(TaskID), component_type="GPU"
         )
         if self.dut().is_debug_mode():
             self.test_run().add_log(LogSeverity.DEBUG, f"Task URI: {TaskURI}")
@@ -655,13 +661,25 @@ class FunctionalIfc:
                     "Task Percentage_Completion = {}".format(JSONData["PercentComplete"])
                 )
             time.sleep(30)
-        if JSONData["TaskState"] == "Completed":
+        if JSONData["TaskState"] == "Completed" and JSONData["TaskStatus"] == "OK":
             Task_Completed = True
         else:
             Task_Completed = False
         
         return Task_Completed, JSONData
 
+
+    def check_all_staging_tasks(self):
+        task_service_uri = self.dut().uri_builder.format_uri(
+            redfish_str="{BaseURI}{TaskServiceURI}", component_type="GPU"
+        )
+        response = self.dut().run_redfish_command(uri=task_service_uri)
+        json_data = response.dict
+        task_list = [i["@odata.id"] for i in json_data["Members"]]
+        for task in task_list:
+            self.ctam_monitor_task(TaskID=task)
+    
+    
     
     def ctam_redfish_uri_deep_hunt(self, URI, uri_hunt="", uri_listing=[], uri_analyzed=[],action=0):
         """

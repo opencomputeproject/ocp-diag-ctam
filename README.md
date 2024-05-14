@@ -39,6 +39,8 @@ Before you begin, ensure you have met the following requirements:
    -  `package_info.json` - contains details about the firmware 
    - `redfish_uri_config.json` - redfish config file
    - `test_runner.json` - config file for test run, can be overridden by cli flags
+   - `redfish_response_messages.json` - config file for redfish response messages (default will be picked from json_spec/input).
+  
 
 ### Flag description
 
