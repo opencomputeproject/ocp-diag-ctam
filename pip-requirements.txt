@@ -1,0 +1,43 @@
+##
+# PIP requirements file
+#
+# This file provides the list of python modules to install using PIP.
+#
+#  Run the following command
+#
+#  pip install -r pip-requirements.txt
+##
+
+ocptv
+prettytable
+redfish
+regex
+mypy
+isort
+pandas
+pip-tools
+pytest
+pytest-cov
+pyOpenSSL
+requests
+requests-ntlm
+requests-toolbelt
+requests-unixsocket
+alive_progress>=3.1.4
+sshtunnel
+Sphinx
+sphinx-rtd-theme
+sphinx_autodoc_typehints
+sphinx_markdown_builder
+sphinx-autoapi
+sphinxcontrib-mermaid
+sphinxcontrib-applehelp
+sphinxcontrib-devhelp
+sphinxcontrib-htmlhelp
+sphinxcontrib-jquery
+sphinxcontrib-jsmath
+sphinxcontrib-qthelp
+sphinxcontrib-serializinghtml
+black>=23.3
+bumpver>=2023.1126
+sshtunnel

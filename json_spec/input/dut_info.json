@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "Need to add one",
+  "title": "dut_info",
+  "description": "TODO: link to md doc",
+  "properties": {
+    "ConnectionIPAddress": {
+      "description": "IP Address of Service Entry point to be used",
+      "type": "string",
+      "value": ""
+    },
+    "SSHTunnel": {
+      "description": "Indicates if the user wants to communicate through SSH tunnel",
+      "type": "bool",
+      "value": false
+    },
+    "SSHTunnelPortList":{
+      "description": "List of ports to connect to via SSH tunnelling",
+      "type": "list",
+      "value": [9999, 5555]
+    },
+    "SSHTunnelProtocol":{
+      "description": "User can now give https or http",
+      "type": "str",
+      "value": ""
+    },
+    "SSHTunnelRemotePort":{
+      "description": "Remote Redfish connection port to be used while SSH tunnelling",
+      "type": "int",
+      "value": 80
+    },
+    "SSHTunnelRemoteIPAddress": {
+      "description": "IP Address of Remote Port of the SSH tunnel to be used",
+      "type": "string",
+      "value": ""
+    },
+    "AuthenticationRequired": {
+      "description": "Indicates if REST API authentication is required by the Redfish service",
+      "type": "bool",
+      "value": false
+    },
+    "PowerOffCommand": {
+      "description": "Command to use to turn off the system",
+      "type": "string",
+      "value": ""
+    },
+    "PowerOnCommand": {
+      "description": "Command to use to turn on the system",
+      "type": "string",
+      "value": ""
+    },
+    "PowerOffWaitTime": {
+      "description": "Off delay needed (in seconds) during FW Activation",
+      "type": "int",
+      "value": 60
+    },
+    "PowerOnWaitTime": {
+      "description": "Wait time (in seconds) during FW Activation post reset cycle",
+      "type": "int",
+      "value": 300
+    },
+    "FwStagingTimeMax": {
+      "description": "Maximum time in seconds taken by staging (copy) phase of full device FW update",
+      "type": "int",
+      "value": 600
+    },
+    "FwActivationTimeMax": {
+      "description": "Maximum time in seconds taken by activation phase of full device FW update",
+      "type": "int",
+      "value": 600
+    },
+    "IdleWaitTimeAfterFirmwareUpdate":{
+      "description": "Wait time (in seconds) for runtime execution delay",
+      "type": "int",
+      "value": 300
+    }
+  },
+  "required": [
+    "ConnectionTo",
+    "PowerOffCommand",
+    "PowerOnCommand",
+    "PowerOffWaitTime",
+    "PowerOnWaitTime",
+    "FwStagingTimeMax",
+    "FwActivationTimeMax",
+    "IdleWaitTimeAfterFirmwareUpdate"
+  ]
+}

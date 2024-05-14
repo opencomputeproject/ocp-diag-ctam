@@ -1,0 +1,3 @@
+graft json_spec
+global-exclude *.py[cod]
+include docs/*.md

@@ -1,0 +1,11 @@
+{
+    "@odata.id": <"data id">,
+    "@odata.type": <"data type">,
+    "Members": [
+        {
+            "@odata.id": <"data id">
+        },
+        {
+            "@odata.id": <"data id">
+        },
+}

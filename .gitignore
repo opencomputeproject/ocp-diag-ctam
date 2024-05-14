@@ -1,0 +1,12 @@
+﻿
+*.pyc
+/.vscode
+/workspace/TestRuns/*
+/workspace*/*
+docs/build/*
+/.vs
+/bin
+/venv
+/env
+*.egg-info
+/dist
