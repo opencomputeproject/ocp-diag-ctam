@@ -447,8 +447,8 @@ class TestRunner:
             self.score_logger.write(json.dumps(msg))
             self.test_result_data.append(("Total", "", 
                                         timedelta(seconds=TestCase.total_execution_time),
-                                        TestCase.total_compliance_score, 
-                                        TestCase.max_compliance_score,"{}%".format(gtotal)))
+                                        TestCase.max_compliance_score,
+                                        TestCase.total_compliance_score,"{}%".format(gtotal)))
             self.generate_domain_test_report()
             if self.weighted_scores:
                 self.generate_compliance_level_test_report()
