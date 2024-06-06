@@ -387,7 +387,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             else:
                 headers = {"Content-Type": "application/octet-stream"}
                 body = open(FileName, "rb").read()
-                response = self.dut().run_redfish_command(uri=URL, mode="POST", body=body, headers=headers)
+                response = self.dut().run_request_command(uri=URL, mode="POST", body=body, headers=headers)
                 JSONData = response.dict
         else:
                 headers = {"Content-Type": "multipart/form-data"}

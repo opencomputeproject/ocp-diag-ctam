@@ -2,6 +2,7 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+
 import argparse
 import os
 import sys
@@ -72,7 +73,6 @@ def parse_args():
         required=not any(arg in sys.argv for arg in ["-l", "--list", "-v", "--version"]),
         help="Path to workspace directory that contains test run files",
     )
-
 
     parser.add_argument(
         "-v",

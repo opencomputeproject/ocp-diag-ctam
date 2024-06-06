@@ -73,6 +73,11 @@
       "description": "Wait time (in seconds) for runtime execution delay",
       "type": "int",
       "value": 300
+    },
+    "DeSensitizeLog":{
+      "description": "Desensitize private details in logger",
+      "type": "bool",
+      "value": false
     }
   },
   "required": [

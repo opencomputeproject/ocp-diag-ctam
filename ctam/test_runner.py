@@ -35,6 +35,7 @@ from ocptv.output import (
     TestStatus,
 )
 from interfaces.comptool_dut import CompToolDut
+from utils.logger_utils import LoggingWriter
 
 from version import __version__
 
@@ -136,8 +137,6 @@ class TestRunner:
             self.test_sequence = sequence_test_override
         elif sequence_group_override != None:
             self.group_sequence = sequence_group_override
-        # elif runner_config["test_cases"]:
-        #     self.test_cases = runner_config["test_cases"]
         elif runner_config.get("test_sequence", None):
             self.test_sequence = runner_config.get("test_sequence", None)
         elif runner_config.get("group_sequence", None):
@@ -145,8 +144,6 @@ class TestRunner:
         elif runner_config.get("active_test_suite", None):
             test_suite_to_select = runner_config.get("active_test_suite", None)
             # Remove the active_test_suite key before selecting the test suite
-            #del runner_config["active_test_suite"]
-
             # Select the test suite from test_runner_data
             for test_suite in test_suite_to_select:
                 selected_test_suite_cases = runner_config.get(test_suite)
@@ -161,10 +158,9 @@ class TestRunner:
                     )
         elif run_all_tests:
             self.test_sequence = run_all_tests
-        # else:
-        #     raise Exception(
-        #         "Specify test cases/groups with -t, -g command line options or use test_runner.json"
-        #     )
+    
+    def get_words_to_skip(self):
+        return [item for sublist in self.net_rc.hosts.values() for item in sublist if isinstance(item, str) if item]
 
     def _get_test_runner_config(self, test_runner_json_file):
         runner_config = {}
@@ -260,13 +256,16 @@ class TestRunner:
         if not os.path.exists(self.cmd_output_dir):
             os.makedirs(self.cmd_output_dir)
         dut_logger = LoggingWriter(
-            self.cmd_output_dir, self.console_log, "RedfishCommandDetails_"+testrun_name, "json", self.debug_mode
+            self.cmd_output_dir, self.console_log, "RedfishCommandDetails_"+testrun_name, "json", self.debug_mode,
+            desanitize_log=self.should_desenitize_logs, words_to_skip=self.words_to_skip
         )
         test_info_logger = LoggingWriter(
-            self.output_dir, self.console_log, "TestInfo_"+testrun_name, "json", self.debug_mode
+            self.output_dir, self.console_log, "TestInfo_"+testrun_name, "json", self.debug_mode,
+            desanitize_log=self.should_desenitize_logs, words_to_skip=self.words_to_skip
         )
         self.score_logger = LoggingWriter(
-            self.output_dir, self.console_log, "TestScore_"+testrun_name, "json", self.debug_mode
+            self.output_dir, self.console_log, "TestScore_"+testrun_name, "json", self.debug_mode,
+            desanitize_log=self.should_desenitize_logs, words_to_skip=self.words_to_skip
         )
         self.test_result_file = os.path.join(self.output_dir, "TestReport_{}.log".format(self.dt))
         self.test_uri_response_check = None
@@ -293,7 +292,8 @@ class TestRunner:
         
 
         self.writer = LoggingWriter(
-            self.output_dir, self.console_log, "OCPTV_"+testrun_name, "json", self.debug_mode
+            self.output_dir, self.console_log, "OCPTV_"+testrun_name, "json", self.debug_mode,
+            desanitize_log=self.should_desenitize_logs, words_to_skip=self.words_to_skip
         )
         tv.config(writer=self.writer)
 
@@ -521,7 +521,8 @@ class TestRunner:
                     file_name = "RedfishCommandDetails_{}_{}".format(test_instance.test_id,
                                                                         test_instance.test_name)
                     logger = LoggingWriter(
-                        self.cmd_output_dir, self.console_log, file_name, "json", self.debug_mode
+                        self.cmd_output_dir, self.console_log, file_name, "json", self.debug_mode,
+                        desanitize_log=self.should_desenitize_logs, words_to_skip=self.words_to_skip
                     )
                     self.comp_tool_dut.logger = logger
                     execution_starttime = time.perf_counter()
@@ -917,96 +918,3 @@ class TestRunner:
                             
                 if count == self.total_cases:
                     break
-
-
-class LoggingWriter(Writer):
-    """
-    Helper class registers python logger with OCP logger to be used for file output etc
-
-    :param Writer: OCP Writer super class
-    :type Writer:
-    """
-
-    def __init__(self, output_dir, console_log, testrun_name,extension_name,  debug):
-        """
-        Initialize file logging parameters
-
-        :param output_dir: location of log file
-        :type output_dir: str
-        :param console_log: true if desired to print to console as well as log
-        :type console_log: bool
-        :param testrun_name: name for current testrun
-        :type testrun_name: str
-        :param debug: if true, log LogSeverity.DEBUG messages
-        :type debug: bool
-        """
-        # Create a logger
-        self.logger = logging.getLogger(testrun_name)
-        self.debug = debug
-
-        # Set the level for this logger. This means that unless specified otherwise, all messages
-        # with level INFO and above will be logged.
-        # If you want to log all messages you can use logging.DEBUG
-        self.logger.setLevel(logging.INFO)
-
-        # Create formatters and add them to the handlers
-        # formatter = logging.Formatter("%(message)s")
-
-        # Create a file handler that logs messages to a file
-        dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        file_name_tmp = "/{}_{}.{}".format(testrun_name, dt, extension_name)
-        self.file_handler = logging.FileHandler(output_dir + file_name_tmp)
-        self.file_handler.setLevel(logging.INFO)
-        self.file_handler.setFormatter(JsonFormatter())
-        self.logger.addHandler(self.file_handler)
-
-        if console_log:
-            # Create a console handler that logs messages to the console
-            self.console_handler = logging.StreamHandler()
-            self.console_handler.setLevel(logging.INFO)
-            self.console_handler.setFormatter(JsonFormatter())
-            self.logger.addHandler(self.console_handler)
-
-    def write(self, buffer: str):
-        """
-        Called from the OCP framework for logging messages.  Use debug switch to filter
-        LogSeverity.DEBUG messages.
-
-        :param buffer: _description_
-        :type buffer: str
-        """
-        if not self.debug:
-            if '"severity": "debug"' in buffer.lower():
-                return
-
-        self.logger.info(buffer)
-        
-    def log(self, msg: str):
-        """
-        Called from the OCP framework for logging messages. This method is a wrapper
-        of the "write" method to add timestamp to a message.
-
-        :param msg: Message to be logged
-        :type msg: str
-        """
-        json_msg = {
-                    "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
-                    "Message": msg
-        }
-
-        self.write(json.dumps(json_msg))
-
-
-class JsonFormatter(logging.Formatter):
-    def format(self, record):
-        """
-        :Description:                       Format method for formatting data into json output
-
-        :param JSON Dict record:		    Dict object for Log JSON Data
-
-        :returns:                           JSON object with indent 4
-        :rtype                              JSON Dict
-        """
-        msg = json.loads(getattr(record, "msg", None))
-        f_msg = json.dumps(msg, indent=4) 
-        return f_msg + ","
