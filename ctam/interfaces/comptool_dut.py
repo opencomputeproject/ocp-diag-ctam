@@ -9,7 +9,6 @@ LICENSE file in the root directory of this source tree.
 import os
 import typing as ty
 import redfish
-import subprocess
 import platform
 import json
 import time
@@ -23,7 +22,6 @@ from ocptv.output import Metadata
 from ocptv.output import Dut
 
 from interfaces.uri_builder import UriBuilder
-# from sshtunnel import SSHTunnelForwarder, HandlerSSHTunnelForwarderError
 from utils.ssh_tunnel_utils import SSHTunnel
 
 
