@@ -41,7 +41,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
     test_name: str = "CTAM Test Negative Empty Metadata Image Update"
     test_id: str = "F26"
     score_weight: int = 10
-    tags: List[str] = ["Negative", "L2"]
+    tags: List[str] = ["Negative", "L2", "Single_Device"]
     compliance_level: str = "L2"
 
     def __init__(self, group: FWUpdateTestGroupN):

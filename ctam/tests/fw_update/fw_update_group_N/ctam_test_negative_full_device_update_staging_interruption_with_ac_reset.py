@@ -38,7 +38,7 @@ class CTAMTestFullDeviceUpdateInterruptionWithSingleDeviceUpdate(TestCase):
     test_name: str = "CTAM Test Negative Full Device Update Staging Interruption With AC Reset"
     test_id: str = "F24"
     score_weight: int = 10
-    tags: List[str] = ["Negative", "L2"]
+    tags: List[str] = ["Negative", "L2", "Single_Device"]
     compliance_level: str = "L2"
 
     def __init__(self, group: FWUpdateTestGroupN):

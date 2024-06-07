@@ -40,7 +40,7 @@ class CTAMTestSingleDeviceUpdatePingPong(TestCase):
     test_name: str = "CTAM Test Single Device Update Ping Pong"
     test_id: str = "F89"
     score_weight: int = 10
-    tags: List[str] = ["L3"]
+    tags: List[str] = ["L3", "Single_Device"]
     compliance_level: str = "L3"
 
     def __init__(self, group: FWUpdateTestGroupN):
