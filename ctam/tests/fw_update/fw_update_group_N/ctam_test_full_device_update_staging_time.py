@@ -106,12 +106,12 @@ class CTAMTestFullDeviceUpdateStagingTime(TestCase):
         with step1.scope():
             if self.group.fw_update_ifc.ctam_activate_ac():
                 step1.add_log(
-                    LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
+                    LogSeverity.INFO, f"{self.test_id} : Teardown : FW Update Activate"
                 )
             else:
                 step1.add_log(
                     LogSeverity.WARNING,
-                    f"{self.test_id} : FW Update Activation Failed",
+                    f"{self.test_id} : Teardown : FW Update Activation Failed",
                 )
                 result = False
                     
