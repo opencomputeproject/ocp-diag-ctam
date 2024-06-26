@@ -606,6 +606,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     for related_item in ComponentRelatedItemList:
                         related_item_uri = related_item.get("@odata.id")
                         if related_item_uri:
+                            related_item_uri = "{}{}".format(self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU"), related_item_uri)
                             response = self.dut().run_redfish_command(uri=related_item_uri)
                             data = response.dict
                             component_sku = data.get("SKU")
