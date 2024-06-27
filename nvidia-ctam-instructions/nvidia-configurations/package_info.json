@@ -1,0 +1,62 @@
+{
+  "PackageHeaderInformation": {
+    "PackageHeaderIdentifier": "",
+    "PackageHeaderFormatVersion": "1",
+    "PackageReleaseDateTime": "",
+    "PackageVersionString": ""
+  },
+  "GPU_FW_IMAGE": {
+    "Path": "workspace",
+    "Package": "",
+    "Version": "",
+    "JSON": "",
+    "Vendor": "NVIDIA"
+  },
+  "GPU_FW_IMAGE_OLD": {
+    "Path": "workspace",
+    "Package": "",
+    "Version": "",
+    "JSON": "",
+    "Vendor": "NVIDIA"
+  },
+  "GPU_FW_IMAGE_BACKUP": {
+    "Path": "workspace",
+    "Package": "",
+    "Version": "",
+    "JSON": "",
+    "Vendor": "NVIDIA"
+  },
+  "GPU_FW_IMAGE_LARGE": {
+    "Path": "workspace",
+    "Package": "",
+    "Version": "",
+    "JSON": "",
+    "Vendor": "NVIDIA"
+  },
+  "GPU_FW_IMAGE_INVALID_SIGNED": {
+    "Path": "workspace",
+    "Package": "",
+    "Version": "",
+    "JSON": "",
+    "Vendor": "NVIDIA"
+  },
+  "GPU_FW_IMAGE_UNSIGNED": {
+    "Path": "workspace",
+    "Package": "",
+    "Version": "",
+    "JSON": "",
+    "Vendor": "NVIDIA"
+  },
+  "GPU_FW_IMAGE_CORRUPT": {
+    "Path": "workspace",
+    "Package": "",
+    "Version": "",
+    "JSON": "",
+    "Vendor": "NVIDIA"
+  },
+  "GPU_FW_IMAGE_CORRUPT_COMPONENT": {
+    "CorruptComponentIdentifier": "0x0020",
+    "MetadataSizeBytes": 4096,
+    "Vendor": "NVIDIA"
+  }
+}
