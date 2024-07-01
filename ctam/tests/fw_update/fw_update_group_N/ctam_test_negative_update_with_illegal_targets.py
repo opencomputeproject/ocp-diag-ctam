@@ -40,7 +40,7 @@ class CTAMTestNegativeUpdateWithIllegalTargets(TestCase):
     test_name: str = "CTAM Test Negative Update with illegal targets"
     test_id: str = "F32"
     score_weight: int = 10
-    tags: List[str] = ["Negative", "L2"]
+    tags: List[str] = ["Negative", "L2", "Single_Device"]
     compliance_level: str = "L2"
 
     def __init__(self, group: FWUpdateTestGroupN):
@@ -108,7 +108,7 @@ class CTAMTestNegativeUpdateWithIllegalTargets(TestCase):
         if result:
             step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")  # type: ignore
             with step4.scope():
-                if self.group.fw_update_ifc.ctam_activate_ac(fwupd_hyst_wait=False):
+                if self.group.fw_update_ifc.ctam_activate_ac():
                     step4.add_log(
                         LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
                     )

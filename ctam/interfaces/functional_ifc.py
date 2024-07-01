@@ -607,7 +607,7 @@ class FunctionalIfc:
         dump_tarball_path = os.path.join( 
                 self.dut().workspace_dir,
                 "{}_dump.tar.xz".format(dt))
-        response =  self.dut().run_redfish_command(uri=URL, timeout=60)
+        response =  self.dut().run_redfish_command(uri=URL)
         try:
             with open(dump_tarball_path, 'wb') as fd:
                 fd.write(response.read)

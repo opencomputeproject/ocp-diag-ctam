@@ -18,19 +18,6 @@ except:
     from utils.ctam_utils import MetaNull as Meta
 
 class RasIfc(FunctionalIfc, metaclass=Meta):
-
-    # _instance: Optional["RasIfc"] = None
-
-    # def __new__(cls, *args, **kwargs):
-    #     """
-    #     ensure only 1 instance can be created
-
-    #     :return: instance
-    #     :rtype: RasIfc
-    #     """
-    #     if not isinstance(cls._instance, cls):
-    #         cls._instance = super(RasIfc, cls).__new__(cls, *args, **kwargs)
-    #     return cls._instance
     
     def __init__(self):
         super().__init__()
@@ -38,18 +25,6 @@ class RasIfc(FunctionalIfc, metaclass=Meta):
         self.logdump_uri_list = []
         self.dumplog_uri_list = []
         self.JSONData = {}
-
-    # @classmethod
-    # def get_instance(cls, *args, **kwargs):
-    #     """
-    #     if there is an existing instance, return it, otherwise create the singleton instance and return it
-
-    #     :return: instance
-    #     :rtype: RasIfc
-    #     """
-    #     if not isinstance(cls._instance, cls):
-    #         cls._instance = cls(*args, **kwargs)
-    #     return cls._instance
     
     def ctam_discover_crashdump_cap(self):
         """
@@ -86,8 +61,6 @@ class RasIfc(FunctionalIfc, metaclass=Meta):
 
     def ctam_crashdump_task_status(self):
         wait_for_task_completion = True
-        TaskStartTime = time.time()
-        check_time = True
         Task_completion_Status = False
         for uri in self.ctam_collect_crashdump_manager_list():
             body = {"DiagnosticDataType": "Manager"}
@@ -97,45 +70,25 @@ class RasIfc(FunctionalIfc, metaclass=Meta):
             self.JSONData = response.dict
             if "error" not in self.JSONData:
                 if wait_for_task_completion:
-                    TaskID = self.JSONData["@odata.id"]
-
+                    TaskID = self.JSONData["Id"]
                     if self.dut().is_debug_mode():
-                        self.test_run().add_log(LogSeverity.DEBUG, TaskID)
-                    v1_str = self.dut().uri_builder.format_uri(
-                        redfish_str="{GPUMC}" + "{}".format(TaskID), component_type="GPU"
-                    )
-                    response = self.dut().run_redfish_command(uri=v1_str)
-                    self.JSONData = response.dict
-
-                    FwStagingTimeMax = self.dut().dut_config["FwStagingTimeMax"]["value"]
-                    while self.JSONData["TaskState"] == "Running" \
-                            and (not check_time or (check_time and (time.time() - TaskStartTime) <= FwStagingTimeMax)):
-                        response = self.dut().run_redfish_command(uri=v1_str)
-                        self.JSONData = response.dict
-                        if self.dut().is_debug_mode():
-                            print(
-                                f"Task completion = {self.JSONData['PercentComplete']}"
-                            )
-                        msg = f"Task completion = {self.JSONData['PercentComplete']}"
-                        self.test_run().add_log(LogSeverity.DEBUG, msg)
-
-                        time.sleep(5)
-                    if self.JSONData["TaskState"] == "Completed":
-                        Task_completion_Status = True
-                    else:
-                        Task_completion_Status = False
-                    
+                            self.test_run().add_log(LogSeverity.DEBUG, TaskID)
+                    Task_completion_Status, self.JSONData = self.ctam_monitor_task(TaskID)
         return Task_completion_Status
 
     def ctam_download_crashdump_attachment(self):
-        result = True
+        result = False
         if self.ctam_crashdump_task_status():
             location_list = self.JSONData.get("Payload", {}).get("HttpHeaders", [])
             if location_list:
                 location = location_list[-1].split(": ")[-1]
                 location_uri = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}" + "{}".format(location), component_type="GPU")
-                self.test_run().add_log(LogSeverity.INFO, "Dump is downloaded.")
-                self.RedfishDownloadDump(location_uri)
+                if self.RedfishDownloadDump(location_uri):
+                    self.test_run().add_log(LogSeverity.INFO, "Dump is downloaded.")
+                    result = True
+                else:
+                    self.test_run().add_log(LogSeverity.INFO, "Dump download Failed.")
+                    result = False
             else:
                 self.test_run().add_log(LogSeverity.FATAL, "Empty list or dictionary.")
                 result = False

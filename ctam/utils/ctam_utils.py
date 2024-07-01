@@ -8,6 +8,12 @@ import tempfile
 
 from alive_progress import alive_bar
 
+redirect_output = None
+
+def set_redirect_output(value):
+    global redirect_output
+    redirect_output = value
+
 class GitUtils():
 
     def __init__(self) -> None:
@@ -67,52 +73,49 @@ class GitUtils():
     def validate_redfish_service(self, file_name, connection_url, user_name, user_pass,
                                   log_path, schema_directory, depth, service_uri, *args, **kwargs):
             
-            log_path = os.path.join(log_path, file_name)
-            file_name = os.path.join(self.repo_path, file_name)
-            schema_directory = os.path.join(self.repo_path, "SchemaFiles")
-            try:
-                service_command = "python {file_name}.py --ip {ip} \
-                        -u {user} -p {pwd} --logdir {log_dir} \
-                        --schema_directory {schema_directory} \
-                            --payload {depth} {uri}".format(
-                                file_name=file_name,
-                                ip=connection_url,
-                                user=user_name,
-                                pwd=user_pass,
-                                log_dir=log_path,
-                                schema_directory=schema_directory,
-                                depth=depth,
-                                uri=service_uri
-                            )
-                with alive_bar(0,theme="classic", stats=False) as bar:
-                    result = subprocess.run(shlex.split(service_command, posix=False), capture_output=True)
-                    print(result.returncode, result.stderr)
-                    if result.returncode != 0 and result.stderr:
-                        error = result.stderr.decode("utf-8").strip()
-                        raise Exception(error)
-                    bar()
-                    result = result.stdout.decode("utf-8").strip()
-                    # print("Res: ",result)
-                    data = result.replace("\r", "").split("\n")[-1]
-                    # print("Data: ", data)
-                    s_idx = result.index("Elapsed time:")
-                    data = result[s_idx:]
-                    # print("Index: ", data)
-                    import re
-                    res = re.findall(r"pass:\s+(\d+)", data)
-                    print("REGEX: ",res)
-                    if res and res[0].isdigit() and int(res[0]) > 0:
-                        # res = int(res[0])
-                        # if res > 0:
-                        return True
-                    # if "fail" in data.lower():
-                    #     msg = "Redfish ServiceVerification has failed. Please check log file for more details."
-                    #     print(msg)
-                    #     return False
-                    return False
-            except Exception as e:
-                print(f"Exception Occurred: {e}")
-                return False
+        result = False
+        log_path = os.path.join(log_path, file_name)
+        file_name = os.path.join(self.repo_path, file_name)
+        schema_directory = os.path.join(self.repo_path, "SchemaFiles")
+        service_command = "python {file_name}.py --ip {ip} \
+                -u {user} -p {pwd} --logdir {log_dir} \
+                --schema_directory {schema_directory} \
+                    --payload {depth} {uri}".format(
+                        file_name=file_name,
+                        ip=connection_url,
+                        user=user_name,
+                        pwd=user_pass,
+                        log_dir=log_path,
+                        schema_directory=schema_directory,
+                        depth=depth,
+                        uri=service_uri
+                    )
+        if redirect_output:
+            redirect_output.temporary_stop()
+        with alive_bar(0) as bar:
+            result = subprocess.run(shlex.split(service_command, posix=False), capture_output=True)
+            print(result.returncode, result.stderr)
+            if result.returncode != 0 and result.stderr:
+                error = result.stderr.decode("utf-8").strip()
+                raise Exception(error)
+            bar()
+            result = result.stdout.decode("utf-8").strip()
+            data = result.replace("\r", "").split("\n")[-1]
+            s_idx = result.index("Elapsed time:")
+            data = result[s_idx:]
+            import re
+            res = re.findall(r"pass:\s+(\d+)", data)
+            print("REGEX: ",res)
+            if res and res[0].isdigit() and int(res[0]) > 0:
+                result = True
+            # if "fail" in data.lower():
+            #     msg = "Redfish ServiceVerification has failed. Please check log file for more details."
+            #     print(msg)
+            #     return False
+            # result = False
+        if redirect_output:
+            redirect_output.start()
+        return result
     
 class MetaNull(type):
     pass
@@ -123,3 +126,43 @@ class MetaNull(type):
 #         bar()
 #         if result.stderr:
 #             raise Exception(result.stderr)
+
+
+import sys
+import atexit
+class TeeStream:
+    def __init__(self, *streams):
+        self.streams = streams
+ 
+    def write(self, message):
+        for stream in self.streams:
+            stream.write(message)
+            stream.flush()
+ 
+    def flush(self):
+        for stream in self.streams:
+            stream.flush()
+ 
+class RedirectOutput:
+    def __init__(self, logfile=""):
+        self.logfile = logfile
+        self.original_stdout = sys.stdout
+        self.original_stderr = sys.stderr
+        self.log_file = open(logfile, 'a+', buffering=1)
+        self.stdout_tee = TeeStream(self.original_stdout, self.log_file)
+        self.stderr_tee = TeeStream(self.original_stderr, self.log_file)
+        atexit.register(self.restore)
+    
+    def start(self):
+        sys.stdout = self.stdout_tee
+        sys.stderr = self.stderr_tee
+
+    def temporary_stop(self):
+        sys.stdout = self.original_stdout
+        sys.stderr = self.original_stderr
+        
+    def restore(self):
+        sys.stdout = self.original_stdout
+        sys.stderr = self.original_stderr
+        self.log_file.close()
+    

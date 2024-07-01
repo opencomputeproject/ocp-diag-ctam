@@ -162,6 +162,18 @@ Test runner knobs can be modified in `test_runner.json` to enable different logg
 **Note: - Tags = Group Tags Union Test Case Tags
 group tags = ["G1"] and test case tags = ["L1"], so the final tags will be ["G1", "L1"]**
 
+## Local Port Forwarding
+* Local port forwarding allows you to forward a port on the local (ssh client) machine to a port on the remote (ssh server) machine, which is then forwarded to a port on the destination machine.
+* ### How it works
+  * Local port forwarding creates a tunnel from a local port on your machine to a specified port on a remote server. When you access the local port, the traffic is securely forwarded to the remote server's port through the SSH connection.
+  * For tunneling we need to give these parameters in dut_config.json file
+    * SSHTunnel 
+    * SSHTunnelRemoteIPAddress
+    * SSHTunnelPortList
+    * SSHTunnelProtocol
+    * SSHTunnelRemotePort (Use 443 as remote port address for redfish tunneling)
+  * The `sshtunnel` library in Python is a handy tool for creating SSH tunnels, allowing you to programmatically set up and manage SSH port forwarding. It can be used to establish both local and remote port forwarding
+  
 ## Developer notes
 ### VS Code
 
