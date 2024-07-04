@@ -134,7 +134,7 @@ def main():
             logs_output_dir = os.path.join(args.workspace, "TestRuns", test_dir)
             print("Output Dir is : ", logs_output_dir)
         else:        
-            logs_output_dir = os.path.join("..\workspace", "TestRuns", test_dir)
+            logs_output_dir = os.path.join("..{}workspace".format(os.sep), "TestRuns", test_dir)
 
         if not os.path.exists(logs_output_dir):
             os.makedirs(logs_output_dir)
