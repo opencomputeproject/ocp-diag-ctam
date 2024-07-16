@@ -3,7 +3,7 @@ Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Negative Update with illegal targets
+:Test Name:		CTAM Test Negative Single Device Update with illegal targets
 :Test ID:		F32
 :Group Name:	fw_update
 :Score Weight:	10
@@ -13,7 +13,7 @@ LICENSE file in the root directory of this source tree.
 				that are **"not"** in the AllowableValues of the URI pointed by ``@Redfish.ActionInfo`` On attempting an
 				update, we expect the firmware version to be retained.
 :Usage 1:		python ctam.py -w ..\workspace -t F32
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Update with illegal targets"
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Single Device Update with illegal targets"
 
 """
 from typing import Optional, List
@@ -29,7 +29,7 @@ from tests.fw_update.fw_update_group_N._fw_update_group_N import (
     FWUpdateTestGroupN,
 )
 
-class CTAMTestNegativeUpdateWithIllegalTargets(TestCase):
+class CTAMTestNegativeSingleDeviceUpdateWithIllegalTargets(TestCase):
     """
     Test case to attempt update of targets which are not updateable. 
 
@@ -40,8 +40,8 @@ class CTAMTestNegativeUpdateWithIllegalTargets(TestCase):
     test_name: str = "CTAM Test Negative Update with illegal targets"
     test_id: str = "F32"
     score_weight: int = 10
-    tags: List[str] = ["Negative", "L2", "Single_Device"]
-    compliance_level: str = "L2"
+    tags: List[str] = ["Negative", "L3", "Single_Device"]
+    compliance_level: str = "L3"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """

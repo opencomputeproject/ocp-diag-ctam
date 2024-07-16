@@ -475,7 +475,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     for element in JSONData["Members"]:
                         if str(element["Updateable"]) == "True":
                             corrupt_component_id = element["SoftwareId"]
-                    
+                            break
             msg = f"{MyName} returned component ID to be corrupted: {corrupt_component_id}"
             self.test_run().add_log(LogSeverity.DEBUG, msg)
         
