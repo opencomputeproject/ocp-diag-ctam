@@ -37,7 +37,7 @@ class CTAMTestNegativeSingleDeviceUpdateWithIllegalTargets(TestCase):
     :type TestCase:
     """
 
-    test_name: str = "CTAM Test Negative Update with illegal targets"
+    test_name: str = "CTAM Test Negative Single Device Update with illegal targets"
     test_id: str = "F32"
     score_weight: int = 10
     tags: List[str] = ["Negative", "L3", "Single_Device"]
