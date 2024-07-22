@@ -47,6 +47,7 @@ class TestRunner:
     def __init__(
         self,
         workspace_dir,
+        logs_output_dir,
         test_hierarchy,
         test_runner_json_file,
         dut_info_json_file,
@@ -92,7 +93,7 @@ class TestRunner:
         self.group_sequence = []
         self.test_result_data = []
         self.total_cases = 0        
-        self.output_dir = ""
+        self.output_dir = logs_output_dir
         self.workspace_dir = workspace_dir
         self.response_check_name = None
         self.compliance_data = {}
@@ -106,6 +107,7 @@ class TestRunner:
         self.package_config = package_info_json_file
         self.redfish_response_messages = {}
         self.single_test_override = single_test_override
+        # self.logs_output_dir = logs_output_dir
         runner_config = self._get_test_runner_config(test_runner_json_file)
 
         with open(dut_info_json_file) as dut_info_json:
@@ -171,7 +173,7 @@ class TestRunner:
         if os.path.isfile(test_runner_json_file):
             with open(test_runner_json_file) as test_runner_json:
                 runner_config = json.load(test_runner_json)
-                self.output_dir = runner_config["output_override_directory"]
+                # self.output_dir = runner_config["output_override_directory"]
                 self.response_check_name = runner_config.get("test_uri_response_excel", None)
                 
                 self.include_tags_set = set(runner_config["include_tags"])
@@ -242,17 +244,14 @@ class TestRunner:
         :param testrun_name: name for the testrun
         :type testrun_name: str
         """
-        #system is up or not
+        # system is up or not
         # If up then establish the connection and the discovery 
         self.cwd = os.path.dirname(os.path.dirname(__file__))
         self.dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        test_dir = f'Tags-{"-".join(self.include_tags_set)}' if self.include_tags_set  and not self.single_test_override else testrun_name+"_{}".format(self.dt)
-
-        if self.workspace_dir:
-            self.output_dir = os.path.join(self.workspace_dir, self.output_dir, "TestRuns", test_dir)
-        else:
-            self.output_dir = os.path.join("workspace", "TestRuns", test_dir)
-        print("Output Dir is : ", self.output_dir)
+        test_dir = ""
+        if self.include_tags_set  and not self.single_test_override:
+            test_dir = f'Tags-{"-".join(self.include_tags_set)}'
+            self.output_dir = os.path.join(self.workspace_dir, "TestRuns", test_dir)
        
         self.cmd_output_dir = os.path.join(self.output_dir, "RedfishCommandDetails")
         if not os.path.exists(self.output_dir):
@@ -293,7 +292,7 @@ class TestRunner:
         
 
         self.writer = LoggingWriter(
-            self.output_dir, self.console_log, "OCPTV_"+testrun_name, "json", self.debug_mode
+            self.output_dir, self.console_log, "OCPTV_CTAM_LOGS_", "json", self.debug_mode
         )
         tv.config(writer=self.writer)
 
@@ -319,7 +318,7 @@ class TestRunner:
         #     )
         #     self.system_details_logger.write(json.dumps(self.system_details))
         
-        self.active_run.start(dut=tv.Dut(id="dut0"))
+        # self.active_run.start(dut=tv.Dut(id="dut0"))
 
     def _end(self, run_status, run_result):
         """
@@ -447,8 +446,8 @@ class TestRunner:
             self.score_logger.write(json.dumps(msg))
             self.test_result_data.append(("Total", "", 
                                         timedelta(seconds=TestCase.total_execution_time),
-                                        TestCase.total_compliance_score, 
-                                        TestCase.max_compliance_score,"{}%".format(gtotal)))
+                                        TestCase.max_compliance_score,
+                                        TestCase.total_compliance_score,"{}%".format(gtotal)))
             self.generate_domain_test_report()
             if self.weighted_scores:
                 self.generate_compliance_level_test_report()
@@ -474,6 +473,7 @@ class TestRunner:
         finally:
             if self.comp_tool_dut:
                 self.comp_tool_dut.clean_up()
+            self.post_proces_logs(self.writer.log_file)
             return status_code, exit_string
         
         
@@ -496,7 +496,8 @@ class TestRunner:
         try:
             if not self.comp_tool_dut:
                 self._start(group_instance.__class__.__name__)
-
+            self.active_run.start(dut=tv.Dut(id=group_instance.__class__.__name__))
+            
             group_instance.setup()
 
             for test_instance in test_case_instances:
@@ -516,6 +517,9 @@ class TestRunner:
                 # this exception block goal is to ensure test case teardown() is called even if setup() or run() fails
                 try:
                     test_starttime = time.perf_counter()
+                    # added this step as we need to get the test case name in log post processing
+                    test_case_step = self.active_run.add_step(name=f"<{test_instance.test_id} - {test_instance.test_name}>") 
+                    test_case_step.start()
                     test_instance.setup()
                     self.comp_tool_dut.current_test_name = test_instance.test_name
                     file_name = "RedfishCommandDetails_{}_{}".format(test_instance.test_id,
@@ -540,6 +544,7 @@ class TestRunner:
                 finally:
                     # attempt test cleanup even if test exception raised
                     test_instance.teardown()
+                    test_case_step.end(status=TestStatus.COMPLETE)
                     execution_endtime = time.perf_counter()
                     execution_time = round(execution_endtime - execution_starttime, 3)
                     test_instance.execution_time = timedelta(seconds=round(execution_endtime - test_starttime, 3))
@@ -918,6 +923,54 @@ class TestRunner:
                 if count == self.total_cases:
                     break
 
+    def post_proces_logs(self, log_path: str = "") -> None:
+        try:
+            log_data = ""
+            with open(log_path, 'r') as log_file:
+                log_data = f"[{log_file.read()}]"
+                import re
+                import ast
+                json_data = ast.literal_eval(log_data)
+                
+                test_start_idx = 0
+                test_end_idx = 0
+                test_data = []
+                file_name = ""
+                test_no = 0
+                while test_start_idx < len(json_data):
+                    if testRunArtifact:= json_data[test_start_idx].get("testRunArtifact", {}):
+                        if testRunStart:= testRunArtifact.get("testRunStart", {}): 
+                            test_end_idx = test_start_idx
+                            while test_end_idx < len(json_data):
+                                if testStepArtifact:= json_data[test_end_idx].get("testStepArtifact", {}):
+                                    if testStepStart:= testStepArtifact.get("testStepStart", {}): 
+                                        check_data = re.findall(r"<(\w+.*)>", testStepStart["name"])  
+                                        if check_data:
+                                            file_name = check_data[0]
+                                            
+                                if testRunArtifactInside:= json_data[test_end_idx].get("testRunArtifact", {}): 
+                                    if testRunEnd:=testRunArtifactInside.get("testRunEnd", {}):
+                                        test_result = testRunEnd["result"]
+                                        break
+                                test_end_idx += 1
+                            test_no += 1
+                            test_data.append(("{}_{}_{}".format(test_no, test_result, file_name), json_data[test_start_idx:test_end_idx + 1]))
+                            test_start_idx = test_end_idx
+                    test_start_idx += 1
+                output_path = os.path.join(self.output_dir, "OCPTV_Processed_TestCase_Logs")
+                if not os.path.exists(output_path):
+                    os.makedirs(output_path)
+                for file_name, data in test_data:
+                    output_file = os.path.join(output_path, "{}.json".format(file_name))
+                    with open(output_file, "w") as f:
+                        f.write(json.dumps(data, indent=4))
+        except Exception as e:
+            exception_details = traceback.format_exc()
+            self.active_run.add_log(
+                severity=LogSeverity.FATAL, message=exception_details
+            )
+            # status_code, exit_string = 1,  f"Test failed due to execption: {repr(e)}"
+                    
 
 class LoggingWriter(Writer):
     """
@@ -947,7 +1000,7 @@ class LoggingWriter(Writer):
         # Set the level for this logger. This means that unless specified otherwise, all messages
         # with level INFO and above will be logged.
         # If you want to log all messages you can use logging.DEBUG
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(logging.DEBUG)
 
         # Create formatters and add them to the handlers
         # formatter = logging.Formatter("%(message)s")
@@ -955,17 +1008,18 @@ class LoggingWriter(Writer):
         # Create a file handler that logs messages to a file
         dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
         file_name_tmp = "/{}_{}.{}".format(testrun_name, dt, extension_name)
+        self.__log_file = output_dir + file_name_tmp
         self.file_handler = logging.FileHandler(output_dir + file_name_tmp)
         self.file_handler.setLevel(logging.INFO)
-        self.file_handler.setFormatter(JsonFormatter())
+        self.file_handler.setFormatter(FileJsonFormatter())
         self.logger.addHandler(self.file_handler)
 
-        if console_log:
+        # if console_log:
             # Create a console handler that logs messages to the console
-            self.console_handler = logging.StreamHandler()
-            self.console_handler.setLevel(logging.INFO)
-            self.console_handler.setFormatter(JsonFormatter())
-            self.logger.addHandler(self.console_handler)
+        self.console_handler = logging.StreamHandler()
+        self.console_handler.setLevel(logging.DEBUG)
+        self.console_handler.setFormatter(StreamJsonFormatter())
+        self.logger.addHandler(self.console_handler)
 
     def write(self, buffer: str):
         """
@@ -978,8 +1032,22 @@ class LoggingWriter(Writer):
         if not self.debug:
             if '"severity": "debug"' in buffer.lower():
                 return
-
-        self.logger.info(buffer)
+    
+        if '"severity": "info"' in buffer.lower():
+            self.logger.info(buffer)
+        elif '"severity": "error"' in buffer.lower():
+            self.logger.error(buffer)
+        elif '"severity": "warning"' in buffer.lower():
+            self.logger.warning(buffer)
+        elif '"severity": "fatal"' in buffer.lower():
+            self.logger.error(buffer)
+        elif '"severity": "debug"' in buffer.lower():
+            self.logger.debug(buffer)
+        else:
+            self.logger.info(buffer)
+     
+     
+     
         
     def log(self, msg: str):
         """
@@ -996,8 +1064,13 @@ class LoggingWriter(Writer):
 
         self.write(json.dumps(json_msg))
 
+    @property
+    def log_file(self):
+        return self.__log_file
+    
+        
 
-class JsonFormatter(logging.Formatter):
+class FileJsonFormatter(logging.Formatter):
     def format(self, record):
         """
         :Description:                       Format method for formatting data into json output
@@ -1008,5 +1081,42 @@ class JsonFormatter(logging.Formatter):
         :rtype                              JSON Dict
         """
         msg = json.loads(getattr(record, "msg", None))
-        f_msg = json.dumps(msg, indent=4) 
-        return f_msg + ","
+        log_msg = super().format(record)
+        log_msg = json.dumps(msg, indent=4) 
+        if record.levelno == logging.ERROR:
+            return f"{log_msg},"
+        elif record.levelno == logging.WARNING:
+            return f"{log_msg},"
+        elif record.levelno == logging.INFO:
+            return f"{log_msg},"
+        elif record.levelno == logging.DEBUG:
+            return f"{log_msg},"
+
+
+
+class StreamJsonFormatter(logging.Formatter):
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    RESET = '\033[0m'
+    def format(self, record):
+        """
+        :Description:                       Format method for formatting data into json output
+
+        :param JSON Dict record:		    Dict object for Log JSON Data
+
+        :returns:                           JSON object with indent 4
+        :rtype                              JSON Dict
+        """
+        msg = json.loads(getattr(record, "msg", None))
+        log_msg = super().format(record)
+        log_msg = json.dumps(msg, indent=4) 
+        if record.levelno == logging.ERROR:
+            return f"{StreamJsonFormatter.RED}{log_msg}{StreamJsonFormatter.RESET},"
+        elif record.levelno == logging.WARNING:
+            return f"{StreamJsonFormatter.YELLOW}{log_msg}{StreamJsonFormatter.RESET},"
+        elif record.levelno == logging.INFO:
+            return f"{StreamJsonFormatter.GREEN}{log_msg}{StreamJsonFormatter.RESET},"
+        elif record.levelno == logging.DEBUG:
+            return f"{StreamJsonFormatter.BLUE}{log_msg}{StreamJsonFormatter.RESET},"

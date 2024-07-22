@@ -40,7 +40,7 @@ class CTAMTestSingleDeviceUpdate(TestCase):
     test_name: str = "CTAM Test Single Device Update"
     test_id: str = "F4"
     score_weight: int = 10
-    tags: List[str] = ["L3"]
+    tags: List[str] = ["L3", "Single_Device"]
     compliance_level: str = "L3"
 
     def __init__(self, group: FWUpdateTestGroupNMinus1):

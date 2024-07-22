@@ -427,6 +427,8 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             if count == 0:
                 count = len(device_list)
             device_list_new = [device for device in device_list if not device in excluded_targets]
+            if not device_list_new:
+                return True
             RandomListOfDevices = random.choices(device_list_new, k=random.randint(1, count))
             self.test_run().add_log(LogSeverity.INFO, str(RandomListOfDevices))
             if self.ctam_pushtargets(RandomListOfDevices):
@@ -473,7 +475,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     for element in JSONData["Members"]:
                         if str(element["Updateable"]) == "True":
                             corrupt_component_id = element["SoftwareId"]
-                    
+                            break
             msg = f"{MyName} returned component ID to be corrupted: {corrupt_component_id}"
             self.test_run().add_log(LogSeverity.DEBUG, msg)
         
@@ -582,7 +584,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
                 jsonhuntall(PLDMPkgJson,
                         "ComponentIdentifier",
-                        str(int(software_id, 16)),
+                        str(hex(int(software_id, 16))),
                         "ComponentVersionString",
                         fw_versions
                     )
@@ -604,6 +606,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     for related_item in ComponentRelatedItemList:
                         related_item_uri = related_item.get("@odata.id")
                         if related_item_uri:
+                            related_item_uri = "{}{}".format(self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU"), related_item_uri)
                             response = self.dut().run_redfish_command(uri=related_item_uri)
                             data = response.dict
                             component_sku = data.get("SKU")
