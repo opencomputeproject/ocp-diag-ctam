@@ -70,7 +70,7 @@ class CTAMTestSingleDeviceUpdate(TestCase):
         updated_devices = []
         failed_devices = []
 
-        if component_list := self.group.fw_update_ifc.ctam_build_updatable_device_list():
+        if component_list := self.group.fw_update_ifc.ctam_get_updateable_devices_in_bundle():
             for device in component_list:
                 result = True
                 step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1_{device}")  # type: ignore
@@ -92,7 +92,7 @@ class CTAMTestSingleDeviceUpdate(TestCase):
 
                 step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3_{device}")  # type: ignore
                 with step3.scope():
-                    status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1)
+                    status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, specific_targets=[device])
                     if status:
                         step3.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
                     else:
@@ -141,6 +141,7 @@ class CTAMTestSingleDeviceUpdate(TestCase):
                 if len(failed_devices) !=0:
                     result = False
         else:
+            step6 = self.test_run().add_step(f"{self.__class__.__name__} run(), step6")
             step6.add_log(LogSeverity.INFO, f"{self.test_id} : No updatable devices, exiting")
             result = False
 
