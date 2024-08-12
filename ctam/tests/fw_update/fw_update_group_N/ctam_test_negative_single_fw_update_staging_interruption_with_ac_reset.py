@@ -91,7 +91,10 @@ class CTAMTestSingleFWUpdateStagingInterruptionWithACReset(TestCase):
         if result:
             step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
             with step3.scope():
-                status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, wait_for_stage_completion=False, image_type="backup")
+                status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(
+                    partial=1, wait_for_stage_completion=False, image_type="backup",
+                    specific_targets=ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{specific_targets}", component_type="GPU"))
+                    )
                 if status:
                     step3.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staging Initiated")
                 else:

@@ -76,6 +76,41 @@ class FunctionalIfc:
         """
         pass
     
+    def ctam_get_component_to_be_corrupted(self, VendorProvidedBundle=True):
+        """
+        :Description:                   It will check the package_info.json for CorruptComponentIdentifier.
+                                        If both corrupt package and CorruptComponentIdentifier are not provided, 
+                                        it'll find the first updatable element from firmware inventory.
+
+        :param VendorProvidedBundle:    Boolean value indicating if the vendor is required to provide a corrupt bundle.
+                                        True by default.
+        
+        :returns:		                SoftwareID of the component to be corrupted (in hex format)
+        :rtype:                         str. None in case of failure
+        """
+        MyName = __name__ + "." + self.ctam_get_component_to_be_corrupted.__qualname__    
+        vendor_provided_corrupt_pkg = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Package", "")
+        if VendorProvidedBundle and vendor_provided_corrupt_pkg == "":
+            msg = "Missing corrupt bundle name in package info file."
+            self.test_run().add_log(LogSeverity.ERROR, msg)
+            corrupt_component_id = None
+            
+        else:
+            corrupt_component_id = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("CorruptComponentIdentifier", "")
+            if corrupt_component_id == "":
+                if VendorProvidedBundle:
+                    msg = "CorruptComponentIdentifier must be provided for bundle {package_name}."
+                    self.test_run().add_log(LogSeverity.ERROR, msg)
+                    corrupt_component_id = None
+                else:
+                    JSONData = self.ctam_getfi(expanded=1)
+                    for element in JSONData["Members"]:
+                        if str(element["Updateable"]) == "True":
+                            corrupt_component_id = element["SoftwareId"]
+            msg = f"{MyName} returned component ID to be corrupted: {corrupt_component_id}"
+            self.test_run().add_log(LogSeverity.DEBUG, msg)
+        return corrupt_component_id
+
 
     def get_JSONFWFilePayload_file(self, image_type="default", corrupted_component_id=None):
         """
@@ -278,7 +313,6 @@ class FunctionalIfc:
                 self.dut().package_config.get("GPU_FW_IMAGE_OLD", {}).get("Path", ""),
                 self.dut().package_config.get("GPU_FW_IMAGE_OLD", {}).get("JSON", ""),
             )
-            
         elif image_type == "corrupt_component":
             pldm_json_file = os.path.join(
                 self.dut().cwd,
@@ -503,7 +537,6 @@ class FunctionalIfc:
         ctam_getus_uri = self.dut().uri_builder.format_uri(
             redfish_str="{BaseURI}{GPUCheckURI}", component_type="GPU"
         )
-
         response = self.dut().run_redfish_command(uri=ctam_getus_uri)
         JSONData = response.dict
         msg = "GPU Reachable info : {}".format(JSONData)
@@ -528,7 +561,7 @@ class FunctionalIfc:
                 msg = f"PowerOnWaitTime is greater than FwActivationTimeMax as per the json config file. Setting FwActivationTimeMax = PowerOnWaitTime"
                 self.test_run().add_log(LogSeverity.WARNING, msg)
                 FwActivationTimeMax = self.dut().dut_config["PowerOnWaitTime"]["value"]
-        
+
         self.NodeACReset()  # NodeACReset declaration pending
         
         if gpu_check:

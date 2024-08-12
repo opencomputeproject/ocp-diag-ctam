@@ -24,8 +24,8 @@
         "GPUPushUriTargetsSuccessMessage": "",
         "HttpPushUriTargets": "",
         "specific_targets": "",
-		"UnstructuredHttpPush": false,
-        "MultiPartFormData": true,
+		"MultiPartFormData": false,
+        "MultiPartForceUpdate": false,
         "TaskServiceURI": "/TaskService/Tasks/"
     },
     "BMC": {

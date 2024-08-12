@@ -69,7 +69,7 @@ class CTAMTestNegativeSingleDeviceUpdateWithIllegalTargets(TestCase):
         """
         result = True
 
-        component_list = self.group.fw_update_ifc.ctam_build_updatable_device_list(illegal=1)
+        component_list = self.group.fw_update_ifc.ctam_get_updateable_devices_in_bundle(illegal=1)
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
             if self.group.fw_update_ifc.ctam_selectpartiallist(
@@ -96,7 +96,8 @@ class CTAMTestNegativeSingleDeviceUpdateWithIllegalTargets(TestCase):
         if result:
             step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
             with step3.scope():
-                status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1)
+                status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(
+                    partial=1, specific_targets=component_list)
                 if status:
                     step3.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
                 else:

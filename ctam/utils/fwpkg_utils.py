@@ -103,9 +103,8 @@ class PLDMFwpkg:
         pldm_parser = PLDMUnpack(corrupted_package_path)
         if result := pldm_parser.parse_pldm_package():
             result = pldm_parser.corrupt_component_image_in_pkg(component_id, metadata_size)
-            
         if not result:
-            print(f"Error in corrupting the package.")
+            print(f"Error in corrupting the package..")
             # delete the package
             os.remove(corrupted_package_path)
             corrupted_package_path = None

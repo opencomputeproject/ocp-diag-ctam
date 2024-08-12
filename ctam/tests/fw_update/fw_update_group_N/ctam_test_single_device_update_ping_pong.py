@@ -99,7 +99,8 @@ class CTAMTestSingleDeviceUpdatePingPong(TestCase):
             if result:
                 step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3_{i}")  # type: ignore
                 with step3.scope():
-                    status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type=image_t)
+                    status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(
+                        partial=1, image_type=image_t, specific_targets=self.specific_targets)
                     if status:
                         step3.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
                     else:

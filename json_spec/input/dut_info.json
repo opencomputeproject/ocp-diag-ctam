@@ -73,6 +73,11 @@
       "description": "Wait time (in seconds) for runtime execution delay",
       "type": "int",
       "value": 300
+    },
+    "SanitizeLog":{
+      "description": "Sanitize log file by removing any sensitive details (i.e. IP and credentials)",
+      "type": "bool",
+      "value": false
     }
   },
   "required": [

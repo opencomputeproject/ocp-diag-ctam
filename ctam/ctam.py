@@ -74,7 +74,6 @@ def parse_args():
         help="Path to workspace directory that contains test run files",
     )
 
-
     parser.add_argument(
         "-v",
         "--version",
