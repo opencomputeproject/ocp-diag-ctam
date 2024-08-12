@@ -349,8 +349,10 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         response = self.dut().run_redfish_command(uri=uri, mode="GET")
         if 'MultipartHttpPushUri' in response.dict:
             return True, response.dict['MultipartHttpPushUri'], True
+        
         elif 'HttpPushUri' in response.dict:
-            return True, response.dict['HttpPushUri'], False
+            # return True, response.dict['HttpPushUri'], False
+            return True, uri, False  #FIXME Once we have product compliance, we will uncomment the above line. 
         return False, "", False
 
     def ctam_pushtargets(self, targets=[], is_multipart_uri=False):
