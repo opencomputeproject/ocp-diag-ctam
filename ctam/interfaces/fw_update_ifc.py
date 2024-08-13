@@ -178,7 +178,6 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         if self.dut().is_debug_mode():
             self.test_run().add_log(LogSeverity.DEBUG, f"URI : {uri}")
             self.test_run().add_log(LogSeverity.DEBUG, f"Targets : {targets}")
-        
         JSONData = self.RedFishFWUpdate(JSONFWFilePayload, uri, targets=targets, is_multipart=is_multipart)
         StagingStartTime = time.time()
 
@@ -347,7 +346,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             redfish_str="{BaseURI}/UpdateService", component_type="GPU"
         )
         response = self.dut().run_redfish_command(uri=uri, mode="GET")
-        if 'MultipartHttpPushUri' in response.dict:
+        if 'MultipartHttpPushUri' in response.dict and self.dut().multipart_push_uri_support:
             return True, response.dict['MultipartHttpPushUri'], True
         
         elif 'HttpPushUri' in response.dict:

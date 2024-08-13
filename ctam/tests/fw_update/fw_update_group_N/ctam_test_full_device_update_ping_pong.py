@@ -70,7 +70,7 @@ class CTAMTestFullDeviceUpdatePingPong(TestCase):
         loops = 2
 
         for i in range(loops):
-            image_t = "default" if i % 2 == 0 else "backup"
+            image_t = "backup" if i % 2 == 0 else "default"
             if result:
                 step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
                 with step1.scope():
@@ -133,14 +133,14 @@ class CTAMTestFullDeviceUpdatePingPong(TestCase):
                         )
                         result = False
 
-            # ensure setting of self.result and self.score prior to calling super().run()
-            self.result = TestResult.PASS if result else TestResult.FAIL
-            if self.result == TestResult.PASS:
-                self.score = self.score_weight
+        # ensure setting of self.result and self.score prior to calling super().run()
+        self.result = TestResult.PASS if result else TestResult.FAIL
+        if self.result == TestResult.PASS:
+            self.score = self.score_weight
 
-            # call super last to log result and score
-            super().run()
-            return self.result
+        # call super last to log result and score
+        super().run()
+        return self.result
 
     def teardown(self):
         """
