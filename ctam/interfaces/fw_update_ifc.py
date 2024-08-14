@@ -417,7 +417,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         else:
             headers = {"Content-Type": "application/octet-stream"}
             body = open(BinPath, "rb").read()
-            response = self.dut().run_request_command(uri=URI, mode="POST", files=body, headers=None)
+            response = self.dut().run_request_command(uri=URI, mode="POST", body=body, headers=headers)
             JSONData = response.json()
         msg = "{0}: RedFish Input: {1} Result: {2}".format(MyName, BinPath, JSONData)
         self.test_run().add_log(LogSeverity.DEBUG, msg)
