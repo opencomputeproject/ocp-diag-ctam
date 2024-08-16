@@ -81,21 +81,25 @@ class CTAMTestInstallSameImageTwoTimes(TestCase):
                     LogSeverity.INFO, f"{self.test_id} : FW Update Not Required"
                 )
 
-        if result:
-            for i in range(times):
-                step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
-                with step2.scope():
-                    status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw()
-                    if status:
-                        step2.add_log(
-                            LogSeverity.INFO, f"{self.test_id} : FW Update Staged"
-                        )
-                    else:
-                        step2.add_log(
-                            LogSeverity.FATAL,
-                            f"{self.test_id} : FW Update Staged Failed",
-                        )
-                        result = False
+        for i in range(times):
+            step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
+            if not result:
+                step2.add_log(
+                        LogSeverity.INFO, f"{self.test_id} : FW Update Staging Failed for {i}"
+                    )
+                break
+            with step2.scope():
+                status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw()
+                if status:
+                    step2.add_log(
+                        LogSeverity.INFO, f"{self.test_id} : FW Update Staged"
+                    )
+                else:
+                    step2.add_log(
+                        LogSeverity.FATAL,
+                        f"{self.test_id} : FW Update Staged Failed",
+                    )
+                    result = False
 
         if result:
             step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore

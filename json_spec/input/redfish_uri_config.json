@@ -26,6 +26,7 @@
         "specific_targets": "",
 		"MultiPartFormData": false,
         "MultiPartForceUpdate": false,
+        "MultiPartPushUriSupport": false,
         "TaskServiceURI": "/TaskService/Tasks/"
     },
     "BMC": {
