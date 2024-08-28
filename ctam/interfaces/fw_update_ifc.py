@@ -111,37 +111,44 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         status_message = ""
         # if all component is update not needed then return update not needed. If any one component is updatable return updatable
         self.ctam_get_fw_version(PostInstall=0)
+
+        # Getting all Component Ids with Version from PLDM Bundle JSON file
+        BundleComponentIdsAndVersions = self.PLDMComponentVersions(image_type=image_type)
         for element in self.PreInstallDetails:
-            # Check ONLY the ones which are part of HttpPushURITargets
+        #     # Check ONLY the ones which are part of HttpPushURITargets
             if (
                 self.included_targets == []
                 or element["@odata.id"] in self.included_targets
             ):
-                msg = f"Pre Install Details: {element['Id']} : {element['SoftwareId']} : {element['Version']} : "
+                msg = f"Pre Install Details: {element['Id']} : {element['SoftwareId']} : {element.get('Version', 'NA')} : "
                 if str(element["Updateable"]) == "True":
-                    Package_Version = self.PLDMComponentVersions(image_type=image_type).get(element["SoftwareId"])
-                    if Package_Version is None:
-                        msg += "Not in the PLDM bundle"
-                    
-                    elif element["Version"] != Package_Version and (
-                        self.included_targets == []
-                        or element["@odata.id"] in self.included_targets
-                    ):
-                        VersionsDifferent = False
-                        msg += f"Update Capable to {Package_Version}"
 
+                    SoftwareId = str(hex(int(element["SoftwareId"], 16)))
+                    if SoftwareId in BundleComponentIdsAndVersions.keys():
+
+                        Package_Version = self.PLDMComponentVersions(image_type=image_type).get(SoftwareId)
+                        if not Package_Version:
+                            msg += "Not in the PLDM bundle"
+                        
+                        elif element["Version"] not in Package_Version and (
+                            self.included_targets == []
+                            or element["@odata.id"] in self.included_targets
+                        ):
+                            VersionsDifferent = False
+                            msg += f"Update Capable to {Package_Version}"
+
+                        else:
+                            msg += "Update Not Needed."
                     else:
-                        msg += "Update Not Needed."
+                        msg += "SoftwareId not found in PLDM JSON."
+                    self.test_run().add_log(LogSeverity.DEBUG, msg)
+                        
                 else:
-                    msg += "Not Updateable."
-                self.test_run().add_log(LogSeverity.DEBUG, msg)
-                    
-            else:
-                # Not in HttpPushURITargets
-                pass
-            
+                    # Not in HttpPushURITargets
+                    pass
         return VersionsDifferent, status_message
-
+    
+            
     def ctam_stage_fw(
         self, partial=0, image_type="default", wait_for_stage_completion=True,
         corrupted_component_id=None, corrupted_component_list=[],
@@ -170,7 +177,15 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             return False, "", ""
         if self.dut().is_debug_mode():
             print(JSONFWFilePayload)
-        status, uri, is_multipart = self.get_update_uri()
+        update_uri = self.dut().redfish_uri_config.get("GPU", {}).get("UpdateURI", "")
+        if update_uri:
+            uri = self.dut().uri_builder.format_uri(
+                redfish_str="{BaseURI}{UpdateURI}", component_type="GPU"
+            )
+            status = True
+            is_multipart = self.dut().redfish_uri_config.get("GPU", {}).get("IsMultiPart", False)
+        else:
+            status, uri, is_multipart = self.get_update_uri()
         if not status:
             self.test_run().add_log(LogSeverity.DEBUG, f"Unable to find update uri from UpdateService resource!!!")
             return False, "", ""
@@ -264,7 +279,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 StageFWOOB_Status = False
         return StageFWOOB_Status, stage_msg, FwUpdTaskID
 
-    def ctam_fw_update_verify(self, image_type="default", corrupted_component_id=None):
+    def ctam_fw_update_verify(self, image_type="default", corrupted_component_id=None, specific_targets=[]):
         """
         :Description:				    Firmware Update verification
         :param image_type:			    Firmware image type
@@ -275,13 +290,14 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         """
         MyName = __name__ + "." + self.ctam_fw_update_verify.__qualname__
         Update_Verified = True
-
+        update_successful = []
+        update_failed = []
         self.ctam_get_fw_version(PostInstall=1)
         msg = json.dumps(self.PostInstallDetails, indent=4)
         self.test_run().add_log(LogSeverity.DEBUG, msg)
-        
-        # Check if all components are reporting
-        Update_Verified = self.ctam_compare_active_components_count()
+        if self.dut().dut_config.get("CompareFirmwareInventoryCount",{}).get("value", True):
+            # Check if all components are reporting
+            Update_Verified = self.ctam_compare_active_components_count()
 
         # Verify version of components currently reporting in FW inventory
         for element in self.PostInstallDetails:
@@ -299,18 +315,22 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     ExpectedVersion
                 )
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
+            
+            elif specific_targets and element["Id"] not in specific_targets:
+                ExpectedVersion = self.PreInstallVersionDetails[element["Id"]]
                 
             else:
+                SoftwareId = str(hex(int(element["SoftwareId"], 16)))
                 # FW version should be updated per PLDM bundle
-                ExpectedVersion = self.PLDMComponentVersions(image_type=image_type).get(element["SoftwareId"])
-            
-            msg = f"Post Install Details: {element['Id']} : {element['SoftwareId']} : {element['Version']} : "
-            if ExpectedVersion is None:
+                ExpectedVersion = self.PLDMComponentVersions(image_type=image_type).get(SoftwareId, '')
+            msg = f"Post Install Details: {element['Id']} : {element['SoftwareId']} : {element.get('Version', 'NA')} : "
+            if not ExpectedVersion:
                 # Either not present in PLDM bundle or not present in PreInstallVersionDetails
                 msg += "Not in the PLDM bundle"
             
-            elif element["Version"] != ExpectedVersion:
+            elif element.get("Version", '') not in ExpectedVersion:
                 # Both positive and negative test case
+                update_failed.append(element['SoftwareId'])
                 Update_Verified = False
                 msg += f"Update Failed : Expected {ExpectedVersion}"
 
@@ -320,9 +340,11 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             
             else:
                 msg += "Update Successful"
+                update_successful.append(element['SoftwareId'])
                 
             self.test_run().add_log(LogSeverity.DEBUG, msg)
-
+        msg = f"Updated Components count - {len(update_successful)} and Failed Components count - {len(update_failed)}"
+        self.test_run().add_log(LogSeverity.DEBUG, msg)
         return Update_Verified
     
     def get_target_inventorys(self, targets):
@@ -341,7 +363,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         :returns:				        whether uri was found, update uri and if it supports multipart push
         :rtype: 					    Bool, Str, Bool
         """
-
+        
         uri = self.dut().uri_builder.format_uri(
             redfish_str="{BaseURI}/UpdateService", component_type="GPU"
         )
@@ -350,8 +372,8 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             return True, response.dict['MultipartHttpPushUri'], True
         
         elif 'HttpPushUri' in response.dict:
-            # return True, response.dict['HttpPushUri'], False
-            return True, uri, False  #FIXME Once we have product compliance, we will uncomment the above line. 
+            return True, response.dict['HttpPushUri'], False
+            # return True, uri, False  #FIXME Once we have product compliance, we will uncomment the above line. 
         return False, "", False
 
     def ctam_pushtargets(self, targets=[], is_multipart_uri=False):
@@ -588,7 +610,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             AllComponentsActive = True
             
         return AllComponentsActive
-    
+
     def ctam_get_version_from_bundle(self, image_type):
         """
         :Description:           It will check the PLDM bundle json and find FW version
@@ -599,72 +621,17 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         :returns:				ComponentVersions
         :rtype:                 string
         """
-        ComponentVersions = {}
         
-        # First, get list of SoftwareIds of all the updatable components
-        FWInventory = self.ctam_getfi(expanded=1)
-        Updateable_SoftwareIds = []
-        jsonhuntall(FWInventory, "Updateable", True, "SoftwareId", Updateable_SoftwareIds)
-        Updateable_SoftwareIds = list(set(Updateable_SoftwareIds)) # Remove duplicates
-        Updateable_SoftwareIds[:] = (SwId for SwId in Updateable_SoftwareIds if SwId != "") # FIXME: Temporary: Remove empty Software IDs
+        ComponentIdsAndVersions = {}
 
         # Then get the PLDM bundle json
         PLDMPkgJson_file = self.get_PLDMPkgJson_file(image_type=image_type)
-        # check again above code
-        if not PLDMPkgJson_file or not os.path.isfile(PLDMPkgJson_file):
-            msg = "PLDMPkgJson file not found."
-            self.test_run().add_log(LogSeverity.DEBUG, msg)   
-            raise Exception(f"PLDMPkgJson file not found at path {PLDMPkgJson_file}")
-        
-        with open(PLDMPkgJson_file, "r") as f:
-            PLDMPkgJson = json.load(f)
-        # Now find the FW version for the software IDs in the PLDM bundle
-        
-        for software_id in Updateable_SoftwareIds:
-            fw_versions = []
 
-            jsonhuntall(PLDMPkgJson,
-                    "ComponentIdentifier",
-                    int(software_id, 16),
-                    "ComponentVersionString",
-                    fw_versions
-                )
-            if not len(fw_versions):
-                # Component is not present in PLDM bundle
-                ComponentVersions[software_id] = None
-                continue
-            if len(fw_versions) == 1:
-                # Only one image is present for this component in the PLDM bundle
-                ComponentVersions[software_id] = fw_versions[0]
-                continue
-            # There are multiple images for the same component.
-            # Additional SKU mapping is needed to find the correct version
-            # FIXME: This implementation is deeply tied to format of the PLDM bundle json. Can we utilize PLDMUnpack class?
-            ComponentRelatedItemList = jsonhunt(FWInventory,
-                                        "SoftwareId",
-                                        software_id,
-                                        "RelatedItem",
-                                    )
-            for related_item in ComponentRelatedItemList:
-                related_item_uri = related_item.get("@odata.id")
-                if related_item_uri:
-                    response = self.dut().run_redfish_command(uri=related_item_uri)
-                    data = response.dict
-                    component_sku = data.get("SKU")
-                    if component_sku:
-                        ApplicableComponents = []
-                        for DeviceRecord in PLDMPkgJson.get("FirmwareDeviceIdentificationArea", {}).get("FirmwareDeviceIDRecords", {}):
-                            for descriptor in DeviceRecord["RecordDescriptors"]:
-                                if "SKU" in descriptor.get("VendorDefinedDescriptorTitleString", "")\
-                                    and int(descriptor.get("VendorDefinedDescriptorData"), 16) == int(component_sku, 16):
-                                        ApplicableComponents = DeviceRecord["ApplicableComponents"]
-                                        break
-                            if ApplicableComponents:
-                                break
-                        for comp_index in ApplicableComponents:
-                            comp_info =  PLDMPkgJson.get("ComponentImageInformationArea", {}).get("ComponentImageInformation", [])[comp_index]
-                            if comp_info["ComponentIdentifier"] == str(hex(int(software_id, 16))):
-                                ComponentVersions[software_id] = comp_info["ComponentVersionString"]
-                                break
-            
-        return ComponentVersions
+        # check again above code
+        if PLDMPkgJson_file and os.path.isfile(PLDMPkgJson_file):
+            with open(PLDMPkgJson_file, "r") as f:
+                PLDMPkgJson = json.load(f)
+
+        #Using jsonmultivaluehunt to get the multiple values by passing two json keys
+        jsonmultivaluehunt(PLDMPkgJson, "ComponentIdentifier", "ComponentVersionString", ComponentIdsAndVersions)
+        return ComponentIdsAndVersions

@@ -67,16 +67,26 @@ class CTAMTestNegativeLargeImageUpdate(TestCase):
         actual test verification
         """
         result = True
+
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
+            if not self.group.fw_update_ifc.ctam_fw_update_precheck():
+                step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
+            else:
+                step1.add_log(
+                    LogSeverity.INFO, f"{self.test_id} : FW Update Not Required"
+                )
+
+        step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
+        with step2.scope():
             status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="large")
             if status:
-                step1.add_log(
+                step2.add_log(
                     LogSeverity.INFO,
                     f"{self.test_id} : FW Update Stage Initiation Failed as Expected",
                 )
             else:
-                step1.add_log(
+                step2.add_log(
                     LogSeverity.ERROR,
                     f"{self.test_id} : FW Update Staging Initiated - Unexpected",
                 )

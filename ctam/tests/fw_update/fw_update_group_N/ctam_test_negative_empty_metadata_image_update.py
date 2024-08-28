@@ -68,33 +68,42 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
         actual test verification
         """
         result = True
-        
+
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
+            if not self.group.fw_update_ifc.ctam_fw_update_precheck():
+                step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
+            else:
+                step1.add_log(
+                    LogSeverity.INFO, f"{self.test_id} : FW Update Not Required"
+                )
+        
+        step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
+        with step2.scope():
             corrupted_component_id  = self.group.fw_update_ifc.ctam_get_component_to_be_corrupted(VendorProvidedBundle=False)
             corrupted_component_list = self.group.fw_update_ifc.ctam_get_component_list(component_id=corrupted_component_id)
-            step1.add_log(LogSeverity.INFO, f"{self.test_id} : Selected component to corrupt -> ID: {corrupted_component_id} List: {corrupted_component_list}")
+            step2.add_log(LogSeverity.INFO, f"{self.test_id} : Selected component to corrupt -> ID: {corrupted_component_id} List: {corrupted_component_list}")
         
-        step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2_{corrupted_component_list[0]}")  # type: ignore
-        with step2.scope():
-            if self.group.fw_update_ifc.ctam_selectpartiallist(count=1, specific_targets=[corrupted_component_list[0]]):
-                step2.add_log(LogSeverity.INFO, f"{self.test_id} : Single Device Selected")
-            else:
-                step2.add_log(LogSeverity.ERROR, f"{self.test_id} : Single Device Selection Failed")
-                result = False
-
         step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3_{corrupted_component_list[0]}")  # type: ignore
         with step3.scope():
+            if self.group.fw_update_ifc.ctam_selectpartiallist(count=1, specific_targets=[corrupted_component_list[0]]):
+                step3.add_log(LogSeverity.INFO, f"{self.test_id} : Single Device Selected")
+            else:
+                step3.add_log(LogSeverity.ERROR, f"{self.test_id} : Single Device Selection Failed")
+                result = False
+
+        step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4_{corrupted_component_list[0]}")  # type: ignore
+        with step4.scope():
             status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="empty_metadata", 
                                                                                  corrupted_component_id=corrupted_component_id,
                                                                                  specific_targets=[corrupted_component_list[0]])
             if status:
-                step3.add_log(
+                step4.add_log(
                     LogSeverity.INFO,
                     f"{self.test_id} : FW Update Stage Initiation Failed as Expected",
                 )
             else:
-                step3.add_log(
+                step4.add_log(
                     LogSeverity.ERROR,
                     f"{self.test_id} : FW Update Staging Initiated - Unexpected",
                 )

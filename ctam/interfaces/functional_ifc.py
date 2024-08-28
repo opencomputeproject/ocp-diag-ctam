@@ -632,35 +632,41 @@ class FunctionalIfc:
         :rtype:                    string
         """
         MyName = __name__ + "." + self.RedfishDownloadDump.__qualname__
-        URL = DumpURI + "/attachment"
-        msg = "Dump Entry URL = {}".format(URL)
-        self.test_run().add_log(LogSeverity.DEBUG, msg)
-        
-        dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        dump_tarball_path = os.path.join( 
-                self.dut().workspace_dir,
-                "{}_dump.tar.xz".format(dt))
-        response =  self.dut().run_redfish_command(uri=URL)
-        try:
-            with open(dump_tarball_path, 'wb') as fd:
-                fd.write(response.read)
-            # Unzip the .tar file
-            import tarfile
-            dump = tarfile.open(dump_tarball_path)
-            DumpPath = os.path.join( 
-                self.dut().workspace_dir, 
-                "{}_dump".format(dt))
-            dump.extractall(DumpPath) # This will create a directory if it's not present already.
-            dump.close()
-            os.remove(dump_tarball_path) # Delete the tarball as it's not needed anymore
-            folder_size = sum(os.path.getsize(os.path.join(dirpath, filename)) for dirpath, dirnames, filenames in os.walk(DumpPath) for filename in filenames)
-            if folder_size > 0:
-                return DumpPath
-            else:
-                print("Downloaded folder size is 0 KB.")
+        check_response = self.dut().run_redfish_command(uri=DumpURI)
+        if check_response.status in range(200, 202):
+            URL = DumpURI + "/attachment"
+            msg = "Dump Entry URL = {}".format(URL)
+            self.test_run().add_log(LogSeverity.DEBUG, msg)
+            
+            dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+            dump_tarball_path = os.path.join( 
+                    self.dut().workspace_dir,
+                    "{}_dump.tar.xz".format(dt))
+            
+            response =  self.dut().run_redfish_command(uri=URL)
+            try:
+                with open(dump_tarball_path, 'wb') as fd:
+                    fd.write(response.read)
+                # Unzip the .tar file
+                import tarfile
+                dump = tarfile.open(dump_tarball_path)
+                DumpPath = os.path.join( 
+                    self.dut().workspace_dir, 
+                    "{}_dump".format(dt))
+                dump.extractall(DumpPath) # This will create a directory if it's not present already.
+                dump.close()
+                os.remove(dump_tarball_path) # Delete the tarball as it's not needed anymore
+                folder_size = sum(os.path.getsize(os.path.join(dirpath, filename)) for dirpath, dirnames, filenames in os.walk(DumpPath) for filename in filenames)
+                if folder_size > 0:
+                    return DumpPath
+                else:
+                    print("Downloaded folder size is 0 KB.")
+                    return None
+            except Exception as e:
+                print(str(e))
                 return None
-        except Exception as e:
-            print(str(e))
+        else:
+            self.test_run().add_log(LogSeverity.FATAL, "No entries found: {}".format(check_response.dict))
             return None
     
     def ctam_monitor_task(self, TaskID=""):
@@ -919,3 +925,18 @@ class FunctionalIfc:
             self.test_run().add_log(LogSeverity.FATAL, "GET request Failed: {} : {}".format(uri, JSONData))
             result = False
         return result
+    
+    def ctam_verify_components_health(self):
+        """
+        :Description:       Get Firmware Inventory details and check health of all components.  
+        :returns:	        bool, List of health issue components
+        """
+        
+        fi_data = self.ctam_getfi(expanded=1)
+    
+        failed_devices = [member.get("Id") for member in fi_data.get("Members", [])
+                     if member.get("Status", {}).get("Health") != "OK" or
+                     member.get("Status", {}).get("State") != "Enabled"]
+        if failed_devices:
+            return False , failed_devices
+        return True, []
