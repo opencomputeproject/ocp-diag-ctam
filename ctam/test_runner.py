@@ -108,7 +108,6 @@ class TestRunner:
         self.package_config = package_info_json_file
         self.redfish_response_messages = {}
         self.single_test_override = single_test_override
-        # self.logs_output_dir = logs_output_dir
         runner_config = self._get_test_runner_config(test_runner_json_file)
 
         with open(dut_info_json_file) as dut_info_json:
@@ -117,8 +116,6 @@ class TestRunner:
         with open(redfish_uri_config_file) as redfish_uri:
             self.redfish_uri_config = json.load(redfish_uri)
 
-        with open(redfish_uri_config_file) as redfish_uri:
-            self.redfish_uri_config = json.load(redfish_uri)
 
         self.net_rc = netrc.netrc(net_rc)
         self.sanitize_logs = self.dut_config.get("properties", {}).get("SanitizeLog", False)
@@ -256,7 +253,7 @@ class TestRunner:
         if not os.path.exists(self.cmd_output_dir):
             os.makedirs(self.cmd_output_dir)
         dut_logger = LoggingWriter(
-            self.cmd_output_dir, self.console_log, "RedfishCommandDetails_"+testrun_name, "json", self.debug_mode,
+            self.cmd_output_dir, self.console_log, testrun_name, "json", self.debug_mode,
             desanitize_log=self.sanitize_logs, words_to_skip=self.words_to_skip
         )
         test_info_logger = LoggingWriter(
@@ -348,6 +345,7 @@ class TestRunner:
         """
         try:
             status_code = 0
+            self.create_json_configuration()
             if self.progress_bar:
                 progress_thread = threading.Thread(target=self.display_progress_bar)
                 progress_thread.daemon = True
@@ -524,7 +522,7 @@ class TestRunner:
                     test_case_step.start()
                     test_instance.setup()
                     self.comp_tool_dut.current_test_name = test_instance.test_name
-                    file_name = "RedfishCommandDetails_{}_{}".format(test_instance.test_id,
+                    file_name = "{}_{}".format(test_instance.test_id,
                                                                         test_instance.test_name)
                     logger = LoggingWriter(
                         self.cmd_output_dir, self.console_log, file_name, "json", self.debug_mode,
@@ -631,8 +629,7 @@ class TestRunner:
             if self.comp_tool_dut:
                 self.comp_tool_dut.clean_up()
             return status_code, exit_string
-            
-
+    
     def update_weighted_data(self, test_instance):
         c_level = test_instance.compliance_level
         w_score = self.weighted_scores.get(test_instance.compliance_level, 10)
@@ -908,7 +905,103 @@ class TestRunner:
             f.write("\n" + str(dt))
         print(dt)
 
+    def create_json_configuration(self):
+        try:
+            # Create 'Configuration' folder inside the CTAM_LOGS_date_time directory if it doesn't exist
+            config_folder_path = os.path.join(self.output_dir, "Configuration")
+            if not os.path.exists(config_folder_path):
+                os.makedirs(config_folder_path)
+            
+            # Dictionary to store data for the JSON output
+            json_data = {}
 
+            for file_name in os.listdir(self.workspace_dir):
+                file_path = os.path.join(self.workspace_dir, file_name)
+                
+                if os.path.isfile(file_path):
+                    if file_name == '.netrc':
+                        with open(file_path, 'r') as file:
+                            lines = file.readlines()
+                        
+                        netrc_data = {}
+                        current_machine = None
+                        
+                        for line in lines:
+                            line = line.strip()
+                            if line.startswith('machine'):
+                                current_machine = line.split(' ')[1]
+                                netrc_data[current_machine] = {}
+                            elif line.startswith('login'):
+                                if current_machine:
+                                    netrc_data[current_machine]['login'] = line.split(' ')[1]
+                            elif line.startswith('password'):
+                                if current_machine:
+                                    netrc_data[current_machine]['password'] = line.split(' ')[1]
+                        
+                        json_data['NETRC'] = netrc_data
+
+                    elif file_name.endswith('.json'):
+                        with open(file_path, 'r') as file:
+                            data = json.load(file)
+
+                        section_name = file_name.split('.')[0].upper().replace('_', ' ')
+                        
+                        if file_name == 'dut_info.json':
+                            section_name = "DUT INFO"
+                            json_data[section_name] = {}
+                            for key, value in data.get('properties', {}).items():
+                                if isinstance(value, dict) and 'value' in value:
+                                    json_data[section_name][key] = value['value']
+                                elif not isinstance(value, dict):
+                                    json_data[section_name][key] = value
+
+                        elif file_name == 'package_info.json':
+                            section_name = "PACKAGE INFO"
+                            json_data[section_name] = {}
+                            for key, value in data.items():
+                                json_data[section_name][key] = value
+
+                        elif file_name == 'redfish_uri_config.json':
+                            section_name = "REDFISH URI CONFIG"
+                            json_data[section_name] = {}
+                            for key, value in data.items():
+                                if isinstance(value, dict):
+                                    json_data[section_name][key] = {k: (json.dumps(v) if isinstance(v, (list, dict)) and v not in (None, '', {}, []) else str(v)) for k, v in value.items() if v not in (None, '', {}, [])}
+                                elif value not in (None, '', {}, []):
+                                    json_data[section_name][key] = str(value)
+
+                        elif file_name == 'redfish_response_messages.json':
+                            section_name = "REDFISH RESPONSE MESSAGES"
+                            json_data[section_name] = {}
+                            for key, value in data.items():
+                                if value:
+                                    json_data[section_name][key] = value
+
+                        elif file_name == 'test_runner.json':
+                            section_name = "TEST RUNNER"
+                            json_data[section_name] = {}
+                            exclude_keys = ["$schema", "$id", "title", "description"]
+                            for key, value in data.items():
+                                if key not in exclude_keys:
+                                    # Skip keys with empty values
+                                    if value not in (None, '', [], {}):
+                                        if isinstance(value, list):
+                                            # Convert list to a single line (comma-separated)
+                                            json_data[section_name][key] = ', '.join(str(v) for v in value if v)
+                                        elif isinstance(value, dict):
+                                            for sub_key, sub_value in value.items():
+                                                json_data[section_name][f"{key}_{sub_key}"] = sub_value
+                                        else:
+                                            json_data[section_name][key] = value
+            
+            json_file_path = os.path.join(config_folder_path, "data.json")
+            
+            with open(json_file_path, 'w') as jsonfile:
+                json.dump(json_data, jsonfile,indent=4)
+
+        except Exception as e:
+            return f"Failed to create Configuration folder or store files: {e}"
+    
     def display_progress_bar(self):
         """
         shows a real-time progress bar in the console displaying the percentage of test cases completed.

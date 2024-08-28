@@ -119,7 +119,7 @@ class CTAMTestSingleDeviceUpdatePingPong(TestCase):
             if result:
                 step5 = self.test_run().add_step(f"{self.__class__.__name__} run(), step5_{i}")
                 with step5.scope():
-                    if self.group.fw_update_ifc.ctam_fw_update_verify(image_type=image_t):
+                    if self.group.fw_update_ifc.ctam_fw_update_verify(image_type=image_t, specific_targets=self.specific_targets):
                         step5.add_log(LogSeverity.INFO, f"{self.test_id} : Update Verification Completed")
                     else:
                         step5.add_log(LogSeverity.INFO, f"{self.test_id} : Update Verification Failed")
@@ -139,9 +139,12 @@ class CTAMTestSingleDeviceUpdatePingPong(TestCase):
         undo environment state change from setup() above, this function is called even if run() fails or raises exception
         """
         # add custom teardown here
-        step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
+        step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown(), Step1")
         with step1.scope():
-            pass
+            if self.group.fw_update_ifc.ctam_pushtargets():
+                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Push URI Targets Reset")
+            else:
+                step1.add_log(LogSeverity.WARNING, f"{self.test_id} : Push URI Targets Reset - Failed")
 
         # call super teardown last
         super().teardown()

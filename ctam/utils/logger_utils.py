@@ -7,7 +7,9 @@
 import re
 import json
 import logging
-
+import sys
+import atexit
+import io
 from enum import Enum
 from datetime import datetime
 
@@ -249,3 +251,51 @@ class StreamJsonFormatter(logging.Formatter):
             return f"{StreamJsonFormatter.GREEN}{log_msg}{StreamJsonFormatter.RESET},"
         elif record.levelno == logging.DEBUG:
             return f"{StreamJsonFormatter.BLUE}{log_msg}{StreamJsonFormatter.RESET},"
+
+
+
+
+class TeeStream(io.IOBase):
+    def __init__(self, *streams):
+        self.streams = streams
+ 
+    def write(self, message):
+        if not self.check_progress_message(message):
+            for stream in self.streams:
+                stream.write(message)
+                stream.flush()
+        else:
+            self.streams[0].write(message)
+            self.streams[0].flush()
+ 
+    def flush(self):
+        for stream in self.streams:
+            stream.flush()
+            
+    def check_progress_message(self, message):
+        pattern = r"[|\\\/\-#]+\s*\|\s*\d+\s*Elapsed\sTime:\s*\d+:\d+:\d+"
+        matches = re.findall(pattern, message)
+        return True if matches else False
+ 
+class RedirectOutput:
+    def __init__(self, logfile=""):
+        self.logfile = logfile
+        self.original_stdout = sys.stdout
+        self.original_stderr = sys.stderr
+        self.log_file = open(logfile, 'a+', buffering=1)
+        self.stdout_tee = TeeStream(self.original_stdout, self.log_file)
+        self.stderr_tee = TeeStream(self.original_stderr, self.log_file)
+        atexit.register(self.restore)
+    
+    def start(self):
+        sys.stdout = self.stdout_tee
+        sys.stderr = self.stderr_tee
+
+    def temporary_stop(self):
+        sys.stdout = self.original_stdout
+        sys.stderr = self.original_stderr
+        
+    def restore(self):
+        sys.stdout = self.original_stdout
+        sys.stderr = self.original_stderr
+        self.log_file.close()

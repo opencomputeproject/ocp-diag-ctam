@@ -11,6 +11,7 @@ import typing as ty
 import redfish
 import platform
 import json
+import inspect
 import time
 from datetime import datetime
 import requests
@@ -201,10 +202,16 @@ class CompToolDut(Dut):
         try:
             start_time = time.time()
             response = None
+            caller_frame = inspect.currentframe().f_back
+            frame_info = inspect.getframeinfo(caller_frame)
+            filename = frame_info.filename
+            lineno = frame_info.lineno
             msg = {
                     "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
                     "TestName": self.current_test_name,
                     "URI": uri,
+                    "Path": filename,
+                    "LineNo": lineno,
             }
             kwargs = {"path": uri, "headers": headers}
             if timeout is not None:
@@ -237,9 +244,14 @@ class CompToolDut(Dut):
             msg.update({"ResponseTime": "{}".format(formatted_time)})
 
             if response.status in range (200,204) and response.text: # FIXME: Add error handling in case the request fails
+                responseData = None
+                try:
+                    responseData = response.dict
+                except Exception as e:
+                    responseData = response.text
                 msg.update({
                     "ResponseCode": response.status,
-                    "Response":response.dict, # FIXME: self-test report cannot be converted to dict # FIXED: Throws error in some cases when response.dict is used and the response body is empty
+                    "Response":responseData, # FIXME: self-test report cannot be converted to dict # FIXED: Throws error in some cases when response.dict is used and the response body is empty
                     }) 
             elif response.status in range (200,204):
                 msg.update({
@@ -286,10 +298,16 @@ class CompToolDut(Dut):
         try:
             start_time = time.time()
             response = None
+            caller_frame = inspect.currentframe().f_back
+            frame_info = inspect.getframeinfo(caller_frame)
+            filename = frame_info.filename
+            lineno = frame_info.lineno
             msg = {
                     "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
                     "TestName": self.current_test_name,
                     "URI": uri,
+                    "Path": filename,
+                    "LineNo": lineno,
             }
             url = self.connection_url + uri
             kwargs = {"path": uri, "headers": headers}
