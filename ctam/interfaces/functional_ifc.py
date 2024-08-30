@@ -538,7 +538,11 @@ class FunctionalIfc:
             redfish_str="{BaseURI}{GPUCheckURI}", component_type="GPU"
         )
         response = self.dut().run_redfish_command(uri=ctam_getus_uri)
-        JSONData = response.dict
+        resp_header = response.getheader(name="Content-Type")
+        if resp_header:
+            JSONData = response.dict
+        else:
+            JSONData = response.text
         msg = "GPU Reachable info : {}".format(JSONData)
         self.test_run().add_log(LogSeverity.INFO, msg)
         return JSONData
