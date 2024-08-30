@@ -510,7 +510,10 @@ class TestRunner:
                 )
                 if not valid and not self.single_test_override:
                     msg = f"Test {test_instance.__class__.__name__} skipped due to tags. tags = {test_inc_tags}"
+                    skipped_test = self.active_run.add_step(name=f"<{test_instance.test_id} - {test_instance.test_name}> tttttttttttt")
+                    skipped_test.start()
                     self.active_run.add_log(severity=LogSeverity.INFO, message=msg)
+                    skipped_test.end(status=TestStatus.COMPLETE)
                     continue
                 if self.weighted_scores:
                     self.__compliance_level_score(testcase=test_instance)
