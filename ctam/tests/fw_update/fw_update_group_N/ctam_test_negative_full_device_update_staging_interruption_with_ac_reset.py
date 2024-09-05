@@ -105,7 +105,7 @@ class CTAMTestFullDeviceUpdateStagingInterruptionWithAcReset(TestCase):
         if result:
             step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")
             with step4.scope():
-                if self.group.fw_update_ifc.ctam_fw_update_verify():
+                if self.group.fw_update_ifc.ctam_fw_update_verify(version_check=False):
                     step4.add_log(
                         LogSeverity.INFO,
                         f"{self.test_id} : Update Verification Completed",

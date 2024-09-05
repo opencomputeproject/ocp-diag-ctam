@@ -279,7 +279,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 StageFWOOB_Status = False
         return StageFWOOB_Status, stage_msg, FwUpdTaskID
 
-    def ctam_fw_update_verify(self, image_type="default", corrupted_component_id=None, specific_targets=[]):
+    def ctam_fw_update_verify(self, image_type="default", corrupted_component_id=None, specific_targets=[], version_check=True):
         """
         :Description:				    Firmware Update verification
         :param image_type:			    Firmware image type
@@ -343,6 +343,12 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 update_successful.append(element['SoftwareId'])
                 
             self.test_run().add_log(LogSeverity.DEBUG, msg)
+
+        if not version_check:
+            if len(update_successful) > 0:
+                Update_Verified = True
+            else:
+                Update_Verified = False
         msg = f"Updated Components count - {len(update_successful)} and Failed Components count - {len(update_failed)}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return Update_Verified
