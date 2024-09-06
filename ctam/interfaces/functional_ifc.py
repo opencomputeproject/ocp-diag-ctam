@@ -502,14 +502,14 @@ class FunctionalIfc:
         :Description:        It will Reset the node.
 
         :returns:	         None
-        :rtype:              None
+        :rtype:              Bool
         """
         MyName = __name__ + "." + self.NodeACReset.__qualname__
         power_off_command = self.dut().dut_config.get("PowerOffCommand", {}).get("value", "")
         power_on_command = self.dut().dut_config.get("PowerOnCommand", {}).get("value", "")
         if not power_off_command or not power_on_command:
             self.test_run().add_log(LogSeverity.INFO, "Please provide both power on and power off command in dut config!")
-            return 
+            return False
         # execute power off
         self.test_run().add_log(LogSeverity.INFO, json.dumps(power_off_command, indent=4))
         arguments = shlex.split(power_off_command)
@@ -524,7 +524,7 @@ class FunctionalIfc:
         subprocess.check_output(arguments, cwd=cwd_path)
         time.sleep(self.dut().dut_config.get("PowerOnWaitTime", {}).get("value", 300))
         self.test_run().add_log(LogSeverity.INFO, "Power ON wait time done")
-        return
+        return True
 
     def IsGPUReachable(self):
         """
@@ -555,29 +555,44 @@ class FunctionalIfc:
         MyName = __name__ + "." + self.ctam_activate_ac.__qualname__
         ActivationStatus = False
         
+        FwActivationTimeMax = self.dut().dut_config["FwActivationTimeMax"]["value"]
         if check_time:
-            FwActivationTimeMax = self.dut().dut_config["FwActivationTimeMax"]["value"]
             if self.dut().dut_config["PowerOnWaitTime"]["value"] > FwActivationTimeMax:
                 msg = f"PowerOnWaitTime is greater than FwActivationTimeMax as per the json config file. Setting FwActivationTimeMax = PowerOnWaitTime"
                 self.test_run().add_log(LogSeverity.WARNING, msg)
                 FwActivationTimeMax = self.dut().dut_config["PowerOnWaitTime"]["value"]
 
-        self.NodeACReset()  # NodeACReset declaration pending
+        if not self.NodeACReset():  # NodeACReset declaration pending
+            return ActivationStatus
         
         if gpu_check:
-            ActivationStartTime = time.time() - self.dut().dut_config["PowerOnWaitTime"]["value"] # When the system was reset
+            if (check_time):
+                ActivationStartTime = time.time() - self.dut().dut_config["PowerOnWaitTime"]["value"] # When the system was reset
+            else:
+                ActivationStartTime = time.time()
+
             while "error" in self.IsGPUReachable():  # declaration pending
-                msg = "GPU showing error"
-                self.test_run().add_log(LogSeverity.DEBUG, msg)
-            while (self.IsGPUReachable())["Status"][
-                "State"
-            ] != "Enabled" \
-                    and (not check_time or (check_time and (time.time() - ActivationStartTime) <= FwActivationTimeMax)): # declaration pending
-                msg = "Waiting for GPU to be back up, {}".format(
-                    (self.IsGPUReachable())["Status"]["State"]
-                )
+                if ((time.time() - ActivationStartTime) > FwActivationTimeMax):
+                    msg = "GPU showing error"
+                    self.test_run().add_log(LogSeverity.DEBUG, msg)
+                    return ActivationStatus
+                msg = "Waiting for GPU to be back up"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
                 time.sleep(30)
+
+            if not check_time:
+                ActivationStartTime = time.time()
+
+            while (self.IsGPUReachable()["Status"]["State"] != "Enabled"): # declaration pending
+                if (time.time() - ActivationStartTime) > FwActivationTimeMax:
+                    msg = "GPU still not up, {}".format(
+                            (self.IsGPUReachable())["Status"]["State"])
+                    return ActivationStatus
+                msg = "Waiting for GPU to be back up, {}".format(
+                        (self.IsGPUReachable())["Status"]["State"])
+                self.test_run().add_log(LogSeverity.DEBUG, msg)
+                time.sleep(30)
+
             ActivationEndTime = time.time()
             
             if check_time and (ActivationEndTime - ActivationStartTime) > FwActivationTimeMax:
