@@ -575,7 +575,7 @@ class FunctionalIfc:
             else:
                 ActivationStartTime = time.time()
 
-            while "error" in self.IsGPUReachable():  # declaration pending
+            while "error" in self.IsGPUReachable() or "Not Implemented" in self.IsGPUReachable():  # declaration pending
                 if ((time.time() - ActivationStartTime) > FwActivationTimeMax):
                     msg = "GPU showing error"
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
