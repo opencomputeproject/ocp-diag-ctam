@@ -37,6 +37,8 @@ class BuiltInLogSanitizers(Enum):
     '''
     IPV4 = "ipv4_address"
     IPV6 = "ipv6_address"
+    CURL = "curl_command"
+    PASSWORD = "passwords"
 
 
 class LogSanitizer(logging.Formatter):
@@ -46,11 +48,14 @@ class LogSanitizer(logging.Formatter):
     builtin_regex = {
         BuiltInLogSanitizers.IPV6: r'^([0-9a-fA-F]{1,4}:){6}((:[0-9a-fA-F]{1,4}){1,2}|:)',
         BuiltInLogSanitizers.IPV4: r'((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])',
+        BuiltInLogSanitizers.CURL: r'-u\s*(\"([^\"]+:[^\"]+)\")',
+        BuiltInLogSanitizers.PASSWORD: r"(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$%!&?&.])[A-Za-z\d@.$%!*&?]{8,}",
     }
 
     def __init__(self, fmt=None, datefmt=None, style='%', string_list=None,
                 replacement_string='XXXX', words_to_skip=[],
-                additional_regex=[BuiltInLogSanitizers.IPV4, BuiltInLogSanitizers.IPV6]):
+                additional_regex=[BuiltInLogSanitizers.IPV4, BuiltInLogSanitizers.IPV6, 
+                                  BuiltInLogSanitizers.CURL, BuiltInLogSanitizers.PASSWORD]):
         """
         Sanitizer constructor. Provide the list of strings to filter out from the logs
 
@@ -126,8 +131,10 @@ class LoggingWriter(Writer):
         :desanitize_log: if true, will mask private details in log output
         :type bool
         """
+        dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+        file_name_tmp = "/{}_{}.{}".format(testrun_name, dt, extension_name)
         # Create a logger
-        self.logger = logging.getLogger(testrun_name)
+        self.logger = logging.getLogger(file_name_tmp)
         self.debug = debug
 
         # Set the level for this logger. This means that unless specified otherwise, all messages
@@ -139,8 +146,6 @@ class LoggingWriter(Writer):
         # formatter = logging.Formatter("%(message)s")
 
         # Create a file handler that logs messages to a file
-        dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        file_name_tmp = "/{}_{}.{}".format(testrun_name, dt, extension_name)
         self.__log_file = output_dir + file_name_tmp
         self.file_handler = logging.FileHandler(output_dir + file_name_tmp)
         self.file_handler.setLevel(logging.INFO)

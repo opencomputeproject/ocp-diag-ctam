@@ -35,7 +35,7 @@ from ocptv.output import (
     TestStatus,
 )
 from interfaces.comptool_dut import CompToolDut
-from utils.logger_utils import LoggingWriter
+from utils.logger_utils import LoggingWriter, LogSanitizer
 
 from version import __version__
 
@@ -911,97 +911,35 @@ class TestRunner:
     def create_json_configuration(self):
         try:
             # Create 'Configuration' folder inside the CTAM_LOGS_date_time directory if it doesn't exist
+            config_files = ["test_runner", "package_info", "dut_info", "redfish_uri_config", "redfish_response_messages"]
             config_folder_path = os.path.join(self.output_dir, "Configuration")
             if not os.path.exists(config_folder_path):
                 os.makedirs(config_folder_path)
-            
-            # Dictionary to store data for the JSON output
-            json_data = {}
-
+            sanitizer = LogSanitizer()
+            def sanitizeData(data):
+                if isinstance(data, dict):
+                    for key, value in data.items():
+                        if isinstance(value, str):
+                            data[key] = sanitizer.format(value)
+                        elif isinstance(value, (dict, list)):
+                            sanitizeData(value)
+                elif isinstance(data, list):
+                    for item in data:
+                        sanitizeData(item)
+            resuld_data = {}
             for file_name in os.listdir(self.workspace_dir):
                 file_path = os.path.join(self.workspace_dir, file_name)
-                
                 if os.path.isfile(file_path):
-                    if file_name == '.netrc':
-                        with open(file_path, 'r') as file:
-                            lines = file.readlines()
-                        
-                        netrc_data = {}
-                        current_machine = None
-                        
-                        for line in lines:
-                            line = line.strip()
-                            if line.startswith('machine'):
-                                current_machine = line.split(' ')[1]
-                                netrc_data[current_machine] = {}
-                            elif line.startswith('login'):
-                                if current_machine:
-                                    netrc_data[current_machine]['login'] = line.split(' ')[1]
-                            elif line.startswith('password'):
-                                if current_machine:
-                                    netrc_data[current_machine]['password'] = line.split(' ')[1]
-                        
-                        json_data['NETRC'] = netrc_data
-
-                    elif file_name.endswith('.json'):
-                        with open(file_path, 'r') as file:
+                   if any(file_name.startswith(f_name) for f_name in config_files):
+                       with open(file_path, 'r') as file:
                             data = json.load(file)
-
-                        section_name = file_name.split('.')[0].upper().replace('_', ' ')
-                        
-                        if file_name == 'dut_info.json':
-                            section_name = "DUT INFO"
-                            json_data[section_name] = {}
-                            for key, value in data.get('properties', {}).items():
-                                if isinstance(value, dict) and 'value' in value:
-                                    json_data[section_name][key] = value['value']
-                                elif not isinstance(value, dict):
-                                    json_data[section_name][key] = value
-
-                        elif file_name == 'package_info.json':
-                            section_name = "PACKAGE INFO"
-                            json_data[section_name] = {}
-                            for key, value in data.items():
-                                json_data[section_name][key] = value
-
-                        elif file_name == 'redfish_uri_config.json':
-                            section_name = "REDFISH URI CONFIG"
-                            json_data[section_name] = {}
-                            for key, value in data.items():
-                                if isinstance(value, dict):
-                                    json_data[section_name][key] = {k: (json.dumps(v) if isinstance(v, (list, dict)) and v not in (None, '', {}, []) else str(v)) for k, v in value.items() if v not in (None, '', {}, [])}
-                                elif value not in (None, '', {}, []):
-                                    json_data[section_name][key] = str(value)
-
-                        elif file_name == 'redfish_response_messages.json':
-                            section_name = "REDFISH RESPONSE MESSAGES"
-                            json_data[section_name] = {}
-                            for key, value in data.items():
-                                if value:
-                                    json_data[section_name][key] = value
-
-                        elif file_name == 'test_runner.json':
-                            section_name = "TEST RUNNER"
-                            json_data[section_name] = {}
-                            exclude_keys = ["$schema", "$id", "title", "description"]
-                            for key, value in data.items():
-                                if key not in exclude_keys:
-                                    # Skip keys with empty values
-                                    if value not in (None, '', [], {}):
-                                        if isinstance(value, list):
-                                            # Convert list to a single line (comma-separated)
-                                            json_data[section_name][key] = ', '.join(str(v) for v in value if v)
-                                        elif isinstance(value, dict):
-                                            for sub_key, sub_value in value.items():
-                                                json_data[section_name][f"{key}_{sub_key}"] = sub_value
-                                        else:
-                                            json_data[section_name][key] = value
-            
-            json_file_path = os.path.join(config_folder_path, "data.json")
+                            sanitizeData(data)
+                            resuld_data[file_name.split(".")[0].replace("_", " ").upper()] = data
+            json_file_path = os.path.join(config_folder_path, "ConfigData.json")
             
             with open(json_file_path, 'w') as jsonfile:
-                json.dump(json_data, jsonfile,indent=4)
-
+                json.dump(resuld_data, jsonfile, indent=4)
+                       
         except Exception as e:
             return f"Failed to create Configuration folder or store files: {e}"
     
