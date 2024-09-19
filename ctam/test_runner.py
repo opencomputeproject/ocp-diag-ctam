@@ -121,7 +121,7 @@ class TestRunner:
             self.redfish_uri_config = json.load(redfish_uri)
 
         self.net_rc = netrc.netrc(net_rc)
-        self.sanitize_logs = self.dut_config.get("properties", {}).get("SanitizeLog", False)
+        self.sanitize_logs = self.dut_config.get("properties", {}).get("SanitizeLog", False).get("value", False)
         self.words_to_skip = self.get_words_to_skip()
 
         if redfish_response_messages:

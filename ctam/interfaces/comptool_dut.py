@@ -92,6 +92,7 @@ class CompToolDut(Dut):
             self.connection_ip_address
         )
         self.multipart_form_data = redfish_uri_config.get("GPU", {}).get("MultiPartFormData", False)
+        self.multipart_force_update = redfish_uri_config.get("GPU", {}).get("MultiPartForceUpdate", False)
         self.multipart_push_uri_support = redfish_uri_config.get("GPU", {}).get("MultiPartPushUriSupport", False)
         self.binded_port = None
         self.SSHTunnelRemoteIPAddress = None

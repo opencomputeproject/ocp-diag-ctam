@@ -405,6 +405,8 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 "UpdateFile": (BinPath, open(BinPath, "rb"), "application/octet-stream"),
                 "UpdateParameters" : ("Targets", targets,'application/json')
             }
+            if self.dut().multipart_force_update:
+                body["UpdateParameters"] = ('update.json', json.dumps({"ForceUpdate": True}), 'application/json')
             response = self.dut().run_request_command(uri=URI, mode="POST",files=body, body={})
             JSONData = response.json()
         elif self.dut().multipart_form_data:
