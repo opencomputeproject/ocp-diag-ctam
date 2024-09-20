@@ -35,7 +35,7 @@ from ocptv.output import (
     TestStatus,
 )
 from interfaces.comptool_dut import CompToolDut
-from utils.logger_utils import LoggingWriter, LogSanitizer
+from utils.logger_utils import LoggingWriter, LogSanitizer, BuiltInLogSanitizers
 
 from version import __version__
 
@@ -915,7 +915,9 @@ class TestRunner:
             config_folder_path = os.path.join(self.output_dir, "Configuration")
             if not os.path.exists(config_folder_path):
                 os.makedirs(config_folder_path)
-            sanitizer = LogSanitizer()
+            sanitizer = LogSanitizer(additional_regex=[
+                BuiltInLogSanitizers.CURL, BuiltInLogSanitizers.PASSWORD,
+            ])
             def sanitizeData(data):
                 if isinstance(data, dict):
                     for key, value in data.items():

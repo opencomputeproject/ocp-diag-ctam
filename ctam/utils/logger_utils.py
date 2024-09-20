@@ -54,8 +54,7 @@ class LogSanitizer(logging.Formatter):
 
     def __init__(self, fmt=None, datefmt=None, style='%', string_list=None,
                 replacement_string='XXXX', words_to_skip=[],
-                additional_regex=[BuiltInLogSanitizers.IPV4, BuiltInLogSanitizers.IPV6, 
-                                  BuiltInLogSanitizers.CURL, BuiltInLogSanitizers.PASSWORD]):
+                additional_regex=[]):
         """
         Sanitizer constructor. Provide the list of strings to filter out from the logs
 
@@ -75,8 +74,12 @@ class LogSanitizer(logging.Formatter):
         :param additional_regex     : List of in-built log collectors to be used
         :type additional_regex      : list of BuiltInLogSanitizers
         """
+        default_regex = [BuiltInLogSanitizers.IPV4, BuiltInLogSanitizers.IPV6]
+        if additional_regex:
+            additional_regex.extend(default_regex)
         super().__init__(fmt=fmt, datefmt=datefmt, style=style)
         self.compiled_string = None
+        
         if not isinstance(string_list, list):
             string_list = []
         string_list = list(
