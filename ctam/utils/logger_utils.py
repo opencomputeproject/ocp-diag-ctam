@@ -7,7 +7,9 @@
 import re
 import json
 import logging
-
+import sys
+import atexit
+import io
 from enum import Enum
 from datetime import datetime
 
@@ -35,6 +37,8 @@ class BuiltInLogSanitizers(Enum):
     '''
     IPV4 = "ipv4_address"
     IPV6 = "ipv6_address"
+    CURL = "curl_command"
+    PASSWORD = "passwords"
 
 
 class LogSanitizer(logging.Formatter):
@@ -44,11 +48,13 @@ class LogSanitizer(logging.Formatter):
     builtin_regex = {
         BuiltInLogSanitizers.IPV6: r'^([0-9a-fA-F]{1,4}:){6}((:[0-9a-fA-F]{1,4}){1,2}|:)',
         BuiltInLogSanitizers.IPV4: r'((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])',
+        BuiltInLogSanitizers.CURL: r'-u\s*(\"([^\"]+:[^\"]+)\")',
+        BuiltInLogSanitizers.PASSWORD: r"(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$%!&?&.])[A-Za-z\d@.$%!*&?]{8,}",
     }
 
     def __init__(self, fmt=None, datefmt=None, style='%', string_list=None,
                 replacement_string='XXXX', words_to_skip=[],
-                additional_regex=[BuiltInLogSanitizers.IPV4, BuiltInLogSanitizers.IPV6]):
+                additional_regex=[]):
         """
         Sanitizer constructor. Provide the list of strings to filter out from the logs
 
@@ -68,8 +74,12 @@ class LogSanitizer(logging.Formatter):
         :param additional_regex     : List of in-built log collectors to be used
         :type additional_regex      : list of BuiltInLogSanitizers
         """
+        default_regex = [BuiltInLogSanitizers.IPV4, BuiltInLogSanitizers.IPV6]
+        if additional_regex:
+            additional_regex.extend(default_regex)
         super().__init__(fmt=fmt, datefmt=datefmt, style=style)
         self.compiled_string = None
+        
         if not isinstance(string_list, list):
             string_list = []
         string_list = list(
@@ -124,8 +134,10 @@ class LoggingWriter(Writer):
         :desanitize_log: if true, will mask private details in log output
         :type bool
         """
+        dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+        file_name_tmp = "/{}_{}.{}".format(testrun_name, dt, extension_name)
         # Create a logger
-        self.logger = logging.getLogger(testrun_name)
+        self.logger = logging.getLogger(file_name_tmp)
         self.debug = debug
 
         # Set the level for this logger. This means that unless specified otherwise, all messages
@@ -137,8 +149,6 @@ class LoggingWriter(Writer):
         # formatter = logging.Formatter("%(message)s")
 
         # Create a file handler that logs messages to a file
-        dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        file_name_tmp = "/{}_{}.{}".format(testrun_name, dt, extension_name)
         self.__log_file = output_dir + file_name_tmp
         self.file_handler = logging.FileHandler(output_dir + file_name_tmp)
         self.file_handler.setLevel(logging.INFO)
@@ -249,3 +259,51 @@ class StreamJsonFormatter(logging.Formatter):
             return f"{StreamJsonFormatter.GREEN}{log_msg}{StreamJsonFormatter.RESET},"
         elif record.levelno == logging.DEBUG:
             return f"{StreamJsonFormatter.BLUE}{log_msg}{StreamJsonFormatter.RESET},"
+
+
+
+
+class TeeStream(io.IOBase):
+    def __init__(self, *streams):
+        self.streams = streams
+ 
+    def write(self, message):
+        if not self.check_progress_message(message):
+            for stream in self.streams:
+                stream.write(message)
+                stream.flush()
+        else:
+            self.streams[0].write(message)
+            self.streams[0].flush()
+ 
+    def flush(self):
+        for stream in self.streams:
+            stream.flush()
+            
+    def check_progress_message(self, message):
+        pattern = r"[|\\\/\-#]+\s*\|\s*\d+\s*Elapsed\sTime:\s*\d+:\d+:\d+"
+        matches = re.findall(pattern, message)
+        return True if matches else False
+ 
+class RedirectOutput:
+    def __init__(self, logfile=""):
+        self.logfile = logfile
+        self.original_stdout = sys.stdout
+        self.original_stderr = sys.stderr
+        self.log_file = open(logfile, 'a+', buffering=1)
+        self.stdout_tee = TeeStream(self.original_stdout, self.log_file)
+        self.stderr_tee = TeeStream(self.original_stderr, self.log_file)
+        atexit.register(self.restore)
+    
+    def start(self):
+        sys.stdout = self.stdout_tee
+        sys.stderr = self.stderr_tee
+
+    def temporary_stop(self):
+        sys.stdout = self.original_stdout
+        sys.stderr = self.original_stderr
+        
+    def restore(self):
+        sys.stdout = self.original_stdout
+        sys.stderr = self.original_stderr
+        self.log_file.close()

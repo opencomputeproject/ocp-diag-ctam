@@ -35,7 +35,7 @@ from ocptv.output import (
     TestStatus,
 )
 from interfaces.comptool_dut import CompToolDut
-from utils.logger_utils import LoggingWriter
+from utils.logger_utils import LoggingWriter, LogSanitizer, BuiltInLogSanitizers
 
 from version import __version__
 
@@ -108,7 +108,6 @@ class TestRunner:
         self.package_config = package_info_json_file
         self.redfish_response_messages = {}
         self.single_test_override = single_test_override
-        # self.logs_output_dir = logs_output_dir
         runner_config = self._get_test_runner_config(test_runner_json_file)
 
         with open(dut_info_json_file) as dut_info_json:
@@ -117,8 +116,6 @@ class TestRunner:
         with open(redfish_uri_config_file) as redfish_uri:
             self.redfish_uri_config = json.load(redfish_uri)
 
-        with open(redfish_uri_config_file) as redfish_uri:
-            self.redfish_uri_config = json.load(redfish_uri)
 
         self.net_rc = netrc.netrc(net_rc)
         self.sanitize_logs = self.dut_config.get("properties", {}).get("SanitizeLog", False)
@@ -256,7 +253,7 @@ class TestRunner:
         if not os.path.exists(self.cmd_output_dir):
             os.makedirs(self.cmd_output_dir)
         dut_logger = LoggingWriter(
-            self.cmd_output_dir, self.console_log, "RedfishCommandDetails_"+testrun_name, "json", self.debug_mode,
+            self.cmd_output_dir, self.console_log, testrun_name, "json", self.debug_mode,
             desanitize_log=self.sanitize_logs, words_to_skip=self.words_to_skip
         )
         test_info_logger = LoggingWriter(
@@ -348,6 +345,7 @@ class TestRunner:
         """
         try:
             status_code = 0
+            self.create_json_configuration()
             if self.progress_bar:
                 progress_thread = threading.Thread(target=self.display_progress_bar)
                 progress_thread.daemon = True
@@ -512,7 +510,10 @@ class TestRunner:
                 )
                 if not valid and not self.single_test_override:
                     msg = f"Test {test_instance.__class__.__name__} skipped due to tags. tags = {test_inc_tags}"
+                    skipped_test = self.active_run.add_step(name=f"<{test_instance.test_id} - {test_instance.test_name}> tttttttttttt")
+                    skipped_test.start()
                     self.active_run.add_log(severity=LogSeverity.INFO, message=msg)
+                    skipped_test.end(status=TestStatus.COMPLETE)
                     continue
                 if self.weighted_scores:
                     self.__compliance_level_score(testcase=test_instance)
@@ -524,7 +525,7 @@ class TestRunner:
                     test_case_step.start()
                     test_instance.setup()
                     self.comp_tool_dut.current_test_name = test_instance.test_name
-                    file_name = "RedfishCommandDetails_{}_{}".format(test_instance.test_id,
+                    file_name = "{}_{}".format(test_instance.test_id,
                                                                         test_instance.test_name)
                     logger = LoggingWriter(
                         self.cmd_output_dir, self.console_log, file_name, "json", self.debug_mode,
@@ -631,8 +632,7 @@ class TestRunner:
             if self.comp_tool_dut:
                 self.comp_tool_dut.clean_up()
             return status_code, exit_string
-            
-
+    
     def update_weighted_data(self, test_instance):
         c_level = test_instance.compliance_level
         w_score = self.weighted_scores.get(test_instance.compliance_level, 10)
@@ -908,7 +908,43 @@ class TestRunner:
             f.write("\n" + str(dt))
         print(dt)
 
-
+    def create_json_configuration(self):
+        try:
+            # Create 'Configuration' folder inside the CTAM_LOGS_date_time directory if it doesn't exist
+            config_files = ["test_runner", "package_info", "dut_info", "redfish_uri_config", "redfish_response_messages"]
+            config_folder_path = os.path.join(self.output_dir, "Configuration")
+            if not os.path.exists(config_folder_path):
+                os.makedirs(config_folder_path)
+            sanitizer = LogSanitizer(additional_regex=[
+                BuiltInLogSanitizers.CURL, BuiltInLogSanitizers.PASSWORD,
+            ])
+            def sanitizeData(data):
+                if isinstance(data, dict):
+                    for key, value in data.items():
+                        if isinstance(value, str):
+                            data[key] = sanitizer.format(value)
+                        elif isinstance(value, (dict, list)):
+                            sanitizeData(value)
+                elif isinstance(data, list):
+                    for item in data:
+                        sanitizeData(item)
+            resuld_data = {}
+            for file_name in os.listdir(self.workspace_dir):
+                file_path = os.path.join(self.workspace_dir, file_name)
+                if os.path.isfile(file_path):
+                   if any(file_name.startswith(f_name) for f_name in config_files):
+                       with open(file_path, 'r') as file:
+                            data = json.load(file)
+                            sanitizeData(data)
+                            resuld_data[file_name.split(".")[0].replace("_", " ").upper()] = data
+            json_file_path = os.path.join(config_folder_path, "ConfigData.json")
+            
+            with open(json_file_path, 'w') as jsonfile:
+                json.dump(resuld_data, jsonfile, indent=4)
+                       
+        except Exception as e:
+            return f"Failed to create Configuration folder or store files: {e}"
+    
     def display_progress_bar(self):
         """
         shows a real-time progress bar in the console displaying the percentage of test cases completed.

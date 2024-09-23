@@ -9,7 +9,7 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Test case of full firmware update in a loop. To verify the ongoing rollback is not affected by 
+:Description:	Test case of full firmware update in a loop. To verify the ongoing rollback is not affected by subsequent update.
 :Usage 1:		python ctam.py -w ..\workspace -t F8
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update In Loop"
 
@@ -26,7 +26,6 @@ from ocptv.output import (
 from tests.fw_update.fw_update_group_N._fw_update_group_N import (
     FWUpdateTestGroupN,
 )
-
 
 class CTAMTestFullDeviceUpdateInLoop(TestCase):
     """

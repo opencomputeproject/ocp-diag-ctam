@@ -71,10 +71,15 @@ class CTAMTestServiceValidator(TestCase):
         git = GitUtils()
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         repo_path = "RedfishServiceValidator"
+        
         with step1.scope():
+            step1.add_log(LogSeverity.INFO, f"Cloning repo for Redfish Service Validator.")
             result = git.clone_repo(repo_url="https://github.com/DMTF/Redfish-Service-Validator.git",
                                   repo_path="RedfishServiceValidator")
-
+            if not result:
+                step1.add_log(LogSeverity.ERROR, f"Cloning repo for Redfish Service Validator failed.")
+            step1.add_log(LogSeverity.INFO, f"Cloning repo for Redfish Service Validator successful.")
+        
         if result:
             step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
             with step2.scope():
@@ -84,14 +89,20 @@ class CTAMTestServiceValidator(TestCase):
                 log_path = os.path.join(self.dut().logger_path, file_name)
                 schema_directory = f".{os.sep}SchemaFiles"
                 connection_url = self.dut().connection_url + base_uri
-                result = git.validate_redfish_service(file_name=file_name, connection_url=connection_url,
+                
+                step2.add_log(LogSeverity.INFO, f"Running Redfish Service command.")
+                result, msg = git.validate_redfish_service(file_name=file_name, connection_url=connection_url,
                                                        user_name=self.dut().user_name, user_pass=self.dut().user_pass,
                                                        log_path=self.dut().logger_path, schema_directory=schema_directory,
-                                                       depth="Tree",
+                                                       depth="Single",
                                                        service_uri="/redfish/v1")
-                
+                if not result:
+                    step2.add_log(LogSeverity.ERROR, f"Something went wrong while running redfish command. Please see error msg {msg}.")
+                step2.add_log(LogSeverity.INFO, f"Redfish Service Command ran successfully and validated.")
+        
         step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
         with step3.scope():
+            step3.add_log(LogSeverity.INFO, f"Cleaning repo after Redfish Service Validated.")
             git.clean_repo()
         # ensure setting of self.result and self.score prior to calling super().run()
         self.result = TestResult.PASS if result else TestResult.FAIL

@@ -20,7 +20,7 @@ from test_runner import TestRunner
 from sys import exit
 from version import __version__
 
-from utils.ctam_utils import RedirectOutput, set_redirect_output
+from utils.logger_utils import RedirectOutput
 
 def parse_args():
     """
@@ -139,7 +139,6 @@ def main():
             os.makedirs(logs_output_dir)
         raw_log_file = os.path.join(logs_output_dir, "Command_Line_Logs.log")
         redirect_output = RedirectOutput(raw_log_file)
-        set_redirect_output(redirect_output)
         redirect_output.start()
         default_config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "json_spec", "input")
         default_config_path = default_config_path.replace('/tmp/', '') if default_config_path.startswith('/tmp/') else default_config_path 

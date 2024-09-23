@@ -1,27 +1,48 @@
 import os
+import re
 import shlex
 import subprocess
 import shutil
 import stat
 from os import path
 import tempfile
-
-from alive_progress import alive_bar
-
-redirect_output = None
-
-def set_redirect_output(value):
-    global redirect_output
-    redirect_output = value
+import progressbar
+import time
+import threading
+from ocptv.output import LogSeverity
 
 class GitUtils():
+    """_summary_
+    GitUtils:
+        This class is based on all git operations line cloning a repo. 
+        Deleting after use
+        Running any script provided to run using the cloned repo.
+    """
 
     def __init__(self) -> None:
+        """_summary_
+        """
         self.repo_path = ""
         self.temp_dir = tempfile.gettempdir()
         pass
 
     def clone_repo(self, repo_url, repo_path, branch_name="", install_requirements=True):
+        """_summary_
+        This method helps to clone a git repo in destination path and install all the requirements.
+
+        Args:
+            repo_url (str): Git repo url that needs to be cloned.
+            repo_path (str): Path where we need to clone the repo.
+            branch_name (str, optional): Branch name that will be cloned. Defaults to "".
+            install_requirements (bool, optional): If true then install the requirement files. Defaults to True.
+
+        Raises:
+            Exception: If there are any error is there in stderr or the return code is not 0, Then raise exception.
+            Exception: If any exception occurred during cloning the repo then raise
+
+        Returns:
+            _type_: bool
+        """
         try:
             self.repo_path = os.path.join(self.temp_dir, repo_path)
 
@@ -54,6 +75,16 @@ class GitUtils():
             return False
 
     def clean_repo(self, repo_path=""):
+        """_summary_
+        This method helps to clean the repo after cloning and running the required test cases.
+        It will clean after all test cases completed.
+
+        Args:
+            repo_path (str, optional): The path where repo is cloned. Defaults to "".
+
+        Returns:
+            _type_: bool
+        """
         try:
             if not repo_path:
                 repo_path = self.repo_path
@@ -72,6 +103,23 @@ class GitUtils():
 
     def validate_redfish_service(self, file_name, connection_url, user_name, user_pass,
                                   log_path, schema_directory, depth, service_uri, *args, **kwargs):
+        """_summary_
+        This method helps to run the Service validator command,
+        In this method we are creating the command using the method arguments.
+
+        Args:
+            file_name (str): Which file we need to run from service validator.
+            connection_url (str): need top give the protocol, ip and port for running the service validator
+            user_name (str): Username for the system ip
+            user_pass (str): Password for the system ip
+            log_path (str): The path where we need to store the logs for service validator
+            schema_directory (str): The schema file directory.
+            depth (str): Need to give depth for running single or across the whole redfish uri's as Tree
+            service_uri (str): The URI from where it will start validation.
+
+        Returns:
+            _type_: (bool, str): return status with pass and fail msg
+        """
             
         result = False
         log_path = os.path.join(log_path, file_name)
@@ -90,79 +138,121 @@ class GitUtils():
                         depth=depth,
                         uri=service_uri
                     )
-        if redirect_output:
-            redirect_output.temporary_stop()
-        with alive_bar(0) as bar:
-            result = subprocess.run(shlex.split(service_command, posix=False), capture_output=True)
-            print(result.returncode, result.stderr)
-            if result.returncode != 0 and result.stderr:
-                error = result.stderr.decode("utf-8").strip()
-                raise Exception(error)
-            bar()
-            result = result.stdout.decode("utf-8").strip()
-            data = result.replace("\r", "").split("\n")[-1]
-            s_idx = result.index("Elapsed time:")
-            data = result[s_idx:]
-            import re
-            res = re.findall(r"pass:\s+(\d+)", data)
-            print("REGEX: ",res)
-            if res and res[0].isdigit() and int(res[0]) > 0:
-                result = True
-            # if "fail" in data.lower():
-            #     msg = "Redfish ServiceVerification has failed. Please check log file for more details."
-            #     print(msg)
-            #     return False
-            # result = False
-        if redirect_output:
-            redirect_output.start()
-        return result
+                    
+        status, result = self.__class__.ctam_run_dmtf_command(service_command)
+        if not status:
+            return status, result
+        result = ''.join(result).strip()
+        data = result.replace("\r", "").split("\n")[-1]
+        s_idx = result.index("Elapsed time:")
+        data = result[s_idx:]
+        res = re.findall(r"pass:\s+(\d+)", data)
+        if res and res[0].isdigit() and int(res[0]) > 0:
+            return True, "PASS"
+        return False, "FAIL"
+    
+    @classmethod
+    def ctam_redfish_interop_validator(cls, file_name, connection_url, user_name, user_pass,
+                                        log_path, profile, *args, **kwargs):
+        """_summary_
+        This method helps to run the Interop command line. It will construct the interop command using the arguments.
+        If we are passing some arguments through **kwargs, then it will combine the key and value for those arguments and run the command.
+
+        Args:
+            file_name (str): File name that needs to be run from command line
+            connection_url (str): The protocol, ip and port where we need to run the validation(https://127.0.0.1:1234)
+            user_name (str): user name for the system ip
+            user_pass (str): password for the system ip
+            log_path (str): The path where we need to store the logs for Interop validator
+            profile (str): The profile we need to validate against redfish interop uri
+        Returns:
+            _type_: (bool): returns if successfully validated or not
+        """
+        service_base_command = "python {file_name}.py --ip {ip} \
+                -u {user} -p {pwd} --logdir {log_dir}".format(
+                        file_name=file_name,
+                        ip=connection_url,
+                        user=user_name,
+                        pwd=user_pass,
+                        log_dir=log_path)
+        
+        service_base_command += f"".join(f" --{k} {v} " for k, v in kwargs.items())
+        service_base_command += " {}".format(profile)
+        status, result = cls.ctam_run_dmtf_command(service_base_command)
+        if not status:
+            return False
+        result = ''.join(result).strip()
+        data = result.replace("\r", "").split("\n")[-1]
+        s_idx = result.find("Elapsed time:")
+        if s_idx < 0:
+            return False
+        data = result[s_idx:]
+        validation_msg = data.split("\n")[-1]
+        if "succeeded".lower() in validation_msg.lower():
+            return True
+        return False
+        
+    @classmethod
+    def ctam_run_dmtf_command(cls, command):
+        """_summary_
+        This method helps to run any command on a command prompt using subprocess. 
+        After running the command it will check for any error or any issue. If there are no errors, then
+        it will return the output as list with status.
+
+        Args:
+            command (str): The command we need to run through subprocess
+
+        Raises:
+            Exception: Raise exception for keyboard interrupt like ctrl+c
+            Exception: Raise exception if the commad is failed or give any issue while running
+
+        Returns:
+            _type_: (bool, list): returns status and the stdout result as list
+        """
+        try:
+            command = repr(command)[1:-1]
+            with subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) as process:
+            # Set up a progress bar; assume you know the number of iterations (like 4 for 4 pings)
+            
+                def read_stream(stream, buffer):
+                    for line in iter(stream.readline, ''):
+                        buffer.append(line)
+                    stream.close()
+
+                stdout_lines = []
+                stderr_lines = []
+                stdout_thread = threading.Thread(target=read_stream, args=(process.stdout, stdout_lines))
+                stderr_thread = threading.Thread(target=read_stream, args=(process.stderr, stderr_lines))
+
+                # Start the threads
+                stdout_thread.start()
+                stderr_thread.start()
+                with progressbar.ProgressBar(max_value=progressbar.UnknownLength) as pbar:
+                    while True:
+                        if process.poll() is not None:
+                            break
+                        pbar.update(1)  # Update the progress bar with each line processed
+                        time.sleep(0.1)  # Simulate some delay (optional)
+        except KeyboardInterrupt:
+            process.terminate()  # Terminate the subprocess
+            process.wait()
+            print("\nProcess interrupted. Cleaning up...")
+            raise Exception("[ERROR] Keyboard Interrupted...")
+        except Exception as e:
+            process.terminate()  # Terminate the subprocess
+            process.wait()
+            raise Exception(LogSeverity.INFO, "[ERROR] Exception occurred during running the command. {}".format(str(e)))
+        finally:
+            # Ensure the progress bar reaches 100% before finishing or stopping
+            pbar.update(100)
+            pbar.finish()
+            stdout_thread.join()
+            stderr_thread.join()
+
+        if stderr_lines:
+            print(stderr_lines)
+            return False, stderr_lines
+        return True, stdout_lines
     
 class MetaNull(type):
     pass
-
-# def show_loading_bar():
-#     with alive_bar(0,theme="classic", stats=False) as bar:
-#         result = subprocess.run(shlex.split(run_command), capture_output=True)
-#         bar()
-#         if result.stderr:
-#             raise Exception(result.stderr)
-
-
-import sys
-import atexit
-class TeeStream:
-    def __init__(self, *streams):
-        self.streams = streams
- 
-    def write(self, message):
-        for stream in self.streams:
-            stream.write(message)
-            stream.flush()
- 
-    def flush(self):
-        for stream in self.streams:
-            stream.flush()
- 
-class RedirectOutput:
-    def __init__(self, logfile=""):
-        self.logfile = logfile
-        self.original_stdout = sys.stdout
-        self.original_stderr = sys.stderr
-        self.log_file = open(logfile, 'a+', buffering=1)
-        self.stdout_tee = TeeStream(self.original_stdout, self.log_file)
-        self.stderr_tee = TeeStream(self.original_stderr, self.log_file)
-        atexit.register(self.restore)
-    
-    def start(self):
-        sys.stdout = self.stdout_tee
-        sys.stderr = self.stderr_tee
-
-    def temporary_stop(self):
-        sys.stdout = self.original_stdout
-        sys.stderr = self.original_stderr
-        
-    def restore(self):
-        sys.stdout = self.original_stdout
-        sys.stderr = self.original_stderr
-        self.log_file.close()
-    
