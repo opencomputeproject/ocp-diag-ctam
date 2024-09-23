@@ -174,7 +174,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         if not status:
             self.test_run().add_log(LogSeverity.DEBUG, f"Unable to find update uri from UpdateService resource!!!")
             return False, "", ""
-        targets = json.dumps({"Targets" : self.get_target_inventorys(targets=specific_targets)}) if specific_targets else '{}'
+        targets = self.get_target_inventorys(targets=specific_targets) if specific_targets else []
         if self.dut().is_debug_mode():
             self.test_run().add_log(LogSeverity.DEBUG, f"URI : {uri}")
             self.test_run().add_log(LogSeverity.DEBUG, f"Targets : {targets}")
@@ -387,7 +387,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 print("{} {}".format(MyName, str(targets)))
         return PushSuccess
 
-    def RedFishFWUpdate(self, BinPath, URI, targets='{}', is_multipart=False):
+    def RedFishFWUpdate(self, BinPath, URI, targets=[], is_multipart=False):
         """
         :Description:         It will update system firmware using redfish command.
         :param BinPath:		  Path for the bin
@@ -403,10 +403,8 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             headers = {"Content-Type": "multipart/form-data"}
             body = {
                 "UpdateFile": (BinPath, open(BinPath, "rb"), "application/octet-stream"),
-                "UpdateParameters" : ("Targets", targets,'application/json')
+                "UpdateParameters" : ("Targets", json.dumps({"Targets": targets, "ForceUpdate": True if self.dut().multipart_force_update else False}),'application/json')
             }
-            if self.dut().multipart_force_update:
-                body["UpdateParameters"] = ('update.json', json.dumps({"ForceUpdate": True}), 'application/json')
             response = self.dut().run_request_command(uri=URI, mode="POST",files=body, body={})
             JSONData = response.json()
         elif self.dut().multipart_form_data:
