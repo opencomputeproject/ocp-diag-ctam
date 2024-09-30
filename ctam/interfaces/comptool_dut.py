@@ -236,7 +236,7 @@ class CompToolDut(Dut):
             
             end_time = time.time()
             time_difference_seconds = end_time - start_time
-            time_difference = datetime.utcfromtimestamp(time_difference_seconds) - datetime.utcfromtimestamp(0)
+            time_difference = datetime.fromtimestamp(time_difference_seconds) - datetime.fromtimestamp(0)
             hours, remainder = divmod(time_difference.seconds, 3600)
             minutes, seconds = divmod(remainder, 60)
             milliseconds = int(time_difference.microseconds / 1000)
