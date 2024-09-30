@@ -74,6 +74,7 @@ class CTAMTestFullDeviceUpdateWithSelfTest(TestCase):
         """
         actual test verification
         """
+        status_message = ""
         result = True
         fw_update_score_percentage = 0
         self_test_score_percentage = 0
@@ -81,7 +82,8 @@ class CTAMTestFullDeviceUpdateWithSelfTest(TestCase):
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
             FwUpdateTest = CTAMTestFullDeviceUpdate(self.group)
-            if FwUpdateTest.run() == TestResult.PASS:
+            result, status_message = FwUpdateTest.run()
+            if result == TestResult.PASS:
                 fw_update_score_percentage = float(FwUpdateTest.score / FwUpdateTest.score_weight)
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update")
             else:
@@ -111,7 +113,7 @@ class CTAMTestFullDeviceUpdateWithSelfTest(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, status_message
 
     def teardown(self):
         """

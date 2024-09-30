@@ -554,11 +554,11 @@ class FunctionalIfc:
         :param check_time:              Check the activation time does not exceed maximum time per spec
 
         :returns:				    	ActivationStatus
-        :rtype: 						Bool
+        :rtype: 						Bool, string
         """
         MyName = __name__ + "." + self.ctam_activate_ac.__qualname__
         ActivationStatus = False
-        
+        status_msg = ""
         FwActivationTimeMax = self.dut().dut_config["FwActivationTimeMax"]["value"]
         if check_time:
             if self.dut().dut_config["PowerOnWaitTime"]["value"] > FwActivationTimeMax:
@@ -603,6 +603,7 @@ class FunctionalIfc:
                 ActivationStatus = False
                 msg = f"Activation is taking longer than the maximum time specified {FwActivationTimeMax} seconds."
                 self.test_run().add_log(LogSeverity.WARNING, msg)
+                status_msg += "\n" + msg
             else:
                 ActivationStatus = True
         
@@ -614,7 +615,7 @@ class FunctionalIfc:
             msg = f"Execution is delayed successfully by {IdleWaitTime} seconds."
             self.test_run().add_log(LogSeverity.INFO, msg)
             
-        return True and ActivationStatus
+        return ActivationStatus, status_msg
     
     def RedfishTriggerDumpCollection(self, DiagnosticDataType, URI, OEMDiagnosticDataType=None):
         """

@@ -101,7 +101,7 @@ class CTAMTestNegativeInvalidDeviceUUIDImageUpdate(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, status_msg
 
     def teardown(self):
         """

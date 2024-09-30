@@ -68,6 +68,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
         actual test verification
         """
         result = True
+        status_message = ""
 
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
@@ -90,6 +91,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
                 step3.add_log(LogSeverity.INFO, f"{self.test_id} : Single Device Selected")
             else:
                 step3.add_log(LogSeverity.ERROR, f"{self.test_id} : Single Device Selection Failed")
+                status_message += f"{self.test_id} : Single Device Selection Failed"
                 result = False
 
         step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4_{corrupted_component_list[0]}")  # type: ignore
@@ -97,6 +99,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
             status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="empty_metadata", 
                                                                                  corrupted_component_id=corrupted_component_id,
                                                                                  specific_targets=[corrupted_component_list[0]])
+            status_message += " " + status_msg
             if status:
                 step4.add_log(
                     LogSeverity.INFO,
@@ -116,7 +119,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, status_message
 
     def teardown(self):
         """

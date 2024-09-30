@@ -66,7 +66,7 @@ class CTAMVerifySelfTestReport(TestCase):
         actual test verification
         """
         result = True
-        
+        status_msg = ""
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
             if self.group.health_check_ifc.trigger_self_test_dump_collection():
@@ -100,7 +100,7 @@ class CTAMVerifySelfTestReport(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, status_msg
 
     def teardown(self):
         """
