@@ -23,7 +23,8 @@ from ocptv.output import Metadata
 from ocptv.output import Dut
 
 from interfaces.uri_builder import UriBuilder
-from utils.ssh_tunnel_utils import SSHTunnel
+from utils.ssh_tunnel_utils import SSHTunnelWithLibrary, SSHTunnelWithSshpass
+
 
 
 class CompToolDut(Dut):
@@ -42,6 +43,7 @@ class CompToolDut(Dut):
         config,
         package_config,
         redfish_uri_config,
+        test_runner_config,
         net_rc,
         debugMode: bool,
         console_log: bool,
@@ -71,6 +73,7 @@ class CompToolDut(Dut):
         self.__package_config_file = package_config
         self.dut_config = config["properties"]
         self.redfish_uri_config = redfish_uri_config
+        self.test_runner_config = test_runner_config
         self.uri_builder = UriBuilder(redfish_uri_config)
         self.current_test_name = ""
         self.net_rc = net_rc
@@ -106,7 +109,10 @@ class CompToolDut(Dut):
         
         self.redfish_ifc = None
         self.redfish_auth = config["properties"].get("AuthenticationRequired", {}).get("value", False)
-        self.ssh_tunnel = SSHTunnel(self.test_info_logger)
+        if self.test_runner_config.get("use_sshpass", False):
+            self.ssh_tunnel = SSHTunnelWithSshpass(self.test_info_logger)
+        else:
+            self.ssh_tunnel = SSHTunnelWithLibrary(self.test_info_logger)
     
     def get_cwd(self):
         cwd = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
