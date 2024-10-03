@@ -108,7 +108,6 @@ class TestRunner:
         self.package_config = package_info_json_file
         self.redfish_response_messages = {}
         self.single_test_override = single_test_override
-        # self.logs_output_dir = logs_output_dir
         runner_config = self._get_test_runner_config(test_runner_json_file)
 
         with open(dut_info_json_file) as dut_info_json:
@@ -543,6 +542,7 @@ class TestRunner:
                     )
                     self.comp_tool_dut.logger = logger
                     execution_starttime = time.perf_counter()
+                    status_msg = ""
                     test_result, status_msg = test_instance.run()
                     # print("status_msg98765", status_msg)
                     # test_result = test_instance.run()
