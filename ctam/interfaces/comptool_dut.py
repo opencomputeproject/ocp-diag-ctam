@@ -43,7 +43,6 @@ class CompToolDut(Dut):
         config,
         package_config,
         redfish_uri_config,
-        test_runner_config,
         net_rc,
         debugMode: bool,
         console_log: bool,
@@ -73,7 +72,6 @@ class CompToolDut(Dut):
         self.__package_config_file = package_config
         self.dut_config = config["properties"]
         self.redfish_uri_config = redfish_uri_config
-        self.test_runner_config = test_runner_config
         self.uri_builder = UriBuilder(redfish_uri_config)
         self.current_test_name = ""
         self.net_rc = net_rc
@@ -109,7 +107,7 @@ class CompToolDut(Dut):
         
         self.redfish_ifc = None
         self.redfish_auth = config["properties"].get("AuthenticationRequired", {}).get("value", False)
-        if self.test_runner_config.get("use_sshpass", False):
+        if config["properties"].get("SSHTunnelUsingSSHPASS", {}).get("value", False):
             self.ssh_tunnel = SSHTunnelWithSshpass(self.test_info_logger)
         else:
             self.ssh_tunnel = SSHTunnelWithLibrary(self.test_info_logger)

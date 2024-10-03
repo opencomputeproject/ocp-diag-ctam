@@ -12,7 +12,6 @@
     "test_sequence" : [],
     "group_sequence" : [],
     "internal_testing": false,
-    "use_sshpass": false,
     "weighted_score": {
         "L0": 100, "L1": 50, "L2": 20, "L3": 0, "Others": 10
     },

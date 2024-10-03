@@ -34,6 +34,11 @@
       "type": "string",
       "value": ""
     },
+    "SSHTunnelUsingSSHPASS": {
+      "description": "Option to use sshpass for portforwarding instead of sshtunnel",
+      "type": "bool",
+      "value": false
+    },
     "AuthenticationRequired": {
       "description": "Indicates if REST API authentication is required by the Redfish service",
       "type": "bool",

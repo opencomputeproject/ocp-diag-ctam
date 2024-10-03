@@ -122,8 +122,10 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             ):
                 msg = f"Pre Install Details: {element['Id']} : {element['SoftwareId']} : {element.get('Version', 'NA')} : "
                 if str(element["Updateable"]) == "True":
-
-                    SoftwareId = str(hex(int(element["SoftwareId"], 16)))
+                    if element["SoftwareId"] == "":
+                        SoftwareId = ""
+                    else:
+                        SoftwareId = str(hex(int(element["SoftwareId"], 16)))
                     if SoftwareId in BundleComponentIdsAndVersions.keys():
 
                         Package_Version = self.PLDMComponentVersions(image_type=image_type).get(SoftwareId)

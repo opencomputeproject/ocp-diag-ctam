@@ -109,7 +109,7 @@ class TestRunner:
         self.redfish_response_messages = {}
         self.single_test_override = single_test_override
         # self.logs_output_dir = logs_output_dir
-        self.runner_config = self._get_test_runner_config(test_runner_json_file)
+        runner_config = self._get_test_runner_config(test_runner_json_file)
 
         with open(dut_info_json_file) as dut_info_json:
             self.dut_config = json.load(dut_info_json)
@@ -119,7 +119,7 @@ class TestRunner:
 
 
         self.net_rc = netrc.netrc(net_rc)
-        self.sanitize_logs = self.dut_config.get("properties", {}).get("SanitizeLog", False).get("value", False)
+        self.sanitize_logs = self.dut_config.get("properties", {}).get("SanitizeLog", {}).get("value", False)
         self.words_to_skip = self.get_words_to_skip()
 
         if redfish_response_messages:
@@ -138,16 +138,16 @@ class TestRunner:
             self.test_sequence = sequence_test_override
         elif sequence_group_override != None:
             self.group_sequence = sequence_group_override
-        elif self.runner_config.get("test_sequence", None):
-            self.test_sequence = self.runner_config.get("test_sequence", None)
-        elif self.runner_config.get("group_sequence", None):
-            self.group_sequence = self.runner_config.get("group_sequence", None)
-        elif self.runner_config.get("active_test_suite", None):
-            test_suite_to_select = self.runner_config.get("active_test_suite", None)
+        elif runner_config.get("test_sequence", None):
+            self.test_sequence = runner_config.get("test_sequence", None)
+        elif runner_config.get("group_sequence", None):
+            self.group_sequence = runner_config.get("group_sequence", None)
+        elif runner_config.get("active_test_suite", None):
+            test_suite_to_select = runner_config.get("active_test_suite", None)
             # Remove the active_test_suite key before selecting the test suite
             # Select the test suite from test_runner_data
             for test_suite in test_suite_to_select:
-                selected_test_suite_cases = self.runner_config.get(test_suite)
+                selected_test_suite_cases = runner_config.get(test_suite)
 
                 if selected_test_suite_cases is not None:
                     # Assign the selected test suite to a Python list
@@ -276,7 +276,6 @@ class TestRunner:
             config=self.dut_config,
             package_config=self.package_config,
             redfish_uri_config=self.redfish_uri_config,
-            test_runner_config=self.runner_config,
             net_rc=self.net_rc,
             debugMode=self.debug_mode,
             console_log=self.console_log,
