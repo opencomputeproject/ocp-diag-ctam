@@ -68,6 +68,7 @@ class CTAMTestNegativeSingleDeviceUpdateWithIllegalTargets(TestCase):
         actual test verification
         """
         result = True
+        status_message = ""
 
         component_list = self.group.fw_update_ifc.ctam_get_updateable_devices_in_bundle(illegal=1)
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
@@ -81,12 +82,15 @@ class CTAMTestNegativeSingleDeviceUpdateWithIllegalTargets(TestCase):
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Single Device Selected")
             else:
                 step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Single Device Selection Failed")
+                status_message += f"{self.test_id} : Single Device Selection Failed"
                 result = False
             
         if result:
             step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
             with step2.scope():
-                if not self.group.fw_update_ifc.ctam_fw_update_precheck():
+                status, status_msg = self.group.fw_update_ifc.ctam_fw_update_precheck()
+                status_message += status_msg
+                if not status:
                     step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
                 else:
                     step2.add_log(
@@ -98,6 +102,7 @@ class CTAMTestNegativeSingleDeviceUpdateWithIllegalTargets(TestCase):
             with step3.scope():
                 status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(
                     partial=1, specific_targets=component_list)
+                status_message += " " + status_msg
                 if status:
                     step3.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
                 else:
@@ -109,7 +114,9 @@ class CTAMTestNegativeSingleDeviceUpdateWithIllegalTargets(TestCase):
         if result:
             step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")  # type: ignore
             with step4.scope():
-                if self.group.fw_update_ifc.ctam_activate_ac():
+                status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
+                status_message += " " + status_msg
+                if status:
                     step4.add_log(
                         LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
                     )
@@ -123,7 +130,9 @@ class CTAMTestNegativeSingleDeviceUpdateWithIllegalTargets(TestCase):
         if result:
             step5 = self.test_run().add_step(f"{self.__class__.__name__} run(), step5")
             with step5.scope():
-                if self.group.fw_update_ifc.ctam_fw_update_verify(image_type="negate"):
+                status, status_msg = self.group.fw_update_ifc.ctam_fw_update_verify(image_type="negate")
+                status_message += " " + status_msg
+                if status:
                     step5.add_log(
                         LogSeverity.INFO,
                         f"{self.test_id} : Update Verification Completed",
@@ -142,7 +151,7 @@ class CTAMTestNegativeSingleDeviceUpdateWithIllegalTargets(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, status_message
 
     def teardown(self):
         """

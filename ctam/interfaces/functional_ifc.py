@@ -554,11 +554,11 @@ class FunctionalIfc:
         :param check_time:              Check the activation time does not exceed maximum time per spec
 
         :returns:				    	ActivationStatus
-        :rtype: 						Bool
+        :rtype: 						Bool, string
         """
         MyName = __name__ + "." + self.ctam_activate_ac.__qualname__
         ActivationStatus = False
-        
+        status_msg = ""
         FwActivationTimeMax = self.dut().dut_config["FwActivationTimeMax"]["value"]
         if check_time:
             if self.dut().dut_config["PowerOnWaitTime"]["value"] > FwActivationTimeMax:
@@ -567,7 +567,8 @@ class FunctionalIfc:
                 FwActivationTimeMax = self.dut().dut_config["PowerOnWaitTime"]["value"]
 
         if not self.NodeACReset():  # NodeACReset declaration pending
-            return ActivationStatus
+            status_msg = "Error while running power cycle"
+            return ActivationStatus, status_msg
         
         if gpu_check:
             if (check_time):
@@ -579,7 +580,8 @@ class FunctionalIfc:
                 if ((time.time() - ActivationStartTime) > FwActivationTimeMax):
                     msg = "GPU showing error"
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
-                    return ActivationStatus
+                    status_msg = msg
+                    return ActivationStatus, status_msg
                 msg = "Waiting for GPU to be back up"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
                 time.sleep(30)
@@ -591,7 +593,8 @@ class FunctionalIfc:
                 if (time.time() - ActivationStartTime) > FwActivationTimeMax:
                     msg = "GPU still not up, {}".format(
                             (self.IsGPUReachable())["Status"]["State"])
-                    return ActivationStatus
+                    status_msg = msg + f" Activation is taking longer than the maximum time specified {FwActivationTimeMax} seconds."
+                    return ActivationStatus, status_msg
                 msg = "Waiting for GPU to be back up, {}".format(
                         (self.IsGPUReachable())["Status"]["State"])
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
@@ -603,6 +606,7 @@ class FunctionalIfc:
                 ActivationStatus = False
                 msg = f"Activation is taking longer than the maximum time specified {FwActivationTimeMax} seconds."
                 self.test_run().add_log(LogSeverity.WARNING, msg)
+                status_msg = msg
             else:
                 ActivationStatus = True
         
@@ -614,7 +618,7 @@ class FunctionalIfc:
             msg = f"Execution is delayed successfully by {IdleWaitTime} seconds."
             self.test_run().add_log(LogSeverity.INFO, msg)
             
-        return True and ActivationStatus
+        return ActivationStatus, status_msg
     
     def RedfishTriggerDumpCollection(self, DiagnosticDataType, URI, OEMDiagnosticDataType=None):
         """

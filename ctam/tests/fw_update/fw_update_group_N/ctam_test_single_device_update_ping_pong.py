@@ -70,6 +70,7 @@ class CTAMTestSingleDeviceUpdatePingPong(TestCase):
         """
         result = True
         loops = 2
+        status_message = ""
 
         self.specific_targets = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{specific_targets}", component_type="GPU"))
         for i in range(loops):
@@ -84,6 +85,7 @@ class CTAMTestSingleDeviceUpdatePingPong(TestCase):
                     step1.add_log(LogSeverity.INFO, f"{self.test_id} : Single Device Selected")
                 else:
                     step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Single Device Selection Failed")
+                    status_message += f"{self.test_id} : Single Device Selection Failed"
                     result = False
                 
             image_t = "default" if i % 2 == 0 else "backup"
@@ -91,7 +93,8 @@ class CTAMTestSingleDeviceUpdatePingPong(TestCase):
             if result:
                 step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2_{i}")  # type: ignore
                 with step2.scope():
-                    if not self.group.fw_update_ifc.ctam_fw_update_precheck(image_type=image_t):
+                    status, status_message = self.group.fw_update_ifc.ctam_fw_update_precheck(image_type=image_t)
+                    if not status:
                         step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
                     else:
                         step2.add_log(LogSeverity.ERROR, f"{self.test_id} : FW Update Not Required, going ahead nevertheless")
@@ -101,6 +104,7 @@ class CTAMTestSingleDeviceUpdatePingPong(TestCase):
                 with step3.scope():
                     status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(
                         partial=1, image_type=image_t, specific_targets=self.specific_targets)
+                    status_message += " " + status_msg
                     if status:
                         step3.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
                     else:
@@ -110,7 +114,9 @@ class CTAMTestSingleDeviceUpdatePingPong(TestCase):
             if result:
                 step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4_{i}")  # type: ignore
                 with step4.scope():
-                    if self.group.fw_update_ifc.ctam_activate_ac():
+                    status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
+                    status_message += " " + status_msg
+                    if status:
                         step4.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Activate")
                     else:
                         step4.add_log(LogSeverity.ERROR, f"{self.test_id} : FW Update Activation Failed")
@@ -119,7 +125,9 @@ class CTAMTestSingleDeviceUpdatePingPong(TestCase):
             if result:
                 step5 = self.test_run().add_step(f"{self.__class__.__name__} run(), step5_{i}")
                 with step5.scope():
-                    if self.group.fw_update_ifc.ctam_fw_update_verify(image_type=image_t, specific_targets=self.specific_targets):
+                    status, status_msg = self.group.fw_update_ifc.ctam_fw_update_verify(image_type=image_t, specific_targets=self.specific_targets)
+                    status_message += " " + status_msg
+                    if status:
                         step5.add_log(LogSeverity.INFO, f"{self.test_id} : Update Verification Completed")
                     else:
                         step5.add_log(LogSeverity.INFO, f"{self.test_id} : Update Verification Failed")
@@ -132,7 +140,7 @@ class CTAMTestSingleDeviceUpdatePingPong(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, status_message
 
     def teardown(self):
         """

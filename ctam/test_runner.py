@@ -118,7 +118,7 @@ class TestRunner:
 
 
         self.net_rc = netrc.netrc(net_rc)
-        self.sanitize_logs = self.dut_config.get("properties", {}).get("SanitizeLog", False)
+        self.sanitize_logs = self.dut_config.get("properties", {}).get("SanitizeLog", {}).get("value", False)
         self.words_to_skip = self.get_words_to_skip()
 
         if redfish_response_messages:
@@ -469,6 +469,15 @@ class TestRunner:
             self.active_run.add_log(
                 severity=LogSeverity.FATAL, message=exception_details
             )
+            msg = {
+                "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                "TotalExecutionTime": str(timedelta(seconds=TestCase.total_execution_time)),
+                "TotalScore": TestCase.total_compliance_score,
+                "MaxComplianceScore": TestCase.max_compliance_score,
+                "Grade": "{}%".format(gtotal),
+                "FailureReason": exception_details
+                }
+            self.score_logger.write(json.dumps(msg))
             status_code, exit_string =  1, f"Test failed due to execption: {repr(e)}"
         finally:
             if self.comp_tool_dut:
@@ -533,13 +542,17 @@ class TestRunner:
                     )
                     self.comp_tool_dut.logger = logger
                     execution_starttime = time.perf_counter()
-                    test_result = test_instance.run()
+                    status_msg = ""
+                    test_result, status_msg = test_instance.run()
+                    # print("status_msg98765", status_msg)
+                    # test_result = test_instance.run()
                     if (
                         test_result == TestResult.FAIL
                     ):  # if any test fails, the group fails
                         group_result = TestResult.FAIL
                 except:  
                     exception_details = traceback.format_exc()
+                    status_msg += " " + exception_details
                     self.active_run.add_log(
                         severity=LogSeverity.FATAL, message=exception_details
                     )
@@ -560,8 +573,10 @@ class TestRunner:
                         "TestName": test_instance.test_name,
                         "TestCaseScoreWeight":test_instance.score_weight,
                         "TestCaseScore": test_instance.score,
-                        "TestCaseResult": TestResult(test_instance.result).name
+                        "TestCaseResult": TestResult(test_instance.result).name,
+                        "FailureReason": status_msg + " For more details check Command_Line_Logs.log file"
                     }
+                    msg = {key: value for key, value in msg.items() if (key != "FailureReason") or (TestResult(test_instance.result).name == "FAIL")}
                     test_tuple = (test_instance.test_id,
                                                    test_instance.test_name,
                                                    test_instance.execution_time,
@@ -600,7 +615,17 @@ class TestRunner:
             self.active_run.add_log(
                 severity=LogSeverity.FATAL, message=exception_details
             )
-
+            msg = {
+                "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                "ExecutionTime": f"{execution_time} seconds",
+                "TestID": test_instance.test_id,
+                "TestName": test_instance.test_name,
+                "TestCaseScoreWeight":test_instance.score_weight,
+                "TestCaseScore": test_instance.score,
+                "TestCaseResult": TestResult(test_instance.result).name,
+                "FailureReason": exception_details
+            }
+            self.score_logger.write(json.dumps(msg))
             group_status = TestStatus.ERROR
             group_result = TestResult.FAIL
 
@@ -608,6 +633,7 @@ class TestRunner:
             # attempt group cleanup even if test exception raised
             group_instance.teardown()
             self._end(group_status, group_result)
+
             return group_status, group_result
 
     def get_system_details(self):
@@ -935,7 +961,8 @@ class TestRunner:
                    if any(file_name.startswith(f_name) for f_name in config_files):
                        with open(file_path, 'r') as file:
                             data = json.load(file)
-                            sanitizeData(data)
+                            if self.sanitize_logs:
+                                sanitizeData(data)
                             resuld_data[file_name.split(".")[0].replace("_", " ").upper()] = data
             json_file_path = os.path.join(config_folder_path, "ConfigData.json")
             

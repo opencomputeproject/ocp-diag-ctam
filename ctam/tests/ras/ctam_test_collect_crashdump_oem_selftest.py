@@ -67,6 +67,7 @@ class CTAMTestCollectCrashdumpOEMSelfTest(TestCase):
         """
         actual test verification
         """
+        status_msg = ""
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
             self.group.ras_ifc.ctam_getes()
@@ -84,7 +85,7 @@ class CTAMTestCollectCrashdumpOEMSelfTest(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, status_msg
 
     def teardown(self):
         """

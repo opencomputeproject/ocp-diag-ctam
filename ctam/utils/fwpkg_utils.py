@@ -13,6 +13,7 @@ import os
 import shutil
 import uuid
 import math
+import random
 
 
 def copy_fwpkg(golden_fwpkg_path, clear_signature=False, signature_struct_bytes=1024):
@@ -633,7 +634,7 @@ class PLDMUnpack:
                     # Zero out metadata bytes
                     # Save the bundle
                     self.fwpkg_fd.write(bytearray(metadata_size))
-                    corruption_status = True
+                    return True # return success if first component is corrupted
             except IOError as e_io_error:
                 log_message = f"Couldn't open or read given FW package ({e_io_error})"
                 print(log_message)
@@ -658,7 +659,7 @@ class PLDMUnpack:
         for index, info in enumerate(self.component_img_info_list):
             if component_id is not None and info["ComponentIdentifier"] != hex(int(component_id, 16)):
                 continue
-            # Lseek to the component from the PLDM fwpkg   
+            # Lseek to the component from the PLDM fwpkg
             offset = info["ComponentLocationOffset"]
             size = info["ComponentSize"]
             if offset + size > package_size:
@@ -671,7 +672,7 @@ class PLDMUnpack:
                     self.fwpkg_fd.seek(offset+metadata_size)
                     # Zero out image bytes and save the bundle
                     self.fwpkg_fd.write(bytearray(math.floor(size/2))) # Corrupting half of the image
-                    corruption_status = True
+                    return True # return success if first component is corrupted
             except IOError as e_io_error:
                 log_message = f"Couldn't open or read given FW package ({e_io_error})"
                 print(log_message)
@@ -708,7 +709,7 @@ class PLDMUnpack:
                     self.fwpkg_fd.seek(offset)
                     # Zero out and save the bundle
                     self.fwpkg_fd.write(bytearray(size))
-                    corruption_status = True
+                    return True # return success if first component is corrupted
             except IOError as e_io_error:
                 log_message = f"Couldn't open or read given FW package ({e_io_error})"
                 print(log_message)
@@ -746,7 +747,6 @@ class PLDMUnpack:
                                                             signed=False)
                                 if record_descriptor_type == 0x0002: # Descriptor Identifier Type is UUID
                                     self.fwpkg_fd.seek(record_descriptors_start_index + 4)
-                                    import random
                                     random_uuid = bytes([random.randint(0, 255) for _ in range(record_descriptor_length)])
                                     self.fwpkg_fd.write(random_uuid)
                                     corruption_status = True

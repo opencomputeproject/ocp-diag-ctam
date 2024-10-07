@@ -157,12 +157,12 @@ class LoggingWriter(Writer):
         self.desanitize_log = desanitize_log
         self.sanitizer = LogSanitizer(words_to_skip=words_to_skip)
 
-        # if console_log:
+        if console_log:
             # Create a console handler that logs messages to the console
-        self.console_handler = logging.StreamHandler()
-        self.console_handler.setLevel(logging.DEBUG)
-        self.console_handler.setFormatter(StreamJsonFormatter())
-        self.logger.addHandler(self.console_handler)
+            self.console_handler = logging.StreamHandler()
+            self.console_handler.setLevel(logging.DEBUG)
+            self.console_handler.setFormatter(StreamJsonFormatter())
+            self.logger.addHandler(self.console_handler)
 
     def write(self, buffer: str):
         """
