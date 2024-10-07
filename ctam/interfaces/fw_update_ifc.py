@@ -77,10 +77,10 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
     def ctam_get_fw_version(self, PostInstall=0):
         """
-        :Description:				Get Firmware Version
-        :param PostInstall:		Get Version after install the Firmware or before installing
+        :Description:               Get Firmware Version
+        :param PostInstall:     Get Version after install the Firmware or before installing
 
-        :returns:				    None
+        :returns:                   None
         """
         
         MyName = __name__ + "." + self.ctam_get_fw_version.__qualname__
@@ -100,11 +100,11 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
     def ctam_fw_update_precheck(self, image_type="default"):
         """
-        :Description:				Check Firmware before installation
-        :param image_type:		    Type of the Firmware image
+        :Description:               Check Firmware before installation
+        :param image_type:          Type of the Firmware image
 
-        :returns:				    VersionsDifferent
-        :rtype: 					Bool
+        :returns:                   VersionsDifferent
+        :rtype:                     Bool
         """
         MyName = __name__ + "." + self.ctam_fw_update_precheck.__qualname__
         VersionsDifferent = True
@@ -122,7 +122,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             ):
                 msg = f"Pre Install Details: {element['Id']} : {element['SoftwareId']} : {element.get('Version', 'NA')} : "
                 if str(element["Updateable"]) == "True":
-
+                    
                     SoftwareId = str(hex(int(element["SoftwareId"], 16)))
                     if SoftwareId in BundleComponentIdsAndVersions.keys():
 
@@ -138,11 +138,11 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                             msg += f"Update Capable to {Package_Version}"
 
                         else:
-                            msg += "Update Not Needed."
+                            msg += "Update Not Needed ."
                     else:
                         msg += "SoftwareId not found in PLDM JSON."
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
-                        
+                    status_message = msg
                 else:
                     # Not in HttpPushURITargets
                     pass
@@ -155,17 +155,18 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         check_time=False, specific_targets=[]
     ):
         """
-        :Description:							Stage Firmware
-        :param partial:							Partial
-        :param image_type:						Type of Firmware Image
-        :param wait_for_stage_completion:		Wait for stage completion
+        :Description:                           Stage Firmware
+        :param partial:                         Partial
+        :param image_type:                      Type of Firmware Image
+        :param wait_for_stage_completion:       Wait for stage completion
         :param corrupted_component_id:          ComponentIdentifier of the component image to be corrupted for specific negative tests
         :param corrupted_component_list:        List component names (Ids) which are corrupted
         :param check_time:                      Check the staging time does not exceed maximum time per spec
 
-        :returns:				    			StageFWOOB_Status, StageFWOOB_Status_message, return_task_id 
-        :rtype: 								Bool, str, str
+        :returns:                               StageFWOOB_Status, StageFWOOB_Status_message, return_task_id 
+        :rtype:                                 Bool, str, str
         """
+        status_msg = ""
         MyName = __name__ + "." + self.ctam_stage_fw.__qualname__
         StartTime = time.time()
         pushtargets = self.dut().uri_builder.format_uri(redfish_str="{HttpPushUriTargets}", component_type="GPU")
@@ -174,7 +175,11 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         JSONFWFilePayload = self.get_JSONFWFilePayload_file(image_type=image_type, corrupted_component_id=corrupted_component_id)
         if not JSONFWFilePayload or not os.path.isfile(JSONFWFilePayload):
             self.test_run().add_log(LogSeverity.DEBUG, f"Package file not found at path {JSONFWFilePayload}!!!")
-            return False, "", ""
+            if corrupted_component_id != None:
+                status_msg = "Error in creating corrupted component!"
+            else:
+                status_msg = f"Package file not found in the workspace !!!"
+            return False, status_msg, ""
         if self.dut().is_debug_mode():
             print(JSONFWFilePayload)
         update_uri = self.dut().redfish_uri_config.get("GPU", {}).get("UpdateURI", "")
@@ -188,8 +193,9 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             status, uri, is_multipart = self.get_update_uri()
         if not status:
             self.test_run().add_log(LogSeverity.DEBUG, f"Unable to find update uri from UpdateService resource!!!")
-            return False, "", ""
-        targets = json.dumps({"Targets" : self.get_target_inventorys(targets=specific_targets)}) if specific_targets else '{}'
+            status_msg = "Unable to find update uri from UpdateService resource!!!"
+            return False, status_msg, ""
+        targets = self.get_target_inventorys(targets=specific_targets) if specific_targets else []
         if self.dut().is_debug_mode():
             self.test_run().add_log(LogSeverity.DEBUG, f"URI : {uri}")
             self.test_run().add_log(LogSeverity.DEBUG, f"Targets : {targets}")
@@ -213,6 +219,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     msg = f"FW copy operation exceeded the maximum time {FwStagingTimeMax} seconds."
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
                     StageFWOOB_Status = False
+                    stage_msg = msg   
 
                 msg = "{0}: GPU Deployment Time: {1} GPU Update Time: {2} \n Redfish Outcome: {3}".format(
                     MyName,
@@ -236,6 +243,8 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                                     task_message_list=JSONData["Messages"],
                                     corrupted_component_id=corrupted_component_id
                                     )
+                                if StageFWOOB_Status == False:
+                                    stage_msg = "Non corrupt component staging failed!!"
                             else:
                                 StageFWOOB_Status = True
                         else:
@@ -244,6 +253,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                             )
                             self.test_run().add_log(LogSeverity.DEBUG, msg)
                             StageFWOOB_Status = False
+                            stage_msg = msg
             else:
                 StageFWOOB_Status = True
         else:
@@ -277,21 +287,23 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
 
                 StageFWOOB_Status = False
+                stage_msg = msg
         return StageFWOOB_Status, stage_msg, FwUpdTaskID
 
     def ctam_fw_update_verify(self, image_type="default", corrupted_component_id=None, specific_targets=[], version_check=True):
         """
-        :Description:				    Firmware Update verification
-        :param image_type:			    Firmware image type
+        :Description:                   Firmware Update verification
+        :param image_type:              Firmware image type
         :param corrupted_component_id:  ComponentIdentifier (in hex format) of the corrupted component image
 
-        :returns:				        Update_Verified
-        :rtype: 					    Bool
+        :returns:                       Update_Verified, string
+        :rtype:                         Bool, string
         """
         MyName = __name__ + "." + self.ctam_fw_update_verify.__qualname__
         Update_Verified = True
         update_successful = []
-        update_failed = []
+        update_failed = []        
+        status_msg = ""
         self.ctam_get_fw_version(PostInstall=1)
         msg = json.dumps(self.PostInstallDetails, indent=4)
         self.test_run().add_log(LogSeverity.DEBUG, msg)
@@ -333,6 +345,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 update_failed.append(element['SoftwareId'])
                 Update_Verified = False
                 msg += f"Update Failed : Expected {ExpectedVersion}"
+                status_msg += "\n" + msg
 
             elif negative_case:
                 # Negative test case, but expected.
@@ -351,7 +364,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 Update_Verified = False
         msg = f"Updated Components count - {len(update_successful)} and Failed Components count - {len(update_failed)}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
-        return Update_Verified
+        return Update_Verified, status_msg
     
     def get_target_inventorys(self, targets):
         return [
@@ -365,9 +378,9 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
     def get_update_uri(self):
         """
-        :Description:				    Get supported fwupdate uri, multipart push uri over httpush
-        :returns:				        whether uri was found, update uri and if it supports multipart push
-        :rtype: 					    Bool, Str, Bool
+        :Description:                   Get supported fwupdate uri, multipart push uri over httpush
+        :returns:                       whether uri was found, update uri and if it supports multipart push
+        :rtype:                         Bool, Str, Bool
         """
         
         uri = self.dut().uri_builder.format_uri(
@@ -415,13 +428,13 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 print("{} {}".format(MyName, str(targets)))
         return PushSuccess
 
-    def RedFishFWUpdate(self, BinPath, URI, targets='{}', is_multipart=False):
+    def RedFishFWUpdate(self, BinPath, URI, targets=[], is_multipart=False):
         """
         :Description:         It will update system firmware using redfish command.
-        :param BinPath:		  Path for the bin
-        :param URI:		      URI for creating URL
+        :param BinPath:       Path for the bin
+        :param URI:           URI for creating URL
 
-        :returns:		      JSON data after executing redfish command
+        :returns:             JSON data after executing redfish command
         :rtype:               JSON Dict
         """
         MyName = __name__ + "." + self.RedFishFWUpdate.__qualname__
@@ -431,7 +444,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             headers = {"Content-Type": "multipart/form-data"}
             body = {
                 "UpdateFile": (BinPath, open(BinPath, "rb"), "application/octet-stream"),
-                "UpdateParameters" : ("Targets", targets,'application/json')
+                "UpdateParameters" : ("Targets", json.dumps({"Targets": targets, "ForceUpdate": True if self.dut().multipart_force_update else False}),'application/json')
             }
             response = self.dut().run_request_command(uri=URI, mode="POST",files=body, body={})
             JSONData = response.json()
@@ -445,7 +458,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         else:
             headers = {"Content-Type": "application/octet-stream"}
             body = open(BinPath, "rb").read()
-            response = self.dut().run_request_command(uri=URI, mode="POST", files=body, headers=None)
+            response = self.dut().run_request_command(uri=URI, mode="POST", body=body, headers=headers)
             JSONData = response.json()
         msg = "{0}: RedFish Input: {1} Result: {2}".format(MyName, BinPath, JSONData)
         self.test_run().add_log(LogSeverity.DEBUG, msg)
@@ -518,7 +531,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         :param VendorProvidedBundle:    Boolean value indicating if the vendor is required to provide a corrupt bundle.
                                         True by default.
         
-        :returns:		                SoftwareID of the component to be corrupted (in hex format)
+        :returns:                       SoftwareID of the component to be corrupted (in hex format)
         :rtype:                         str. None in case of failure
         """
         MyName = __name__ + "." + self.ctam_get_component_to_be_corrupted.__qualname__    
@@ -555,7 +568,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         :param task_message_list:           List of message from the task status response
         :param corrupted_component_id:      ComponentIdentifier (in hex format) of the corrupted component image
 
-        :returns:				    	    NonCorruptCompStaging_Success
+        :returns:                           NonCorruptCompStaging_Success
         :rtype:                             Bool
         """
         MyName = __name__ + "." + self.ctam_check_component_fwupd_failure.__qualname__        
@@ -580,7 +593,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         
         :param component_id:                Component ID / SoftwareID
 
-        :returns:				    	    List of components with the component ID
+        :returns:                           List of components with the component ID
         :rtype:                             list
         """
         JSONData = self.ctam_getfi(expanded=1)
@@ -595,7 +608,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                                             if pre install and post install details are empty. Make sure to
                                             call ctam_get_fw_version method to fill up pre and post install details.
 
-        :returns:				    	    AllComponentsActive
+        :returns:                           AllComponentsActive
         :rtype:                             Bool
         """
         
@@ -622,9 +635,9 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         :Description:           It will check the PLDM bundle json and find FW version
                                 of the component with the specified software id.
         
-        :param image_type:		image type
+        :param image_type:      image type
 
-        :returns:				ComponentVersions
+        :returns:               ComponentVersions
         :rtype:                 string
         """
         

@@ -65,6 +65,7 @@ class CTAMTestLogServiceDumpURIListRead(TestCase):
         """
         actual test verification
         """
+        status_msg = ""
         result = True
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
@@ -98,7 +99,7 @@ class CTAMTestLogServiceDumpURIListRead(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, status_msg
 
     def teardown(self):
         """

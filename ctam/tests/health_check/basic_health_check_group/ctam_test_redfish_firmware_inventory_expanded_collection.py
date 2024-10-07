@@ -68,7 +68,7 @@ class CTAMTestRedfishFirmwareInventoryExpandedCollection(TestCase):
         actual test verification
         """
         result = True
-        
+        status_msg = ""
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
             JSONData = self.group.health_check_ifc.ctam_getfi(expanded=1)
@@ -94,7 +94,7 @@ class CTAMTestRedfishFirmwareInventoryExpandedCollection(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, status_msg
 
     def teardown(self):
         """

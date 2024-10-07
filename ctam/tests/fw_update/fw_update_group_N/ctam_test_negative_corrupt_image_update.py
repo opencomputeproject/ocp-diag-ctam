@@ -68,6 +68,7 @@ class CTAMTestNegativeCorruptImageUpdate(TestCase):
         actual test verification
         """
         result = True
+        status_message = ""
 
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
@@ -81,6 +82,7 @@ class CTAMTestNegativeCorruptImageUpdate(TestCase):
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
             status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="corrupt")
+            status_message += status_msg
             if status:
                 step2.add_log(
                     LogSeverity.INFO,
@@ -100,7 +102,7 @@ class CTAMTestNegativeCorruptImageUpdate(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, status_message
 
     def teardown(self):
         """

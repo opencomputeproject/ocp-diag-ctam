@@ -23,7 +23,8 @@ from ocptv.output import Metadata
 from ocptv.output import Dut
 
 from interfaces.uri_builder import UriBuilder
-from utils.ssh_tunnel_utils import SSHTunnel
+from utils.ssh_tunnel_utils import SSHTunnelWithLibrary, SSHTunnelWithSshpass
+
 
 
 class CompToolDut(Dut):
@@ -93,6 +94,7 @@ class CompToolDut(Dut):
             self.connection_ip_address
         )
         self.multipart_form_data = redfish_uri_config.get("GPU", {}).get("MultiPartFormData", False)
+        self.multipart_force_update = redfish_uri_config.get("GPU", {}).get("MultiPartForceUpdate", False)
         self.multipart_push_uri_support = redfish_uri_config.get("GPU", {}).get("MultiPartPushUriSupport", False)
         self.binded_port = None
         self.SSHTunnelRemoteIPAddress = None
@@ -105,7 +107,10 @@ class CompToolDut(Dut):
         
         self.redfish_ifc = None
         self.redfish_auth = config["properties"].get("AuthenticationRequired", {}).get("value", False)
-        self.ssh_tunnel = SSHTunnel(self.test_info_logger)
+        if config["properties"].get("SSHTunnelUsingSSHPASS", {}).get("value", False):
+            self.ssh_tunnel = SSHTunnelWithSshpass(self.test_info_logger)
+        else:
+            self.ssh_tunnel = SSHTunnelWithLibrary(self.test_info_logger)
     
     def get_cwd(self):
         cwd = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -235,7 +240,7 @@ class CompToolDut(Dut):
             
             end_time = time.time()
             time_difference_seconds = end_time - start_time
-            time_difference = datetime.utcfromtimestamp(time_difference_seconds) - datetime.utcfromtimestamp(0)
+            time_difference = datetime.fromtimestamp(time_difference_seconds) - datetime.fromtimestamp(0)
             hours, remainder = divmod(time_difference.seconds, 3600)
             minutes, seconds = divmod(remainder, 60)
             milliseconds = int(time_difference.microseconds / 1000)

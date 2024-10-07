@@ -64,30 +64,37 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
         """
         actual test verification
         """
+        status_message = ""
         result = True
 
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if not self.group.fw_update_ifc.ctam_fw_update_precheck(
+            status, status_msg = self.group.fw_update_ifc.ctam_fw_update_precheck(
                 image_type="backup"
-            ):
+            )
+            status_message += status_msg
+            if not status:
                 step1.add_log(LogSeverity.INFO, f"[{self.test_id}] : FW Update Capable")
             else:
                 step1.add_log(
                     LogSeverity.INFO, f"{self.test_id} : FW Update Not Required"
                 )
+                status_message += " " + "FW Update Not Required"
 
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
-            status, _, task_id =self.group.fw_update_ifc.ctam_stage_fw(
+
+            status, status_msg, task_id =self.group.fw_update_ifc.ctam_stage_fw(
                 wait_for_stage_completion=False
             )
+            status_message += " " + status_msg
             if status:
                 step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
             else:
                 step2.add_log(
                     LogSeverity.ERROR, f"{self.test_id} : FW Update Stage Failed"
                 )
+                status_message += " " + "FW Update Stage Failed"
                 result = False
 
         step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
@@ -97,6 +104,7 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
             disturb_count = 1
             while keep_disturbing:
                 status, msg, _ = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup")
+                status_message += " " + msg
                 if status:
                     keep_disturbing = False
                     step3.add_log(
@@ -108,6 +116,7 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
                         LogSeverity.ERROR,
                         f"{self.test_id} : FW Update Disturb Failed, but with incorrect message.",
                     )
+                    status_message += " " + f"{self.test_id} : FW Update Disturb Failed, but with incorrect message."
                     keep_disturbing = False
                     unexpected_error = True
                 else:
@@ -115,6 +124,7 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
                         LogSeverity.ERROR,
                         f"{self.test_id} : FW Update Disturb Failed as expected",
                     )
+                    status_message += " " + f"{self.test_id} : FW Update Disturb Failed as expected"
                     disturb_count = disturb_count + 1
 
             if disturb_count == 1 and not unexpected_error:
@@ -123,18 +133,22 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
                     LogSeverity.ERROR,
                     f"{self.test_id} : FW Update Disturb was successful in first shot - Not Expected",
                 )
+                status_message += " " + f"{self.test_id} : FW Update Disturb was successful in first shot - Not Expected"
             if unexpected_error and task_id:
                 step3.add_log(
                     LogSeverity.ERROR,
                     f"{self.test_id} : FW Update Failed with Unexpected error - Waiting for pervious FW staging to be completed",
                 )
+                status_message += " " + f"{self.test_id} : FW Update Failed with Unexpected error - Waiting for pervious FW staging to be completed"
                 status, json_data = self.group.fw_update_ifc.ctam_monitor_task(TaskID=task_id)
                 
 
         if result or unexpected_error:
             step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")  # type: ignore
             with step4.scope():
-                if self.group.fw_update_ifc.ctam_activate_ac():
+                status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
+                status_message += " " + status_msg
+                if status:
                     step4.add_log(
                         LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
                     )
@@ -148,7 +162,9 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
         if result or unexpected_error:
             step5 = self.test_run().add_step(f"{self.__class__.__name__} run(), step5")
             with step5.scope():
-                if self.group.fw_update_ifc.ctam_fw_update_verify(image_type="backup"):
+                status, status_msg = self.group.fw_update_ifc.ctam_fw_update_verify(image_type="backup")
+                status_message += " " + status_msg
+                if status:
                     step5.add_log(
                         LogSeverity.INFO,
                         f"{self.test_id} : Update Verification Completed",
@@ -167,7 +183,7 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, status_message
 
     def teardown(self):
         """
