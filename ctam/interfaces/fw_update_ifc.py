@@ -358,10 +358,10 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             self.test_run().add_log(LogSeverity.DEBUG, msg)
 
         if not version_check:
-            if len(update_successful) > 0:
-                Update_Verified = True
-            else:
+            if len(update_failed) > 0:
                 Update_Verified = False
+            else:
+                Update_Verified = True
         msg = f"Updated Components count - {len(update_successful)} and Failed Components count - {len(update_failed)}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return Update_Verified, status_msg
@@ -653,4 +653,5 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
         #Using jsonmultivaluehunt to get the multiple values by passing two json keys
         jsonmultivaluehunt(PLDMPkgJson, "ComponentIdentifier", "ComponentVersionString", ComponentIdsAndVersions)
+        ComponentIdsAndVersions = {str(hex(int(key, 16))): value for key, value in ComponentIdsAndVersions.items()}
         return ComponentIdsAndVersions

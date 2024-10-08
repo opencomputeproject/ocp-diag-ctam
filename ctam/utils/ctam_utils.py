@@ -189,8 +189,10 @@ class GitUtils():
         data = result[s_idx:]
         validation_msg = data.split("\n")[-1]
         if "succeeded".lower() in validation_msg.lower():
-            return True
-        return False
+            return True, 0
+        else:
+            error_count = re.search(r'\d+', validation_msg).group()
+            return False, int(error_count)
         
     @classmethod
     def ctam_run_dmtf_command(cls, command):

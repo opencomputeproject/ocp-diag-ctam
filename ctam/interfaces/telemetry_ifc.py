@@ -85,13 +85,6 @@ class TelemetryIfc(FunctionalIfc, metaclass=Meta):
             URI = JSONData["MetricReports"]["@odata.id"]
             self.ctam_redfish_hunt(URI, "MetricValues", MetricReports)
         return MetricReports
-    
-    # def ctam_chassis_instance(self):
-    #     URI = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/Chassis", component_type="GPU")
-    #     response = self.dut().run_redfish_command(URI)
-    #     JSONData = response.dict
-    #     chassis_instances = [data["@odata.id"] for data in JSONData["Members"]]
-    #     return chassis_instances
 
     
     def ctam_get_all_metric_reports(self):
@@ -110,5 +103,7 @@ class TelemetryIfc(FunctionalIfc, metaclass=Meta):
             print(t)
         self.write_test_info("{}".format(mr_json))
         return mr_json
+    
+    
 
     
