@@ -38,6 +38,7 @@ from interfaces.comptool_dut import CompToolDut
 from utils.logger_utils import LoggingWriter, LogSanitizer, BuiltInLogSanitizers
 
 from version import __version__
+COUNTER = 0   
 
 
 class TestRunner:
@@ -485,7 +486,6 @@ class TestRunner:
             self.post_proces_logs(self.writer.log_file)
             return status_code, exit_string
         
-        
     def _run_group_test_cases(self, group_instance, test_case_instances):
         """
         for now, create a separate test run for each group. In the event of failures
@@ -498,7 +498,7 @@ class TestRunner:
         :returns: group_status, group_result
         :rtype:  ocptv.output.TestStatus, ocptv.output.TestResult
         """
-
+        global COUNTER
         group_status = TestStatus.ERROR
         group_result = TestResult.PASS
 
@@ -519,7 +519,7 @@ class TestRunner:
                 )
                 if not valid and not self.single_test_override:
                     msg = f"Test {test_instance.__class__.__name__} skipped due to tags. tags = {test_inc_tags}"
-                    skipped_test = self.active_run.add_step(name=f"<{test_instance.test_id} - {test_instance.test_name}> tttttttttttt")
+                    skipped_test = self.active_run.add_step(name=f"<{test_instance.test_id} - {test_instance.test_name}>")
                     skipped_test.start()
                     self.active_run.add_log(severity=LogSeverity.INFO, message=msg)
                     skipped_test.end(status=TestStatus.COMPLETE)
@@ -534,8 +534,9 @@ class TestRunner:
                     test_case_step.start()
                     test_instance.setup()
                     self.comp_tool_dut.current_test_name = test_instance.test_name
-                    file_name = "{}_{}".format(test_instance.test_id,
+                    file_name = "{}_{}_{}".format(COUNTER, test_instance.test_id,
                                                                         test_instance.test_name)
+                    COUNTER += 1
                     logger = LoggingWriter(
                         self.cmd_output_dir, self.console_log, file_name, "json", self.debug_mode,
                         desanitize_log=self.sanitize_logs, words_to_skip=self.words_to_skip
