@@ -41,8 +41,8 @@ class CTAMTestRedfishInteropValidatorFirmwareInventory(TestCase):
     test_name: str = "CTAM Test Redfish Interop Validator Firmware Inventory"
     test_id: str = "H5"
     score_weight: int = 10
-    tags: List[str] = ["HCheck", "L0"]
-    compliance_level: str ="L0"
+    tags: List[str] = ["HCheck", "L1"]
+    compliance_level: str ="L1"
 
     # exclude_tags: List[str] = ["NotCheck"]
 
