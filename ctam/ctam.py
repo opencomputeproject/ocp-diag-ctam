@@ -5,6 +5,7 @@
 
 import argparse
 import os
+import progressbar
 import sys
 import traceback
 import json
@@ -137,6 +138,10 @@ def main():
 
         if not os.path.exists(logs_output_dir):
             os.makedirs(logs_output_dir)
+        # When there are multiple output sources (like stdout, stderr, or logging) which can often conflict
+        # with the progressbar, this will cause it to break onto the new lines or display inconsistently.
+        # Hence wrap_Stderr() is used.
+        progressbar.streams.wrap_stderr()
         raw_log_file = os.path.join(logs_output_dir, "Command_Line_Logs.log")
         redirect_output = RedirectOutput(raw_log_file)
         redirect_output.start()
