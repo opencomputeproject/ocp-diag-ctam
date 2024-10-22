@@ -8,7 +8,8 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Test case of full firmware update in a loop. To verify the ongoing rollback is not affected by 
+:Description:	Before running this test case we expect to be on N image. We will do staging with N-1 image which is getting interrupted by ac
+                power reset. At least one of the components should stay on N image after ac power reset.
 :Usage 1:		python ctam.py -w ..\workspace -t F24
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Staging Interruption With AC Reset"
 

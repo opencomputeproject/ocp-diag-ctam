@@ -653,4 +653,5 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
         #Using jsonmultivaluehunt to get the multiple values by passing two json keys
         jsonmultivaluehunt(PLDMPkgJson, "ComponentIdentifier", "ComponentVersionString", ComponentIdsAndVersions)
+        ComponentIdsAndVersions = {str(hex(int(key, 16))): value for key, value in ComponentIdsAndVersions.items()}
         return ComponentIdsAndVersions

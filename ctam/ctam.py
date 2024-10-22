@@ -236,6 +236,7 @@ def main():
                 package_info_json_file=package_info_json,
                 redfish_uri_config_file=redfish_uri_config,
                 redfish_response_messages=redfish_response_messages,
+                default_config_path=default_config_path,
                 net_rc=net_rc,
             )
             status_code, exit_string = runner.get_system_details()
@@ -251,6 +252,7 @@ def main():
                 package_info_json_file=package_info_json,
                 redfish_uri_config_file=redfish_uri_config,
                 redfish_response_messages=redfish_response_messages,
+                default_config_path=default_config_path,
                 net_rc=net_rc,
                 single_test_override=args.testcase,
             )
@@ -264,6 +266,7 @@ def main():
                 package_info_json_file=package_info_json,
                 redfish_uri_config_file=redfish_uri_config,
                 redfish_response_messages=redfish_response_messages,
+                default_config_path=default_config_path,
                 net_rc=net_rc,
                 sequence_test_override=args.testcase_sequence,
             )
@@ -277,6 +280,7 @@ def main():
                 package_info_json_file=package_info_json,
                 redfish_uri_config_file=redfish_uri_config,
                 redfish_response_messages=redfish_response_messages,
+                default_config_path=default_config_path,
                 net_rc=net_rc,
                 single_group_override=args.group,
             )
@@ -290,6 +294,7 @@ def main():
                 package_info_json_file=package_info_json,
                 redfish_uri_config_file=redfish_uri_config,
                 redfish_response_messages=redfish_response_messages,
+                default_config_path=default_config_path,
                 net_rc=net_rc,
                 sequence_group_override=args.group_sequence,
             )
@@ -305,6 +310,7 @@ def main():
                 net_rc=net_rc,
                 redfish_uri_config_file=redfish_uri_config,
                 redfish_response_messages=redfish_response_messages,
+                default_config_path=default_config_path,
                 run_all_tests=all_tests
             )
 
