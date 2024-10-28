@@ -100,7 +100,8 @@ class CTAMTestRedfishInteropValidatorFirmwareInventory(TestCase):
                                                 )
                 if not result:
                     step2.add_log(LogSeverity.ERROR, f"Something went wrong while running redfish command.")
-                step2.add_log(LogSeverity.INFO, f"Redfish Service Command ran successfully and validated.")
+                else:
+                    step2.add_log(LogSeverity.INFO, f"Redfish Service Command ran successfully and validated.")
 
         # ensure setting of self.result and self.score prior to calling super().run()
         self.result = TestResult.PASS if result else TestResult.FAIL

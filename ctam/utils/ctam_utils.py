@@ -166,7 +166,7 @@ class GitUtils():
             log_path (str): The path where we need to store the logs for Interop validator
             profile (str): The profile we need to validate against redfish interop uri
         Returns:
-            _type_: (bool): returns if successfully validated or not
+            _type_: (bool, int): returns if successfully validated or not
         """
         service_base_command = "python {file_name}.py --ip {ip} \
                 -u {user} -p {pwd} --logdir {log_dir}".format(
@@ -180,12 +180,12 @@ class GitUtils():
         service_base_command += " {}".format(profile)
         status, result = cls.ctam_run_dmtf_command(service_base_command)
         if not status:
-            return False
+            return False, 0
         result = ''.join(result).strip()
         data = result.replace("\r", "").split("\n")[-1]
         s_idx = result.find("Elapsed time:")
         if s_idx < 0:
-            return False
+            return False, 0
         data = result[s_idx:]
         validation_msg = data.split("\n")[-1]
         if "succeeded".lower() in validation_msg.lower():
