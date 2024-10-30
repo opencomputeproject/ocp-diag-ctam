@@ -176,7 +176,7 @@ class GitUtils():
                         pwd=user_pass,
                         log_dir=log_path)
         
-        service_base_command += f"".join(f" --{k} {v} " for k, v in kwargs.items())
+        service_base_command += f"".join(f" --{k} {v} " for k, v in kwargs.items() if v)
         service_base_command += " {}".format(profile)
         status, result = cls.ctam_run_dmtf_command(service_base_command)
         if not status:
