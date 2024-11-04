@@ -108,7 +108,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         """
         MyName = __name__ + "." + self.ctam_fw_update_precheck.__qualname__
         VersionsDifferent = True
-        status_message = ""
+        failure_reason = ""
         # if all component is update not needed then return update not needed. If any one component is updatable return updatable
         self.ctam_get_fw_version(PostInstall=0)
 
@@ -116,38 +116,42 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         BundleComponentIdsAndVersions = self.PLDMComponentVersions(image_type=image_type)
         for element in self.PreInstallDetails:
         #     # Check ONLY the ones which are part of HttpPushURITargets
-            if (
-                self.included_targets == []
-                or element["@odata.id"] in self.included_targets
-            ):
-                msg = f"Pre Install Details: {element['Id']} : {element['SoftwareId']} : {element.get('Version', 'NA')} : "
-                if str(element["Updateable"]) == "True":
-                    
-                    SoftwareId = str(hex(int(element["SoftwareId"], 16)))
-                    if SoftwareId in BundleComponentIdsAndVersions.keys():
-
-                        Package_Version = self.PLDMComponentVersions(image_type=image_type).get(SoftwareId)
-                        if not Package_Version:
-                            msg += "Not in the PLDM bundle"
+            try:
+                if (
+                    self.included_targets == []
+                    or element["@odata.id"] in self.included_targets
+                ):
+                    msg = f"Pre Install Details: {element['Id']} : {element['SoftwareId']} : {element.get('Version', 'NA')} : "
+                    if str(element["Updateable"]) == "True":
                         
-                        elif element["Version"] not in Package_Version and (
-                            self.included_targets == []
-                            or element["@odata.id"] in self.included_targets
-                        ):
-                            VersionsDifferent = False
-                            msg += f"Update Capable to {Package_Version}"
+                        SoftwareId = str(hex(int(element["SoftwareId"], 16)))
+                        if SoftwareId in BundleComponentIdsAndVersions.keys():
 
+                            Package_Version = self.PLDMComponentVersions(image_type=image_type).get(SoftwareId)
+                            if not Package_Version:
+                                msg += "Not in the PLDM bundle"
+                            
+                            elif element["Version"] not in Package_Version and (
+                                self.included_targets == []
+                                or element["@odata.id"] in self.included_targets
+                            ):
+                                VersionsDifferent = False
+                                msg += f"Update Capable to {Package_Version}"
+
+                            else:
+                                msg += "Update Not Needed ."
                         else:
-                            msg += "Update Not Needed ."
+                            msg += "SoftwareId not found in PLDM JSON."
+                        self.test_run().add_log(LogSeverity.DEBUG, msg)
                     else:
-                        msg += "SoftwareId not found in PLDM JSON."
-                    self.test_run().add_log(LogSeverity.DEBUG, msg)
-                    status_message = msg
-                else:
-                    # Not in HttpPushURITargets
-                    pass
-        return VersionsDifferent, status_message
-    
+                        # Not in HttpPushURITargets
+                        pass
+            except Exception as e:
+                failure_reason += msg + " Exception occured: " + str(e)
+                self.test_run().add_log(LogSeverity.ERROR, msg + "Exception occured: " + str(e))
+                VersionsDifferent = False
+                
+        return VersionsDifferent, failure_reason
             
     def ctam_stage_fw(
         self, partial=0, image_type="default", wait_for_stage_completion=True,
@@ -166,7 +170,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         :returns:                               StageFWOOB_Status, StageFWOOB_Status_message, return_task_id 
         :rtype:                                 Bool, str, str
         """
-        status_msg = ""
+        failure_reason = ""
         MyName = __name__ + "." + self.ctam_stage_fw.__qualname__
         StartTime = time.time()
         pushtargets = self.dut().uri_builder.format_uri(redfish_str="{HttpPushUriTargets}", component_type="GPU")
@@ -176,10 +180,10 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         if not JSONFWFilePayload or not os.path.isfile(JSONFWFilePayload):
             self.test_run().add_log(LogSeverity.DEBUG, f"Package file not found at path {JSONFWFilePayload}!!!")
             if corrupted_component_id != None:
-                status_msg = "Error in creating corrupted component!"
+                failure_reason = "Error in creating corrupted component!"
             else:
-                status_msg = f"Package file not found in the workspace !!!"
-            return False, status_msg, ""
+                failure_reason = f"Package file not found in the workspace !!!"
+            return False, failure_reason, ""
         if self.dut().is_debug_mode():
             print(JSONFWFilePayload)
         update_uri = self.dut().redfish_uri_config.get("GPU", {}).get("UpdateURI", "")
@@ -193,13 +197,14 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             status, uri, is_multipart = self.get_update_uri()
         if not status:
             self.test_run().add_log(LogSeverity.DEBUG, f"Unable to find update uri from UpdateService resource!!!")
-            status_msg = "Unable to find update uri from UpdateService resource!!!"
-            return False, status_msg, ""
+            failure_reason = "Unable to find update uri from UpdateService resource!!!"
+            return False, failure_reason, ""
         targets = self.get_target_inventorys(targets=specific_targets) if specific_targets else []
         if self.dut().is_debug_mode():
             self.test_run().add_log(LogSeverity.DEBUG, f"URI : {uri}")
             self.test_run().add_log(LogSeverity.DEBUG, f"Targets : {targets}")
-        JSONData = self.RedFishFWUpdate(JSONFWFilePayload, uri, targets=targets, is_multipart=is_multipart)
+        is_force_update = image_type == "backup" or image_type == "old_version"
+        JSONData = self.RedFishFWUpdate(JSONFWFilePayload, uri, targets=targets, is_multipart=is_multipart, is_force_update=is_force_update)
         StagingStartTime = time.time()
 
         if self.dut().is_debug_mode():
@@ -264,11 +269,11 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     message = JSONData.get("error", {}).get("code", "")
                 resp_msg = self.dut().redfish_response_messages.get("UpdateProgress_Message", "UnexpectedMessage")
                 if resp_msg:
-                    if message.split(".")[-1].lower() != resp_msg.lower():
+                    if message.split(".")[-1].lower() == resp_msg.lower():
                         StageFWOOB_Status = False
-                        stage_msg = "UnexpectedMessage"
+                        stage_msg = "ExpectedMessage"
             
-            if image_type == "large":
+            elif image_type == "large":
                 message = JSONData.get("error", {}).get("@Message.ExtendedInfo", {})[0].get("MessageId", "")
                 if not message:
                     message = JSONData.get("error", {}).get("code", "")
@@ -303,7 +308,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         Update_Verified = True
         update_successful = []
         update_failed = []        
-        status_msg = ""
+        failure_reason = ""
         self.ctam_get_fw_version(PostInstall=1)
         msg = json.dumps(self.PostInstallDetails, indent=4)
         self.test_run().add_log(LogSeverity.DEBUG, msg)
@@ -313,49 +318,54 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
         # Verify version of components currently reporting in FW inventory
         for element in self.PostInstallDetails:
-            negative_case = (
-                image_type == "negate" 
-                or str(element["Updateable"]) == "False" # Note, this may mean empty SoftwareId. So this condition needs to come before the next one
-                or (image_type == "corrupt_component" and int(element["SoftwareId"], 16) == int(corrupted_component_id, 16) )
-                or (self.included_targets != []
-                    and element["@odata.id"] not in self.included_targets)
-            )
-            if negative_case:
-                # FW version should be same as from pre-update
-                ExpectedVersion = self.PreInstallVersionDetails[element["Id"]]
-                msg = "FW should not be updated, expected version = {}".format(
-                    ExpectedVersion
+            try:
+                negative_case = (
+                    image_type == "negate" 
+                    or str(element["Updateable"]) == "False" # Note, this may mean empty SoftwareId. So this condition needs to come before the next one
+                    or (image_type == "corrupt_component" and int(element["SoftwareId"], 16) == int(corrupted_component_id, 16) )
+                    or (self.included_targets != []
+                        and element["@odata.id"] not in self.included_targets)
                 )
-                self.test_run().add_log(LogSeverity.DEBUG, msg)
-            
-            elif specific_targets and element["Id"] not in specific_targets:
-                ExpectedVersion = self.PreInstallVersionDetails[element["Id"]]
+                if negative_case:
+                    # FW version should be same as from pre-update
+                    ExpectedVersion = self.PreInstallVersionDetails[element["Id"]]
+                    msg = "FW should not be updated, expected version = {}".format(
+                        ExpectedVersion
+                    )
+                    self.test_run().add_log(LogSeverity.DEBUG, msg)
                 
-            else:
-                SoftwareId = str(hex(int(element["SoftwareId"], 16)))
-                # FW version should be updated per PLDM bundle
-                ExpectedVersion = self.PLDMComponentVersions(image_type=image_type).get(SoftwareId, '')
-            msg = f"Post Install Details: {element['Id']} : {element['SoftwareId']} : {element.get('Version', 'NA')} : "
-            if not ExpectedVersion:
-                # Either not present in PLDM bundle or not present in PreInstallVersionDetails
-                msg += "Not in the PLDM bundle"
-            
-            elif element.get("Version", '') not in ExpectedVersion:
-                # Both positive and negative test case
-                update_failed.append(element['SoftwareId'])
-                Update_Verified = False
-                msg += f"Update Failed : Expected {ExpectedVersion}"
-                status_msg += "\n" + msg
+                elif specific_targets and element["Id"] not in specific_targets:
+                    ExpectedVersion = self.PreInstallVersionDetails[element["Id"]]
+                    
+                else:
+                    SoftwareId = str(hex(int(element["SoftwareId"], 16)))
+                    # FW version should be updated per PLDM bundle
+                    ExpectedVersion = self.PLDMComponentVersions(image_type=image_type).get(SoftwareId, '')
+                msg = f"Post Install Details: {element['Id']} : {element['SoftwareId']} : {element.get('Version', 'NA')} : "
+                if not ExpectedVersion:
+                    # Either not present in PLDM bundle or not present in PreInstallVersionDetails
+                    msg += "Not in the PLDM bundle"
+                
+                elif element.get("Version", '') not in ExpectedVersion:
+                    # Both positive and negative test case
+                    update_failed.append(element['SoftwareId'])
+                    Update_Verified = False
+                    msg += f"Update Failed : Expected {ExpectedVersion}"
+                    failure_reason += " " + msg
 
-            elif negative_case:
-                # Negative test case, but expected.
-                msg += "Update Interrupted as Expected"
-            
-            else:
-                msg += "Update Successful"
-                update_successful.append(element['SoftwareId'])
+                elif negative_case:
+                    # Negative test case, but expected.
+                    msg += "Update Interrupted as Expected"
                 
-            self.test_run().add_log(LogSeverity.DEBUG, msg)
+                else:
+                    msg += "Update Successful"
+                    update_successful.append(element['SoftwareId'])
+                    
+                self.test_run().add_log(LogSeverity.DEBUG, msg)
+            except Exception as e:
+                failure_reason += " Exception occured: " + str(e)
+                self.test_run().add_log(LogSeverity.ERROR, "Exception occured: " + str(e))
+                Update_Verified = False
 
         if not version_check:
             if len(update_successful) > 0:
@@ -364,7 +374,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 Update_Verified = False
         msg = f"Updated Components count - {len(update_successful)} and Failed Components count - {len(update_failed)}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
-        return Update_Verified, status_msg
+        return Update_Verified, failure_reason
     
     def get_target_inventorys(self, targets):
         return [
@@ -428,7 +438,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 print("{} {}".format(MyName, str(targets)))
         return PushSuccess
 
-    def RedFishFWUpdate(self, BinPath, URI, targets=[], is_multipart=False):
+    def RedFishFWUpdate(self, BinPath, URI, targets=[], is_multipart=False, is_force_update=False):
         """
         :Description:         It will update system firmware using redfish command.
         :param BinPath:       Path for the bin
@@ -444,7 +454,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             headers = {"Content-Type": "multipart/form-data"}
             body = {
                 "UpdateFile": (BinPath, open(BinPath, "rb"), "application/octet-stream"),
-                "UpdateParameters" : ("Targets", json.dumps({"Targets": targets, "ForceUpdate": True if self.dut().multipart_force_update else False}),'application/json')
+                "UpdateParameters" : ("Targets", json.dumps({"Targets": targets, "ForceUpdate": True if is_force_update else False}),'application/json')
             }
             response = self.dut().run_request_command(uri=URI, mode="POST",files=body, body={})
             JSONData = response.json()

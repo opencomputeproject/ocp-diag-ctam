@@ -71,18 +71,17 @@ class CTAMTestInstallSameImageTwoTimes(TestCase):
 
         result = True
         times = 2
-        status_message = ""
+        failure_reason = ""
 
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            status, status_message = self.group.fw_update_ifc.ctam_fw_update_precheck()
+            status, failure_reason = self.group.fw_update_ifc.ctam_fw_update_precheck()
             if not status:
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
             else:
                 step1.add_log(
                     LogSeverity.INFO, f"{self.test_id} : FW Update Not Required"
                 )
-                status_message += " " + "FW Update Not Required"
 
         for i in range(times):
             step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
@@ -93,7 +92,7 @@ class CTAMTestInstallSameImageTwoTimes(TestCase):
                 break
             with step2.scope():
                 status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw()
-                status_message += " " + status_msg
+                failure_reason += " " + status_msg
                 if status:
                     step2.add_log(
                         LogSeverity.INFO, f"{self.test_id} : FW Update Staged"
@@ -103,13 +102,14 @@ class CTAMTestInstallSameImageTwoTimes(TestCase):
                         LogSeverity.FATAL,
                         f"{self.test_id} : FW Update Staged Failed",
                     )
+                    failure_reason += " " + "FW Update Staged Failed"
                     result = False
 
         if result:
             step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
             with step3.scope():
                 status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
-                status_message += " " + status_msg
+                failure_reason += " " + status_msg
                 if status:
                     step3.add_log(
                         LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
@@ -119,13 +119,14 @@ class CTAMTestInstallSameImageTwoTimes(TestCase):
                         LogSeverity.FATAL,
                         f"{self.test_id} : FW Update Activation Failed",
                     )
+                    failure_reason += "" + "FW Update Activation Failed"
                     result = False
 
         if result:
             step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")
             with step4.scope():
                 status, status_msg = self.group.fw_update_ifc.ctam_fw_update_verify()
-                status_message += " " + status_msg
+                failure_reason += " " + status_msg
                 if status:
                     step4.add_log(
                         LogSeverity.INFO,
@@ -136,6 +137,7 @@ class CTAMTestInstallSameImageTwoTimes(TestCase):
                         LogSeverity.FATAL,
                         f"{self.test_id} : Update Verification Failed",
                     )
+                    failure_reason += " " + "Update Verification Failed"
                     result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -145,7 +147,7 @@ class CTAMTestInstallSameImageTwoTimes(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result, status_message
+        return self.result, failure_reason
 
     def teardown(self):
         """

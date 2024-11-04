@@ -61,7 +61,7 @@ class CTAMTestAcCyclesInLoop(TestCase):
         actual test verification
         """
         result = True
-        status_msg = ""
+        failure_reason = ""
         loops = 1
 
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  
@@ -73,7 +73,8 @@ class CTAMTestAcCyclesInLoop(TestCase):
                         self.test_run().add_log(LogSeverity.DEBUG, msg)  
                     else:
                         msg = f"{self.test_id} : AC Cycle Failed Loop {i}"
-                        self.test_run().add_log(LogSeverity.DEBUG, msg) 
+                        self.test_run().add_log(LogSeverity.DEBUG, msg)
+                        failure_reason += msg
                         result = False
         
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -83,7 +84,7 @@ class CTAMTestAcCyclesInLoop(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result, status_msg
+        return self.result, failure_reason
 
     def teardown(self):
         """
