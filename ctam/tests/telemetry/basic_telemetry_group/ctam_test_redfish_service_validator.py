@@ -42,8 +42,6 @@ class CTAMTestServiceValidator(TestCase):
     tags: List[str] = []
     compliance_level: str = ""
 
-    # exclude_tags: List[str] = ["NotCheck"]
-
     def __init__(self, group: BasicTelemetryTestGroup):
         """
         _summary_

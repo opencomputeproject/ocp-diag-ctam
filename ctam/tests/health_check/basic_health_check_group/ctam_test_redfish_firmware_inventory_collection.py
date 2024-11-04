@@ -3,19 +3,21 @@ Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Redfish Firmware Inventory Collection
+:Test Name:		CTAM Test Redfish Interop Validator Firmware Inventory
 :Test ID:		H5
-:Group Name:	fw_update
+:Group Name:	health_check
 :Score Weight:	10
 
-:Description:	This test attempts to get the firmware inventory from update service
+:Description:	This test validates the Firmware Inventory using RIV
 
 :Usage 1:		python ctam.py -w ..\workspace -t H5
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Firmware Inventory Collection"
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Interop Validator Firmware Inventory"
 
 """
 from typing import Optional, List
 from tests.test_case import TestCase
+from test_hierarchy import TestHierarchy
+import os
 from ocptv.output import (
     DiagnosisType,
     LogSeverity,
@@ -26,9 +28,9 @@ from ocptv.output import (
 from tests.health_check.basic_health_check_group.basic_health_check_test_group import (
     BasicHealthCheckTestGroup,
 )
+from utils.ctam_utils import GitUtils
 
-
-class CTAMTestRedfishFirmwareInventoryCollection(TestCase):
+class CTAMTestRedfishInteropValidatorFirmwareInventory(TestCase):
     """
     Verify values of Firmware Inventory Collection are present
 
@@ -36,11 +38,11 @@ class CTAMTestRedfishFirmwareInventoryCollection(TestCase):
     :type TestCase:
     """
 
-    test_name: str = "CTAM Test Redfish Firmware Inventory Collection"
+    test_name: str = "CTAM Test Redfish Interop Validator Firmware Inventory"
     test_id: str = "H5"
     score_weight: int = 10
-    tags: List[str] = ["HCheck"]
-    compliance_level: str =""
+    tags: List[str] = ["HCheck", "L1"]
+    compliance_level: str ="L1"
 
     # exclude_tags: List[str] = ["NotCheck"]
 
@@ -50,6 +52,7 @@ class CTAMTestRedfishFirmwareInventoryCollection(TestCase):
         """
         super().__init__()
         self.group = group
+        self.git_utils = GitUtils()
 
     def setup(self):
         """
@@ -117,7 +120,8 @@ class CTAMTestRedfishFirmwareInventoryCollection(TestCase):
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():
-            pass
+            step1.add_log(LogSeverity.INFO, f"Cleaning repo after running Redfish Interop Validator.")
+            self.git_utils.clean_repo()
 
         # call super teardown last
         super().teardown()

@@ -1,0 +1,77 @@
+{
+  "SchemaDefinition": "RedfishInteroperabilityProfile.v1_6_0",
+  "ProfileName": "OCPGPUManagement",
+  "ProfileVersion": "1.0.0",
+  "Purpose": "Specifies the OCP baseline hardware management requirements for the Redfish interface on GPU platforms.",
+  "OwningEntity": "Open Compute Project",
+  "ContributedBy": "Google, Meta, Microsoft, NVidia, AMD",
+  "License": "Creative Commons Attribution-ShareAlike 4.0 International License",
+  "ContactInfo": "",
+  "Protocol": {
+    "MinVersion": "1.0"
+  },
+  "Resources": {
+    "SoftwareInventory":{
+      "MinVersion": "1.0.0",
+      "ReadRequirement": "Recommended",
+      "PropertyRequirements":{
+        "Id":{
+          "ReadRequirement":"Mandatory",
+          "Purpose": "Placeholder for Purpose Comment to be Added"
+        },
+        "Name":{
+          "ReadRequirement":"Mandatory",
+          "Purpose": "Placeholder for Purpose Comment to be Added"
+        },
+        "Status":{
+          "ReadRequirement":"Mandatory",
+          "Purpose": "Placeholder for Purpose Comment to be Added",
+          "PropertyRequirements":{
+            "State":{
+              "ReadRequirement":"Mandatory",
+              "Purpose": "Placeholder for Purpose Comment to be Added",
+              "Values":["Enabled", "Disabled"]
+            },
+            "Health":{
+              "ReadRequirement":"Mandatory",
+              "Purpose": "Placeholder for Purpose Comment to be Added",
+              "Values":["OK", "Warning", "Critical"]
+            }
+          }
+        },
+        "SoftwareId":{
+          "ReadRequirement":"Mandatory",
+          "Purpose": "Placeholder for Purpose Comment to be Added"
+        },
+        "Manufacturer":{
+          "ReadRequirement":"Mandatory",
+          "Purpose": "Placeholder for Purpose Comment to be Added"
+        },
+        "Updateable":{
+          "ReadRequirement":"Mandatory",
+          "Purpose": "Placeholder for Purpose Comment to be Added"
+        },
+        "WriteProtected":{
+          "ReadRequirement":"Mandatory",
+          "Purpose": "Placeholder for Purpose Comment to be Added"
+        },
+        "Version":{
+          "ReadRequirement":"Mandatory",
+          "Purpose": "Placeholder for Purpose Comment to be Added"
+        }
+      }
+    }
+  },
+  "Registries": {
+    "Base": {
+      "MinVersion": "1.0.0",
+      "Repository": "redfish.dmtf.org/registries",
+      "Messages": {
+        "Success": {},
+        "GeneralError": {},
+        "Created": {},
+        "PropertyDuplicate": {}
+      }
+    }
+  }
+}
