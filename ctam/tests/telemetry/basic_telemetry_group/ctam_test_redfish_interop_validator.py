@@ -68,7 +68,7 @@ class CTAMTestRedfishInteropValidator(TestCase):
         actual test verification
         """
         result = True
-        status_msg = ""
+        failure_reason = ""
         logger_path = os.path.join(self.dut().logger_path, "RedfishInteropValidator", f"{self.__class__.test_id}_{self.__class__.__name__}")
 
         #cloning Redfish Interop Validator under temp folder which will be deleted after completion of test case.
@@ -96,6 +96,7 @@ class CTAMTestRedfishInteropValidator(TestCase):
                                                 )
                 if not result:
                     step2.add_log(LogSeverity.ERROR, f"Something went wrong while running redfish command.")
+                    failure_reason += "Something went wrong while running redfish command."
                 else:
                     step2.add_log(LogSeverity.INFO, f"Redfish Service Command ran successfully and validated.")
 
@@ -106,7 +107,7 @@ class CTAMTestRedfishInteropValidator(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result, status_msg
+        return self.result, failure_reason
 
     def teardown(self):
         """

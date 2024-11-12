@@ -67,7 +67,7 @@ class CTAMTestRedfishProcessorExpandedCollection(TestCase):
         """
         actual test verification
         """
-        status_msg = ""
+        failure_reason = ""
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
             self.group.health_check_ifc.ctam_getepc(expanded=1)
@@ -85,7 +85,7 @@ class CTAMTestRedfishProcessorExpandedCollection(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result, status_msg
+        return self.result, failure_reason
 
     def teardown(self):
         """
