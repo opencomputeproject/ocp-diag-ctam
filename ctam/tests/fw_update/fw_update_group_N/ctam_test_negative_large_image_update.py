@@ -70,7 +70,8 @@ class CTAMTestNegativeLargeImageUpdate(TestCase):
 
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if not self.group.fw_update_ifc.ctam_fw_update_precheck():
+            status, failure_reason = self.group.fw_update_ifc.ctam_fw_update_precheck()
+            if not status:
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
             else:
                 step1.add_log(

@@ -58,7 +58,7 @@ class CTAMTestTelemetryMRRead(TestCase):
         """
         actual test verification
         """
-        status_msg = ""
+        failure_reason = ""
         result = True
         step1 = self.test_run().add_step((f"{self.__class__.__name__} run(), step1"))  # type: ignore
         with step1.scope():
@@ -72,6 +72,7 @@ class CTAMTestTelemetryMRRead(TestCase):
                 self.test_run().add_log(LogSeverity.INFO, msg)
             else:
                 self.test_run().add_log(LogSeverity.FATAL, "Could not extract the Metric Reports. Proceed with manual debug")
+                failure_reason += "Could not extract the Metric Reports. Proceed with manual debug"
                 result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -81,7 +82,7 @@ class CTAMTestTelemetryMRRead(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result, status_msg
+        return self.result, failure_reason
 
     def teardown(self):
         """

@@ -66,13 +66,14 @@ class CTAMVerifySelfTestReport(TestCase):
         actual test verification
         """
         result = True
-        status_msg = ""
+        failure_reason = ""
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
             if self.group.health_check_ifc.trigger_self_test_dump_collection():
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Self test dump collection is triggered")
             else:
                 step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Self Test Dump Collection Failed")
+                failure_reason += "Self Test Dump Collection Failed"
                 result = False
 
         if result:
@@ -82,6 +83,7 @@ class CTAMVerifySelfTestReport(TestCase):
                     step2.add_log(LogSeverity.INFO, f"{self.test_id} : Self Test Dump Download")
                 else:
                     step2.add_log(LogSeverity.ERROR, f"{self.test_id} : Self Test Dump Download Failed")
+                    failure_reason += "Self Test Dump Download Failed"
                     result = False
                     
         if result:
@@ -91,6 +93,7 @@ class CTAMVerifySelfTestReport(TestCase):
                     step3.add_log(LogSeverity.INFO, f"{self.test_id} : Self Test Report Failure Check")
                 else:
                     step3.add_log(LogSeverity.ERROR, f"{self.test_id} : Self Test Report Failure Check Failed")
+                    failure_reason += "Self Test Report Failure Check Failed"
                     result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -100,7 +103,7 @@ class CTAMVerifySelfTestReport(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result, status_msg
+        return self.result, failure_reason
 
     def teardown(self):
         """

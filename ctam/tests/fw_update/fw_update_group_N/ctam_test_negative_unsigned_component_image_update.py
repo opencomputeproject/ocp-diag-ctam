@@ -67,11 +67,13 @@ class CTAMTestNegativeUnsignedImageUpdate(TestCase):
         """
         actual test verification
         """
+        failure_reason = ""
         result = True
 
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if not self.group.fw_update_ifc.ctam_fw_update_precheck():
+            status, failure_reason = self.group.fw_update_ifc.ctam_fw_update_precheck()
+            if not status:
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
             else:
                 step1.add_log(
@@ -81,7 +83,7 @@ class CTAMTestNegativeUnsignedImageUpdate(TestCase):
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
             status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="unsigned_component_image")
-            print("status_msg13342442525", status_msg)
+            failure_reason += " " + status_msg
             if status:
                 step2.add_log(
                     LogSeverity.INFO,
@@ -92,7 +94,7 @@ class CTAMTestNegativeUnsignedImageUpdate(TestCase):
                     LogSeverity.ERROR,
                     f"{self.test_id} : FW Update Staging Initiated - Unexpected",
                 )
-                status_msg += f"{self.test_id} : FW Update Staging Initiated - Unexpected"
+                failure_reason += " FW Update Staging Initiated - Unexpected"
                 result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -102,7 +104,7 @@ class CTAMTestNegativeUnsignedImageUpdate(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result, status_msg
+        return self.result, failure_reason
 
     def teardown(self):
         """

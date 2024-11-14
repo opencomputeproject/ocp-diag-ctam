@@ -65,7 +65,7 @@ class CTAMTestServiceValidator(TestCase):
         """
         actual test verification
         """
-        status_msg = ""
+        failure_reason = ""
         result = True
         git = GitUtils()
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
@@ -77,6 +77,7 @@ class CTAMTestServiceValidator(TestCase):
                                   repo_path="RedfishServiceValidator")
             if not result:
                 step1.add_log(LogSeverity.ERROR, f"Cloning repo for Redfish Service Validator failed.")
+                failure_reason += "Cloning repo for Redfish Service Validator failed. "
             step1.add_log(LogSeverity.INFO, f"Cloning repo for Redfish Service Validator successful.")
         
         if result:
@@ -97,6 +98,7 @@ class CTAMTestServiceValidator(TestCase):
                                                        service_uri="/redfish/v1")
                 if not result:
                     step2.add_log(LogSeverity.ERROR, f"Something went wrong while running redfish command. Please see error msg {msg}.")
+                    failure_reason += f"Something went wrong while running redfish command. Please see error msg {msg}."
                 step2.add_log(LogSeverity.INFO, f"Redfish Service Command ran successfully and validated.")
         
         step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
@@ -110,7 +112,7 @@ class CTAMTestServiceValidator(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result, status_msg
+        return self.result, failure_reason
 
     def teardown(self):
         """

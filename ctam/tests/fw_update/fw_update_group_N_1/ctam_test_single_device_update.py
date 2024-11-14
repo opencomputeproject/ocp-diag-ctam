@@ -69,7 +69,7 @@ class CTAMTestSingleDeviceUpdate(TestCase):
         result = True
         updated_devices = []
         failed_devices = []
-        status_message = ""
+        failure_reason = ""
 
         if component_list := self.group.fw_update_ifc.ctam_get_updateable_devices_in_bundle():
             for device in component_list:
@@ -80,13 +80,13 @@ class CTAMTestSingleDeviceUpdate(TestCase):
                         step1.add_log(LogSeverity.INFO, f"{self.test_id} : Single Device Selected")
                     else:
                         step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Single Device Selection Failed")
-                        status_message += f"{self.test_id} : Single Device Selection Failed"
+                        failure_reason += f"{self.test_id} : Single Device Selection Failed"
                         result = False
                 
                 step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2_{device}")  # type: ignore
                 with step2.scope():
                     status, status_msg = self.group.fw_update_ifc.ctam_fw_update_precheck()
-                    status_message += " " + status_msg
+                    failure_reason += " " + status_msg
                     if not status:
                         step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
                     else:
@@ -97,20 +97,21 @@ class CTAMTestSingleDeviceUpdate(TestCase):
                 step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3_{device}")  # type: ignore
                 with step3.scope():
                     status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, specific_targets=[device])
-                    status_message += " " + status_msg
+                    failure_reason += " " + status_msg
                     if status:
                         step3.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
                     else:
                         step3.add_log(
                             LogSeverity.ERROR, f"{self.test_id} : FW Update Stage Failed"
                         )
+                        failure_reason += " FW Update Stage Failed"
                         result = False
 
                 if result:
                     step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4_{device}")  # type: ignore
                     with step4.scope():
                         status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
-                        status_message += " " + status_msg
+                        failure_reason += " " + status_msg
                         if status:
                             step4.add_log(
                                 LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
@@ -120,13 +121,14 @@ class CTAMTestSingleDeviceUpdate(TestCase):
                                 LogSeverity.ERROR,
                                 f"{self.test_id} : FW Update Activation Failed",
                             )
+                            failure_reason += " FW Update Activation Failed"
                             result = False
 
                 if result:
                     step5 = self.test_run().add_step(f"{self.__class__.__name__} run(), step5_{device}")
                     with step5.scope():
                         status, status_msg = self.group.fw_update_ifc.ctam_fw_update_verify()
-                        status_message += " " + status_msg
+                        failure_reason += " " + status_msg
                         if status:
                             step5.add_log(
                                 LogSeverity.INFO,
@@ -136,6 +138,7 @@ class CTAMTestSingleDeviceUpdate(TestCase):
                             step5.add_log(
                                 LogSeverity.INFO, f"{self.test_id} : Update Verification Failed"
                             )
+                            failure_reason += " Update Verification Failed"
                             result = False
                 
                 if result:
@@ -149,11 +152,11 @@ class CTAMTestSingleDeviceUpdate(TestCase):
                 step6.add_log(LogSeverity.INFO, f"{failed_devices} : Failed to update devices")
                 if len(failed_devices) !=0:
                     result = False
-                    status_message += " " + f"{failed_devices} : Failed to update devices"
+                    failure_reason += " " + "Failed to update devices"
         else:
             step6 = self.test_run().add_step(f"{self.__class__.__name__} run(), step6")
             step6.add_log(LogSeverity.INFO, f"{self.test_id} : No updatable devices, exiting")
-            status_message += f"{self.test_id} : No updatable devices, exiting"
+            failure_reason += "No updatable devices, exiting"
             result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -163,7 +166,7 @@ class CTAMTestSingleDeviceUpdate(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result, status_message
+        return self.result, failure_reason
 
     def teardown(self):
         """

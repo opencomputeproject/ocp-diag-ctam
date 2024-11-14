@@ -546,17 +546,15 @@ class TestRunner:
                     )
                     self.comp_tool_dut.logger = logger
                     execution_starttime = time.perf_counter()
-                    status_msg = ""
-                    test_result, status_msg = test_instance.run()
-                    # print("status_msg98765", status_msg)
-                    # test_result = test_instance.run()
+                    failure_reason = ""
+                    test_result, failure_reason = test_instance.run()
                     if (
                         test_result == TestResult.FAIL
                     ):  # if any test fails, the group fails
                         group_result = TestResult.FAIL
                 except:  
                     exception_details = traceback.format_exc()
-                    status_msg += " " + exception_details
+                    failure_reason += " " + exception_details
                     self.active_run.add_log(
                         severity=LogSeverity.FATAL, message=exception_details
                     )
@@ -578,7 +576,7 @@ class TestRunner:
                         "TestCaseScoreWeight":test_instance.score_weight,
                         "TestCaseScore": test_instance.score,
                         "TestCaseResult": TestResult(test_instance.result).name,
-                        "FailureReason": status_msg + " For more details check Command_Line_Logs.log file"
+                        "FailureReason": failure_reason + " For more details check Command_Line_Logs.log file"
                     }
                     msg = {key: value for key, value in msg.items() if (key != "FailureReason") or (TestResult(test_instance.result).name == "FAIL")}
                     test_tuple = (test_instance.test_id,
