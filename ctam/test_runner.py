@@ -944,7 +944,7 @@ class TestRunner:
             if not os.path.exists(config_folder_path):
                 os.makedirs(config_folder_path)
             sanitizer = LogSanitizer(additional_regex=[
-                BuiltInLogSanitizers.CURL, BuiltInLogSanitizers.PASSWORD,
+                BuiltInLogSanitizers.CURL, BuiltInLogSanitizers.PASS_WD,
             ])
             def sanitizeData(data):
                 if isinstance(data, dict):

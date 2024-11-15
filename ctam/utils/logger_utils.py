@@ -38,7 +38,7 @@ class BuiltInLogSanitizers(Enum):
     IPV4 = "ipv4_address"
     IPV6 = "ipv6_address"
     CURL = "curl_command"
-    PASSWORD = "passwords"
+    PASS_WD = "pass_wd"
 
 
 class LogSanitizer(logging.Formatter):
@@ -49,7 +49,7 @@ class LogSanitizer(logging.Formatter):
         BuiltInLogSanitizers.IPV6: r'^([0-9a-fA-F]{1,4}:){6}((:[0-9a-fA-F]{1,4}){1,2}|:)',
         BuiltInLogSanitizers.IPV4: r'((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])',
         BuiltInLogSanitizers.CURL: r'-u\s*(\"([^\"]+:[^\"]+)\")',
-        BuiltInLogSanitizers.PASSWORD: r"(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$%!&?&.])[A-Za-z\d@.$%!*&?]{8,}",
+        BuiltInLogSanitizers.PASS_WD: r"(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$%!&?&.])[A-Za-z\d@.$%!*&?]{8,}",
     }
 
     def __init__(self, fmt=None, datefmt=None, style='%', string_list=None,
