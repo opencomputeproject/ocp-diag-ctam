@@ -218,6 +218,8 @@ class CompToolDut(Dut):
                     "URI": uri,
                     "Path": filename,
                     "LineNo": lineno,
+                    "RequestHeaders": headers if headers is not None else "{}",
+                    "RequestBody": body if body is not None else "{}",
             }
             kwargs = {"path": uri, "headers": headers}
             if timeout is not None:
@@ -314,6 +316,8 @@ class CompToolDut(Dut):
                     "URI": uri,
                     "Path": filename,
                     "LineNo": lineno,
+                    "RequestHeaders": headers if headers is not None else "{}",
+                    "RequestBody": body if body is not None else "{}",
             }
             url = self.connection_url + uri
             kwargs = {"path": uri, "headers": headers}

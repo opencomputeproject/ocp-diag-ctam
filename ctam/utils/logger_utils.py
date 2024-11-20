@@ -38,7 +38,7 @@ class BuiltInLogSanitizers(Enum):
     IPV4 = "ipv4_address"
     IPV6 = "ipv6_address"
     CURL = "curl_command"
-    PASSWORD = "passwords"
+    PASS_WD = "pass_wd"
 
 
 class LogSanitizer(logging.Formatter):
@@ -49,11 +49,11 @@ class LogSanitizer(logging.Formatter):
         BuiltInLogSanitizers.IPV6: r'^([0-9a-fA-F]{1,4}:){6}((:[0-9a-fA-F]{1,4}){1,2}|:)',
         BuiltInLogSanitizers.IPV4: r'((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])',
         BuiltInLogSanitizers.CURL: r'-u\s*(\"([^\"]+:[^\"]+)\")',
-        BuiltInLogSanitizers.PASSWORD: r"(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$%!&?&.])[A-Za-z\d@.$%!*&?]{8,}",
+        BuiltInLogSanitizers.PASS_WD: r"(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$%!&?&.])[A-Za-z\d@.$%!*&?]{8,}",
     }
 
     def __init__(self, fmt=None, datefmt=None, style='%', string_list=None,
-                replacement_string='XXXX', words_to_skip=[],
+                replacement_string='******', words_to_skip=[],
                 additional_regex=[]):
         """
         Sanitizer constructor. Provide the list of strings to filter out from the logs
@@ -266,8 +266,13 @@ class StreamJsonFormatter(logging.Formatter):
 class TeeStream(io.IOBase):
     def __init__(self, *streams):
         self.streams = streams
- 
+        self.sanitizer = LogSanitizer(additional_regex=[
+            BuiltInLogSanitizers.CURL,
+            BuiltInLogSanitizers.IPV4, BuiltInLogSanitizers.IPV6,
+        ])
+    
     def write(self, message):
+        message = self.sanitizer.format(message)
         if not self.check_progress_message(message):
             for stream in self.streams:
                 stream.write(message)
