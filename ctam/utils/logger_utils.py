@@ -53,7 +53,7 @@ class LogSanitizer(logging.Formatter):
     }
 
     def __init__(self, fmt=None, datefmt=None, style='%', string_list=None,
-                replacement_string='XXXX', words_to_skip=[],
+                replacement_string='******', words_to_skip=[],
                 additional_regex=[]):
         """
         Sanitizer constructor. Provide the list of strings to filter out from the logs
@@ -266,8 +266,13 @@ class StreamJsonFormatter(logging.Formatter):
 class TeeStream(io.IOBase):
     def __init__(self, *streams):
         self.streams = streams
- 
+        self.sanitizer = LogSanitizer(additional_regex=[
+            BuiltInLogSanitizers.CURL,
+            BuiltInLogSanitizers.IPV4, BuiltInLogSanitizers.IPV6,
+        ])
+    
     def write(self, message):
+        message = self.sanitizer.format(message)
         if not self.check_progress_message(message):
             for stream in self.streams:
                 stream.write(message)
