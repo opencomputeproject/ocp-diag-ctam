@@ -5,7 +5,7 @@ LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Redfish Task Service
 :Test ID:		H10
-:Group Name:	fw_update
+:Group Name:	health_check
 :Score Weight:	10
 
 :Description:	This test attempts to get task service

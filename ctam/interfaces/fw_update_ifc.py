@@ -421,7 +421,6 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
         JSONData = response.dict
 
-        #print(json.dumps(JSONData, indent=4))
 
         if jsondeephunt(JSONData, "Message") == "The request completed successfully.":
             JSONData = self.ctam_getus()

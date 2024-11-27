@@ -5,7 +5,7 @@ LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test AC Cycles In Loop
 :Test ID:		H100
-:Group Name:	Health_check
+:Group Name:	health_check
 :Score Weight:	10
 
 :Description:	AC Cycle is essential for activation flow of firmware update and many other flows. 
