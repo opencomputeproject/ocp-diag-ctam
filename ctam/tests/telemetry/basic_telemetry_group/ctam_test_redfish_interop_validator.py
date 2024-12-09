@@ -89,14 +89,14 @@ class CTAMTestRedfishInteropValidator(TestCase):
                                                                     component_type="GPU")
                 repo_file_name = os.path.join(self.git_utils.repo_path, file_name)
                 
-                result, _ = GitUtils.ctam_redfish_interop_validator(file_name=repo_file_name, connection_url=self.dut().connection_url,
+                result,error_count = GitUtils.ctam_redfish_interop_validator(file_name=repo_file_name, connection_url=self.dut().connection_url,
                                                 user_name=self.dut().user_name, user_pass=self.dut().user_pass,
                                                 log_path=logger_path, passthrough=base_uri,
                                                 profile=json_file_path
                                                 )
                 if not result:
-                    step2.add_log(LogSeverity.ERROR, f"Something went wrong while running redfish command.")
-                    failure_reason += "Something went wrong while running redfish command."
+                    step2.add_log(LogSeverity.ERROR, f"Validation has failed: {error_count} problems found")
+                    failure_reason += f"Validation has failed: {error_count} problems found"
                 else:
                     step2.add_log(LogSeverity.INFO, f"Redfish Service Command ran successfully and validated.")
 

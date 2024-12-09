@@ -95,7 +95,7 @@ class CompToolDut(Dut):
         self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
             self.connection_ip_address
         )
-        self.multipart_form_data = redfish_uri_config.get("GPU", {}).get("MultiPartFormData", False)
+        self.multipart_form_data = redfish_uri_config.get("GPU_FWUpdate", {}).get("MultiPartFormData", False)
         self.multipart_push_uri_support = redfish_uri_config.get("GPU", {}).get("MultiPartPushUriSupport", False)
         self.binded_port = None
         self.SSHTunnelRemoteIPAddress = None

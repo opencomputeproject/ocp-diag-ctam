@@ -156,7 +156,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
     def ctam_stage_fw(
         self, partial=0, image_type="default", wait_for_stage_completion=True,
         corrupted_component_id=None, corrupted_component_list=[],
-        check_time=False, specific_targets=[]
+        check_time=False, specific_targets=[], is_force_update=True
     ):
         """
         :Description:                           Stage Firmware
@@ -186,15 +186,17 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             return False, failure_reason, ""
         if self.dut().is_debug_mode():
             print(JSONFWFilePayload)
-        update_uri = self.dut().redfish_uri_config.get("GPU", {}).get("UpdateURI", "")
+        update_uri = self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("UpdateURI", "")
         if update_uri:
-            uri = self.dut().uri_builder.format_uri(
-                redfish_str="{BaseURI}{UpdateURI}", component_type="GPU"
+            base_uri = self.dut().uri_builder.format_uri(
+                redfish_str="{BaseURI}", component_type="GPU"
             )
+            uri = base_uri + update_uri
             status = True
-            is_multipart = self.dut().redfish_uri_config.get("GPU", {}).get("IsMultiPart", False)
+            is_multipart = self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("IsMultiPart", False)
         else:
             status, uri, is_multipart = self.get_update_uri()
+            uri = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}" + uri, component_type="GPU")
         if not status:
             self.test_run().add_log(LogSeverity.DEBUG, f"Unable to find update uri from UpdateService resource!!!")
             failure_reason = "Unable to find update uri from UpdateService resource!!!"
@@ -203,7 +205,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         if self.dut().is_debug_mode():
             self.test_run().add_log(LogSeverity.DEBUG, f"URI : {uri}")
             self.test_run().add_log(LogSeverity.DEBUG, f"Targets : {targets}")
-        is_force_update = image_type == "backup" or image_type == "old_version"
+        # is_force_update = image_type == "backup" or image_type == "old_version"
         JSONData = self.RedFishFWUpdate(JSONFWFilePayload, uri, targets=targets, is_multipart=is_multipart, is_force_update=is_force_update)
         StagingStartTime = time.time()
 
@@ -421,7 +423,6 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
         JSONData = response.dict
 
-
         if jsondeephunt(JSONData, "Message") == "The request completed successfully.":
             JSONData = self.ctam_getus()
             if str(JSONData["HttpPushUriTargets"]) == str(targets):
@@ -437,7 +438,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 print("{} {}".format(MyName, str(targets)))
         return PushSuccess
 
-    def RedFishFWUpdate(self, BinPath, URI, targets=[], is_multipart=False, is_force_update=False):
+    def RedFishFWUpdate(self, BinPath, URI, targets=[], is_multipart=False, is_force_update=True):
         """
         :Description:         It will update system firmware using redfish command.
         :param BinPath:       Path for the bin
