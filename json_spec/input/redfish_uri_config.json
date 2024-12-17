@@ -4,22 +4,19 @@
 		"BaseURI":"/hmc/redfish/v1/",
 		"GPUCheckURI":"/Managers/AMC",
 		"BaseboardIDs":"['UBB']",
+		"MultiPartPushUriSupport":false,
 		"TaskServiceURI": "/TaskService/Tasks/"
 	},
 	"GPU_FWUpdate":{
 		"MultiPartFormData":true,
-		"UnstructuredHttpPush":true,
+		"HttpPushUriTargets":"HttpPushUriTargets",
 		"specific_targets":"[]",
 		"IsMultiPart":false,
 		"UpdateURI":"/UpdateService"
 	},
 	"GPU_Telemetry":{
-		
 	},
 	"GPU_RAS":{
-		"EROTDumps": {"DiagnosticDataType":"OEM", "OEMDiagnosticDataType":"EROTLogs"},
-		"FPGADumps": {"DiagnosticDataType":"OEM", "OEMDiagnosticDataType":"FPGADump"},
-		"RetimerDumps": {"DiagnosticDataType":"OEM", "OEMDiagnosticDataType":"RetimerDump"}
 	},
 	"BMC":{
 		"BaseURI":"/redfish/v1",
