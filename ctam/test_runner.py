@@ -380,6 +380,19 @@ class TestRunner:
                         self.total_cases = len(self.test_sequence)
                         progress_thread.start()
 
+                """
+                1.Initialize previous_test_result:
+                    The variable previous_test_result is initialized as True, representing the result of the previous test.
+                2.Iterate Over Test Sequence:
+                    Loop through self.test_sequence using enumerate to process each test case in sequence.
+                3.Check for "PROF" Test:
+                    If the current test is "PROF", get the previous test from the sequence (prev_test).
+                    If the result of the previous test (previous_test_result) is "FAIL", log the message and exit the loop.
+                    Otherwise, continue to the next iteration.
+                4.Update Previous Test Result:
+                    Assign the result of the current test (group_result.value) to previous_test_result.
+
+                """
                 previous_test_result = True       
                 for index, test in enumerate(self.test_sequence):          
                     if test == "PROF":
