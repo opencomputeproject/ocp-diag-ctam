@@ -1,9 +1,9 @@
 {
 	"GPU":{
-		"GPUMC": "/hmc",
-		"BaseURI":"/hmc/redfish/v1/",
-		"GPUCheckURI":"/Managers/AMC",
-		"BaseboardIDs":"['UBB']",
+		"GPUMC": "/{GPUMC}",
+		"BaseURI":"/{GPUMC}/redfish/v1/",
+		"GPUCheckURI":"/Managers/{ManagerID}",
+		"BaseboardIDs":"['BaseboardIDs']",
 		"MultiPartPushUriSupport":false,
 		"TaskServiceURI": "/TaskService/Tasks/"
 	},
