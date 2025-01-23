@@ -10,7 +10,7 @@ LICENSE file in the root directory of this source tree.
 
 :Description:	Basic test case of ensuring that there are LogServices Dump available in the accelerator
 
-:Usage 1:		python ctam.py -w ..\workspace -t H99
+:Usage 1:		python ctam.py -w ..\workspace -t H97
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test LogService Dump URI List Read"
 
 """

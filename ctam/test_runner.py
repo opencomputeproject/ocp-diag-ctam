@@ -379,8 +379,32 @@ class TestRunner:
                 if self.progress_bar and self.console_log is False:
                         self.total_cases = len(self.test_sequence)
                         progress_thread.start()
-                        
-                for test in self.test_sequence:
+
+                """
+                1.Initialize previous_test_result:
+                    The variable previous_test_result is initialized as True, representing the result of the previous test.
+                2.Iterate Over Test Sequence:
+                    Loop through self.test_sequence using enumerate to process each test case in sequence.
+                3.Check for "PROF" Test:
+                    If the current test is "PROF", get the previous test from the sequence (prev_test).
+                    If the result of the previous test (previous_test_result) is "FAIL", log the message and exit the loop.
+                    Otherwise, continue to the next iteration.
+                4.Update Previous Test Result:
+                    Assign the result of the current test (group_result.value) to previous_test_result.
+
+                """
+                previous_test_result = True       
+                for index, test in enumerate(self.test_sequence):          
+                    if test == "PROF":
+                        prev_test = self.test_sequence[index - 1]
+
+                        if previous_test_result == "FAIL":
+                            msg = f"PROF encountered at index {index}... result of previous test: {prev_test} -> {previous_test_result}"
+                            self.active_run.add_log(severity=LogSeverity.INFO, message=msg)
+                            break
+                        else:
+                            continue
+                                            
                     (
                         group_instance,
                         test_case_instances,
@@ -390,6 +414,8 @@ class TestRunner:
                     # group_exc_tags = group_instance.exclude_tags
 
                     group_status, group_result = self._run_group_test_cases(group_instance, test_case_instances)
+                    previous_test_result = group_result.value
+
                     group_status_set.add(group_status)
                     group_result_set.add(group_result)
 

@@ -74,7 +74,7 @@ class CTAMTestSingleFWUpdateStagingInterruptionWithACReset(TestCase):
         with step1.scope():
             if self.group.fw_update_ifc.ctam_selectpartiallist(
                 count=1,
-                specific_targets=ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{specific_targets}", component_type="GPU"))
+                specific_targets=ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{specific_targets}", component_type="GPU_FWUpdate"))
             ):
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Single Device Selected")
             else:
@@ -97,7 +97,7 @@ class CTAMTestSingleFWUpdateStagingInterruptionWithACReset(TestCase):
             with step3.scope():
                 status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(
                     partial=1, wait_for_stage_completion=False, image_type="backup",
-                    specific_targets=ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{specific_targets}", component_type="GPU"))
+                    specific_targets=ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{specific_targets}", component_type="GPU_FWUpdate"))
                     )
                 failure_reason += " " + status_msg
                 if status:

@@ -505,25 +505,40 @@ class FunctionalIfc:
         :rtype:              Bool
         """
         MyName = __name__ + "." + self.NodeACReset.__qualname__
-        power_off_command = self.dut().dut_config.get("PowerOffCommand", {}).get("value", "")
-        power_on_command = self.dut().dut_config.get("PowerOnCommand", {}).get("value", "")
-        if not power_off_command or not power_on_command:
-            self.test_run().add_log(LogSeverity.INFO, "Please provide both power on and power off command in dut config!")
-            return False
-        # execute power off
-        self.test_run().add_log(LogSeverity.INFO, json.dumps(power_off_command, indent=4))
-        arguments = shlex.split(power_off_command)
-        cwd_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        cwd_path = None if cwd_path == "/tmp" else cwd_path
-        subprocess.check_output(arguments, cwd=cwd_path)
-        time.sleep(self.dut().dut_config.get("PowerOffWaitTime", {}).get("value", 60))
-        self.test_run().add_log(LogSeverity.INFO, "Power Off wait time done")
-        # execute power on
-        self.test_run().add_log(LogSeverity.INFO, json.dumps(power_on_command, indent=4))
-        arguments = shlex.split(power_on_command)
-        subprocess.check_output(arguments, cwd=cwd_path)
-        time.sleep(self.dut().dut_config.get("PowerOnWaitTime", {}).get("value", 300))
-        self.test_run().add_log(LogSeverity.INFO, "Power ON wait time done")
+        single_shot_power_cycle = self.dut().dut_config.get("SingleShotPowerCycle", {}).get("value", "")
+        if single_shot_power_cycle:
+            single_shot_power_command = self.dut().dut_config.get("SingleShotPowerCycleCommand", {}).get("value", "")
+            if not single_shot_power_command:
+                self.test_run().add_log(LogSeverity.INFO, "Please provide single command for power off and power on in dut config!")
+                return False
+            # execute single shot power cycle
+            self.test_run().add_log(LogSeverity.INFO, json.dumps(single_shot_power_command, indent=4))
+            arguments = shlex.split(single_shot_power_command)
+            cwd_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            cwd_path = None if cwd_path == "/tmp" else cwd_path
+            subprocess.check_output(arguments, cwd=cwd_path)
+            time.sleep(self.dut().dut_config.get("PowerOnWaitTime", {}).get("value", 300))
+            self.test_run().add_log(LogSeverity.INFO, "Power ON wait time done")
+        else:
+            power_off_command = self.dut().dut_config.get("PowerOffCommand", {}).get("value", "")
+            power_on_command = self.dut().dut_config.get("PowerOnCommand", {}).get("value", "")
+            if not power_off_command or not power_on_command:
+                self.test_run().add_log(LogSeverity.INFO, "Please provide both power on and power off command in dut config!")
+                return False
+            # execute power off
+            self.test_run().add_log(LogSeverity.INFO, json.dumps(power_off_command, indent=4))
+            arguments = shlex.split(power_off_command)
+            cwd_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            cwd_path = None if cwd_path == "/tmp" else cwd_path
+            subprocess.check_output(arguments, cwd=cwd_path)
+            time.sleep(self.dut().dut_config.get("PowerOffWaitTime", {}).get("value", 60))
+            self.test_run().add_log(LogSeverity.INFO, "Power Off wait time done")
+            # execute power on
+            self.test_run().add_log(LogSeverity.INFO, json.dumps(power_on_command, indent=4))
+            arguments = shlex.split(power_on_command)
+            subprocess.check_output(arguments, cwd=cwd_path)
+            time.sleep(self.dut().dut_config.get("PowerOnWaitTime", {}).get("value", 300))
+            self.test_run().add_log(LogSeverity.INFO, "Power ON wait time done")
         return True
 
     def IsGPUReachable(self):

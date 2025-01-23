@@ -72,7 +72,7 @@ class CTAMTestSingleDeviceUpdatePingPong(TestCase):
         loops = 2
         failure_reason = ""
 
-        self.specific_targets = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{specific_targets}", component_type="GPU"))
+        self.specific_targets = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{specific_targets}", component_type="GPU_FWUpdate"))
         for i in range(loops):
             step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
             with step1.scope():

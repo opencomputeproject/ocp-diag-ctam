@@ -5,7 +5,7 @@ LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Redfish Telemetry Service
 :Test ID:		H7
-:Group Name:	fw_update
+:Group Name:	health_check
 :Score Weight:	10
 
 :Description:	This test attempts to get telemetry service
