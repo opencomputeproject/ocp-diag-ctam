@@ -8,7 +8,25 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	ras
 :Score Weight:	10
 
-:Description:	Placeholder only. Post CollectDiagnisticData for '\redfish\v1\Systems\{BaseboardId}\LogService\EventLog with DiagnosticDataType = OEMSelfTest
+:Description:	 
+This test verifies the Redfish Event Service's capability to collect diagnostic data, 
+manage subscriptions, and validate the availability of diagnostic data types. 
+It also ensures proper error handling and subscription creation when required.
+    
+    Post CollectDiagnisticData for '\redfish\v1\Systems\{BaseboardId}\LogService\EventLog with DiagnosticDataType = OEMSelfTest
+   - The test retrieves `AllowableValues` for `DiagnosticDataType` and `OEMDiagnosticDataType` from:  
+     `https://<BaseURI>/redfish/v1/Systems/{BaseboardId}/LogService/EventLog/Actions/CollectDiagnosticData`.  
+   - Ensures these values are non-empty and valid.
+
+**PASS Criteria:**  
+- `DiagnosticDataType` and `OEMDiagnosticDataType` have valid, non-empty allowable values.  
+- Event Service and subscriptions respond successfully.  
+- New subscriptions are created and retrieved without errors when needed.
+
+**FAIL Criteria:**  
+- Missing or empty `DiagnosticDataType` or `OEMDiagnosticDataType`.  
+- Failure to fetch or validate the Event Service and subscriptions.  
+- Errors during Redfish command execution or invalid response data.
 
 :Usage 1:		python ctam.py -w ..\workspace -t R3
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Collect Crashdump OEM Self Test"

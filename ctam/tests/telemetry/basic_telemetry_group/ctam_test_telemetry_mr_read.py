@@ -5,10 +5,19 @@ LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Telemetry MR Read
 :Test ID:		T4
-:Group Name:	telemetry
+:Group Name:	Telemetry
 :Score Weight:	10
 
-:Description:	Basic test case to discover list of all metric reports and  
+:Description:	This test case discovers the list of all metric reports available on the Device Under Test (DUT)
+                and prints their details. It ensures that the telemetry interface can retrieve and display the
+                metric reports correctly.
+
+:PASS Criteria: The test will pass if the telemetry interface successfully retrieves and prints the details
+                of all metric reports.
+
+:FAIL Criteria: The test will fail if the telemetry interface returns an empty list or encounters any errors
+                while retrieving the metric reports.
+
 :Usage 1:		python ctam.py -w ..\workspace -t T4
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry MR Read"
 

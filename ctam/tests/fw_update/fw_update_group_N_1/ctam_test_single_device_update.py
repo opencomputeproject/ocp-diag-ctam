@@ -9,7 +9,13 @@ LICENSE file in the root directory of this source tree.
 :Score Weight:	10
 
 :Description:	Basic test case of Single Device firmware update. All updatable devices are updated and activated, one device at a time.
-                Any device fail would lead to test case fail. 
+                Any device fail would lead to test case fail.
+
+                PASS Criteria:
+                - All updatable devices are updated and activated successfully, one device at a time.
+                
+                FAIL Criteria:
+                - Any device fails to update or activate.
 
 :Usage 1:		python ctam.py -w ..\workspace -t F4
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Single Device Update"

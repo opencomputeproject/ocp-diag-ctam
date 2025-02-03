@@ -8,7 +8,14 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Basic test case of full firmware update.To verify the successful execution of a full firmware update process.
+:Description:	Basic test case of full firmware update. This test case verifies the successful execution of a full firmware update process.
+
+                PASS Criteria:
+				- The firmware update process completes successfully and the firmware is updated to the new version.
+				
+				FAIL Criteria:
+				- The firmware update process fails or the firmware is not updated to the new version.
+    
 :Usage 1:		python ctam.py -w ..\workspace -t F1
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update"
 

@@ -8,7 +8,16 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Verify that firmware copy operation (staging) does not exceed the max time specified in the requirements.
+Description:	
+    This test verifies that the firmware copy operation (staging) does not exceed the maximum time specified in the requirements(FwStagingTimeMax). 
+    The test involves performing a pre-check to ensure the device is capable of firmware updates, followed by staging the firmware update and verifying the operation's success.
+
+:PASS Criteria:	
+    - The firmware updation process should not exceed the maximum time specified in the requirements(FwStagingTimeMax).
+
+:FAIL Criteria:	
+    - The firmware staging operation fails or does not complete within the specified time(FwStagingTimeMax).
+    
 :Usage 1:		python ctam.py -w ..\workspace -t F63
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Staging Time"
 

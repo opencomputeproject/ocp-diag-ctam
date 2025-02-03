@@ -8,8 +8,15 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test case is a Negative Test. It'll make a copy of the default FW image provided in package_info.json 
-                and corrput the UUID of the PLDM bundle. Then it'll attempt firmware update with the fwpkg containing corrupted UUID. 
+:Description:	
+    This test case is a negative test. It makes a copy of the default FW image provided in package_info.json 
+    and corrupts the UUID of the PLDM bundle. Then it attempts a firmware update with the fwpkg containing the corrupted UUID. 
+
+:PASS Criteria:	
+    - The firmware staging operation fails as expected due to the corrupted UUID.
+
+:FAIL Criteria:	
+    - The firmware staging operation succeeds unexpectedly with the corrupted UUID.
 
 :Usage 1:		python ctam.py -w ..\workspace -t F27
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Invalid Package UUID Image Update"

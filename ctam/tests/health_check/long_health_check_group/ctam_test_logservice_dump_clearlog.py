@@ -8,8 +8,12 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	health_check
 :Score Weight:	10
 
-:Description:	Basic test case to clear all entries of all instances of LogService Dumps
-				
+:Description:	Basic test case to clear all entries of all instances of LogService Dumps.
+                This test ensures that all log entries are cleared successfully.
+
+                PASS Criteria: The test passes if all log entries are cleared without errors.
+                FAIL Criteria: The test fails if any log entry cannot be cleared or an error occurs.
+
 :Usage 1:		python ctam.py -w ..\workspace -t H96
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test LogService Dump Clear"
 

@@ -8,9 +8,15 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test case is a Negative test. It would search for GPU_FW_IMAGE_UNSIGNED_BUNDLE referenced by package_info.json.
+:Description:	This test case is a negative test. It searches for GPU_FW_IMAGE_UNSIGNED_BUNDLE referenced by package_info.json.
                 If the bundle is not provided, it will modify GPU_FW_IMAGE (golden fwpkg) for this test. Then it will attempt
-                firmware update using the Unsigned Bundle.
+                a firmware update using the unsigned bundle.
+
+                PASS Criteria:
+                - The firmware update staging process fails as expected when using an unsigned bundle.
+                
+                FAIL Criteria:
+                - The firmware update staging process succeeds unexpectedly when using an unsigned bundle.
 
 :Usage 1:		python ctam.py -w ..\workspace -t F90
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Unsigned Bundle Update"

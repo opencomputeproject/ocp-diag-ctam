@@ -8,8 +8,14 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test case is a Negative test. It would search for GPU_FW_IMAGE_UNSIGNED referenced by package_info.json and attempt
-                firmware update using the unsigned image.
+:Description:	This test case is a negative test. It searches for GPU_FW_IMAGE_UNSIGNED referenced by package_info.json and attempts
+                a firmware update using the unsigned image.
+
+                PASS Criteria:
+                - The firmware update staging process fails as expected when using an unsigned image.
+                
+                FAIL Criteria:
+                - The firmware update staging process succeeds unexpectedly when using an unsigned image.
 
 :Usage 1:		python ctam.py -w ..\workspace -t F18
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Unsigned Image Update"

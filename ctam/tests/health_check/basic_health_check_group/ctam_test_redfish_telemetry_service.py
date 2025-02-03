@@ -8,7 +8,11 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	health_check
 :Score Weight:	10
 
-:Description:	This test attempts to get telemetry service
+:Description:	This test verifies the availability and correctness of the Redfish Telemetry Service.
+                The test attempts to retrieve telemetry data from the service and checks for errors.
+
+                PASS Criteria: The test passes if the telemetry data is successfully retrieved and contains no errors.
+                FAIL Criteria: The test fails if the telemetry data cannot be retrieved or contains errors.
 
 :Usage 1:		python ctam.py -w ..\workspace -t H7
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Telemetry Service"

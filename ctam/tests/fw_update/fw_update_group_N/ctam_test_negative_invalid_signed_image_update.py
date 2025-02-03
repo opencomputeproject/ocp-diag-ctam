@@ -8,9 +8,15 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test case focuses on the scenario where we are trying to initiate a firmware update flow with an invalid signed image. 
-				The expectation is for staging to fail when this is attempted. 
-				The image is provided by the vendor	and it has a section in package_info.json
+:Description:	
+    This test case focuses on the scenario where we are trying to initiate a firmware update flow with an invalid signed image. 
+    The expectation is for staging to fail when this is attempted. The image is provided by the vendor and it has a section in package_info.json.
+
+:PASS Criteria:	
+    - The firmware staging operation fails as expected due to the invalid signed image.
+
+:FAIL Criteria:	
+    - The firmware staging operation succeeds unexpectedly with the invalid signed image.
 
 :Usage 1:		python ctam.py -w ..\workspace -t F22
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Invalid Signed Image Update"

@@ -8,7 +8,11 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test case entails performing firmware updates in a loop between N and N-1 i.e default and backup respectively.
+:Description:	This test case entails performing firmware updates in a loop between N-1 and N i.e backup and default respectively.
+                The test ensures that the firmware updates can be performed repeatedly without issues.
+
+                PASS Criteria: The test passes if all firmware updates between backup and default complete successfully without errors.
+                FAIL Criteria: The test fails if any firmware update between backup and default encounters an error.
 
 :Usage 1:		python ctam.py -w ..\workspace -t F88
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Ping Pong"

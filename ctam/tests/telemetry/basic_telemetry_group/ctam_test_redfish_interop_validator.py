@@ -8,7 +8,14 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	Telemetry
 :Score Weight:	10
 
-:Description:	This test case will clone the RIV in temp folder and take json profiles as input.
+:Description:	This test case will clone the Redfish Interop Validator (RIV) in a temporary folder and take JSON profiles as input.
+				It will then run the RIV using these profiles to validate the Redfish service.
+
+				PASS Criteria:
+				- The Redfish Interop Validator runs successfully and validates the Redfish service without errors.
+				
+				FAIL Criteria:
+				- The Redfish Interop Validator encounters errors during validation.
 
 :Usage 1:		python ctam.py -w ..\workspace -t T97
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Interop Validator"

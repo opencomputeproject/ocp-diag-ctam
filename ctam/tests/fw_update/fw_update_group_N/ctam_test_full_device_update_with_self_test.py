@@ -8,7 +8,15 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test case does a full firmware update first, and then verifies if self-test reports any failures.
+:Description:	
+    This test case performs a full firmware update and then verifies if the self-test reports any failures.
+
+:PASS Criteria:	
+    - The firmware update completes successfully without any failures in the self-test report.
+
+:FAIL Criteria:	
+    - The firmware update fails with failures in the self-test reports after the firmware update.
+
 :Usage 1:		python ctam.py -w ..\workspace -T F67
 :Usage 2:		python ctam.py -w ..\workspace -T "CTAM Test Full Device Update with Self-test Verification"
 

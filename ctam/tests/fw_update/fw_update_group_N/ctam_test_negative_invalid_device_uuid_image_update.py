@@ -8,8 +8,16 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test case is a Negative Test. It'll make a copy of the default FW image provided in package_info.json 
-                and corrput the UUID in all FirmwareDeviceIDRecords. Then it'll attempt firmware update with the fwpkg containing corrupted device UUIDs. 
+:Description:	
+    This test case is a negative test. It makes a copy of the default FW image provided in package_info.json 
+    and corrupts the UUID in all FirmwareDeviceIDRecords. Then it attempts a firmware update with the fwpkg containing corrupted device UUIDs. 
+    The objective is to ensure that the system correctly handles the corrupted UUIDs and does not proceed with the update.
+
+:PASS Criteria:	
+    - The firmware staging operation fails as expected due to the corrupted UUIDs.
+
+:FAIL Criteria:	
+    - The firmware staging operation succeeds unexpectedly with the corrupted UUIDs.
 
 :Usage 1:		python ctam.py -w ..\workspace -t F28
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Invalid Device UUID Image Update"
