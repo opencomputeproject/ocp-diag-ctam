@@ -17,7 +17,7 @@ Before you begin, ensure you have met the following requirements:
     - Python virtualenv and pip is installed
     - Install some key libraries:
          sudo apt-get install python3-tk sshpass jq
-    - Docker is installed (Skip unless you want to create a binary)    
+    - Docker is installed (Skip unless you want to create a binary). Please refer to docker.md file for docker set-up instructions.    
 
 
 ### Setup 
