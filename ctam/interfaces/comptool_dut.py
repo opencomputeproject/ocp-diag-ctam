@@ -96,7 +96,7 @@ class CompToolDut(Dut):
             self.connection_ip_address
         )
         self.multipart_form_data = redfish_uri_config.get("GPU_FWUpdate", {}).get("MultiPartFormData", False)
-        self.multipart_push_uri_support = redfish_uri_config.get("GPU", {}).get("MultiPartPushUriSupport", False)
+        self.multipart_push_uri_support = redfish_uri_config.get("GPU_FWUpdate", {}).get("MultiPartPushUriSupport", False)
         self.binded_port = None
         self.SSHTunnelRemoteIPAddress = None
         self.ssh_tunnel_required = config["properties"].get("SSHTunnel", {}).get("value", False)
@@ -219,7 +219,7 @@ class CompToolDut(Dut):
                     "Path": filename,
                     "LineNo": lineno,
                     "RequestHeaders": headers if headers is not None else "{}",
-                    "RequestBody": body if body is not None else "{}",
+                    "RequestBody": body if (body is not None) and isinstance(body, dict) else "{}",
             }
             kwargs = {"path": uri, "headers": headers}
             if timeout is not None:
@@ -317,7 +317,7 @@ class CompToolDut(Dut):
                     "Path": filename,
                     "LineNo": lineno,
                     "RequestHeaders": headers if headers is not None else "{}",
-                    "RequestBody": body if body is not None else "{}",
+                    "RequestBody": body if (body is not None) and isinstance(body, dict) else "{}",
             }
             url = self.connection_url + uri
             kwargs = {"path": uri, "headers": headers}
