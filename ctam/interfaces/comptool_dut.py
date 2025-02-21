@@ -254,13 +254,16 @@ class CompToolDut(Dut):
             if response.status in range (200,204) and response.text: # FIXME: Add error handling in case the request fails
                 responseData = None
                 try:
-                    responseData = response.dict
+                    import ast
+                    data = ast.literal_eval(response.text) # Convert response text to a Python dictionary
+                    responseData = response.dict # Get the response data as a dictionary
                 except Exception as e:
-                    responseData = response.text
+                    responseData = response.text # If conversion fails, use the raw response text
                 msg.update({
                     "ResponseCode": response.status,
                     "Response":responseData, # FIXME: self-test report cannot be converted to dict # FIXED: Throws error in some cases when response.dict is used and the response body is empty
-                    }) 
+                    })
+                
             elif response.status in range (200,204):
                 msg.update({
                     "ResponseCode": response.status,
