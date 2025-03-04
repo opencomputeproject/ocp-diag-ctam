@@ -131,6 +131,9 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                             if not Package_Version:
                                 msg += "Not in the PLDM bundle"
                             
+                            elif element["Id"] in self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("exclude_targets_list", []):
+                                msg += "Skipping as it is in the exclude list"
+                            
                             elif element["Version"] not in Package_Version and (
                                 self.included_targets == []
                                 or element["@odata.id"] in self.included_targets
@@ -147,8 +150,8 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                         # Not in HttpPushURITargets
                         pass
             except Exception as e:
-                failure_reason += msg + " Exception occured: " + str(e)
-                self.test_run().add_log(LogSeverity.ERROR, msg + "Exception occured: " + str(e))
+                failure_reason += " Exception occured: " + str(e)
+                self.test_run().add_log(LogSeverity.ERROR, "Exception occured: " + str(e))
                 VersionsDifferent = False
                 
         return VersionsDifferent, failure_reason
@@ -321,9 +324,13 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         # Verify version of components currently reporting in FW inventory
         for element in self.PostInstallDetails:
             try:
+                if element["Id"] in self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("exclude_targets_list", []):
+                    msg = f"Skipping {element['Id']} as it is in the exclude list"
+                    self.test_run().add_log(LogSeverity.DEBUG, msg)
+                    continue
                 negative_case = (
                     image_type == "negate" 
-                    or str(element["Updateable"]) == "False" # Note, this may mean empty SoftwareId. So this condition needs to come before the next one
+                    or str(element["Updateable"]).lower() == "false" # Note, this may mean empty SoftwareId. So this condition needs to come before the next one
                     or (image_type == "corrupt_component" and int(element["SoftwareId"], 16) == int(corrupted_component_id, 16) )
                     or (self.included_targets != []
                         and element["@odata.id"] not in self.included_targets)

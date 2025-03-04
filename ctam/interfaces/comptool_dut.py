@@ -88,6 +88,9 @@ class CompToolDut(Dut):
         self.connection_ip_address = config["properties"]["ConnectionIPAddress"][
             "value"
         ]
+        self.connection_port = config["properties"]["ConnectionPort"][
+            "value"
+        ]
         self.default_prefix = self.uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
         self.port_list = config["properties"]["SSHTunnelPortList"]["value"]
         self.protocol = config["properties"]["SSHTunnelProtocol"]["value"]
@@ -96,7 +99,7 @@ class CompToolDut(Dut):
             self.connection_ip_address
         )
         self.multipart_form_data = redfish_uri_config.get("GPU_FWUpdate", {}).get("MultiPartFormData", False)
-        self.multipart_push_uri_support = redfish_uri_config.get("GPU", {}).get("MultiPartPushUriSupport", False)
+        self.multipart_push_uri_support = redfish_uri_config.get("GPU_FWUpdate", {}).get("MultiPartPushUriSupport", False)
         self.binded_port = None
         self.SSHTunnelRemoteIPAddress = None
         self.ssh_tunnel_required = config["properties"].get("SSHTunnel", {}).get("value", False)
@@ -137,6 +140,8 @@ class CompToolDut(Dut):
             self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
                 self.SSHTunnelRemoteIPAddress
             )
+        else:
+            self.connection_ip_address = f"{self.connection_ip_address}:{self.connection_port}"
         
         # TODO investigate storing FW update files via add_software_info() in super
         self.__connection_url = f"{self.protocol}://{self.connection_ip_address}"
@@ -219,7 +224,7 @@ class CompToolDut(Dut):
                     "Path": filename,
                     "LineNo": lineno,
                     "RequestHeaders": headers if headers is not None else "{}",
-                    "RequestBody": body if body is not None else "{}",
+                    "RequestBody": body if (body is not None) and isinstance(body, dict) else "{}",
             }
             kwargs = {"path": uri, "headers": headers}
             if timeout is not None:
@@ -262,8 +267,7 @@ class CompToolDut(Dut):
                 msg.update({
                     "ResponseCode": response.status,
                     "Response":responseData, # FIXME: self-test report cannot be converted to dict # FIXED: Throws error in some cases when response.dict is used and the response body is empty
-                    })
-                
+                    }) 
             elif response.status in range (200,204):
                 msg.update({
                     "ResponseCode": response.status,
@@ -320,7 +324,7 @@ class CompToolDut(Dut):
                     "Path": filename,
                     "LineNo": lineno,
                     "RequestHeaders": headers if headers is not None else "{}",
-                    "RequestBody": body if body is not None else "{}",
+                    "RequestBody": body if (body is not None) and isinstance(body, dict) else "{}",
             }
             url = self.connection_url + uri
             kwargs = {"path": uri, "headers": headers}
