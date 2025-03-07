@@ -9,6 +9,11 @@
 			"type": "string",
 			"value": ""
 		},
+		"ConnectionPort": {
+			"description": "IP Address of Service Entry point to be used",
+			"type": "string",
+			"value": ""
+		},
 		"SSHTunnel": {
 			"description": "Indicates if the user wants to communicate through SSH tunnel",
 			"type": "bool",

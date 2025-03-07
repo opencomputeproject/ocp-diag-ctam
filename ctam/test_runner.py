@@ -679,6 +679,9 @@ class TestRunner:
                 if (test_result == "FAIL"):
                     if existing_record['TestCaseResult'] != "FAIL" or exec_time > existing_exec_time:
                         filtered_data[test_id] = record
+                else:
+                    if existing_record['TestCaseResult'] != "FAIL" and exec_time > existing_exec_time:
+                        filtered_data[test_id] = record
 
         # Convert the dictionary values back to a list and assign it back to test_score_data
         test_score_data = list(filtered_data.values())
