@@ -657,6 +657,32 @@ class TestRunner:
                     except Exception as e:
                         print(f"Error reading {full_path}: {e}")
 
+        # Check for Duplicate TestID's
+        filtered_list = []
+        # Dictionary to store result for unique TestID
+        filtered_data = {}
+        # For the repeated TestID's create only one entry with result as FAIL if
+        # any one of the result in the repeated TestID fails.
+        for record in test_score_data:
+            test_id = record['TestID']
+            # convert the execution time to float
+            exec_time = float(record['ExecutionTime'].split()[0])
+            test_result = record['TestCaseResult']
+
+            #if the test ID not available before then add it
+            if test_id not in filtered_data:
+                filtered_data[test_id] = record
+            else:
+                # If the current record has FAIL and has higher execution time then replace it
+                existing_record = filtered_data[test_id]
+                existing_exec_time = float(existing_record['ExecutionTime'].split()[0])
+                if (test_result == "FAIL"):
+                    if existing_record['TestCaseResult'] != "FAIL" or exec_time > existing_exec_time:
+                        filtered_data[test_id] = record
+
+        # Convert the dictionary values back to a list and assign it back to test_score_data
+        test_score_data = list(filtered_data.values())
+
         # Save the consolidated cleaned JSON data into a single JSON file
         with open(consolidated_output_json, "w", encoding="utf-8") as out_f:
             json.dump(test_score_data, out_f, indent=4)
