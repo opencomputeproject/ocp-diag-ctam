@@ -68,15 +68,17 @@ class CTAMTestFullDeviceUpdatePingPong(TestCase):
 
         result = True
         loops = 2
-
+        failure_reason = ""
         for i in range(loops):
-            image_t = "default" if i % 2 == 0 else "backup"
+            image_t = "backup" if i % 2 == 0 else "default"
             if result:
                 step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
                 with step1.scope():
-                    if not self.group.fw_update_ifc.ctam_fw_update_precheck(
+                    status, status_msg = self.group.fw_update_ifc.ctam_fw_update_precheck(
                         image_type=image_t
-                    ):
+                    )
+                    failure_reason += status_msg
+                    if not status:
                         step1.add_log(
                             LogSeverity.INFO, f"{self.test_id} : FW Update Capable"
                         )
@@ -89,6 +91,7 @@ class CTAMTestFullDeviceUpdatePingPong(TestCase):
                 step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
                 with step2.scope():
                     status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(image_type=image_t)
+                    failure_reason += " " + status_msg
                     if status:
                         step2.add_log(
                             LogSeverity.INFO, f"{self.test_id} : FW Update Staged"
@@ -98,12 +101,15 @@ class CTAMTestFullDeviceUpdatePingPong(TestCase):
                             LogSeverity.ERROR,
                             f"{self.test_id} : FW Update Stage Failed",
                         )
+                        failure_reason += " " + "FW Update Stage Failed"
                         result = False
 
             if result:
                 step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
                 with step3.scope():
-                    if self.group.fw_update_ifc.ctam_activate_ac():
+                    status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
+                    failure_reason += " " + status_msg
+                    if status:
                         step3.add_log(
                             LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
                         )
@@ -112,6 +118,7 @@ class CTAMTestFullDeviceUpdatePingPong(TestCase):
                             LogSeverity.ERROR,
                             f"{self.test_id} : FW Update Activation Failed",
                         )
+                        failure_reason += " " + "FW Update Activation Failed"
                         result = False
 
             if result:
@@ -119,9 +126,11 @@ class CTAMTestFullDeviceUpdatePingPong(TestCase):
                     f"{self.__class__.__name__} run(), step4"
                 )
                 with step4.scope():
-                    if self.group.fw_update_ifc.ctam_fw_update_verify(
+                    status, status_msg = self.group.fw_update_ifc.ctam_fw_update_verify(
                         image_type=image_t
-                    ):
+                    )
+                    failure_reason += " " + status_msg
+                    if status:
                         step4.add_log(
                             LogSeverity.INFO,
                             f"{self.test_id} : Update Verification Completed",
@@ -131,16 +140,17 @@ class CTAMTestFullDeviceUpdatePingPong(TestCase):
                             LogSeverity.ERROR,
                             f"{self.test_id} : Update Verification Failed",
                         )
+                        failure_reason += " " + "Update Verification Failed"
                         result = False
 
-            # ensure setting of self.result and self.score prior to calling super().run()
-            self.result = TestResult.PASS if result else TestResult.FAIL
-            if self.result == TestResult.PASS:
-                self.score = self.score_weight
+        # ensure setting of self.result and self.score prior to calling super().run()
+        self.result = TestResult.PASS if result else TestResult.FAIL
+        if self.result == TestResult.PASS:
+            self.score = self.score_weight
 
-            # call super last to log result and score
-            super().run()
-            return self.result
+        # call super last to log result and score
+        super().run()
+        return self.result, failure_reason
 
     def teardown(self):
         """

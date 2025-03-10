@@ -5,7 +5,7 @@ LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Redfish Software Inventory Expanded Collection
 :Test ID:		H11
-:Group Name:	fw_update
+:Group Name:	health_check
 :Score Weight:	10
 
 :Description:	This test attempts to get the expanded Software inventory from update service
@@ -67,6 +67,7 @@ class CTAMTestRedfishSoftwareInventoryExpandedCollection(TestCase):
         """
         actual test verification
         """
+        failure_reason = ""
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
             self.group.health_check_ifc.ctam_getsi(expanded=1)
@@ -84,7 +85,7 @@ class CTAMTestRedfishSoftwareInventoryExpandedCollection(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

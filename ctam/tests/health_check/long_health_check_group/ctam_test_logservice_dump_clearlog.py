@@ -61,7 +61,7 @@ class CTAMTestLogserviceDumpClearlog(TestCase):
         actual test verification
         """
         result = True
-
+        failure_reason = ""
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  
         with step1.scope():
             if result:= self.group.health_check_ifc.ctam_clear_log_dump(): 
@@ -79,7 +79,7 @@ class CTAMTestLogserviceDumpClearlog(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

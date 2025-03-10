@@ -9,9 +9,9 @@ LICENSE file in the root directory of this source tree.
 import os
 import typing as ty
 import redfish
-import subprocess
 import platform
 import json
+import inspect
 import time
 from datetime import datetime
 import requests
@@ -23,8 +23,8 @@ from ocptv.output import Metadata
 from ocptv.output import Dut
 
 from interfaces.uri_builder import UriBuilder
-# from sshtunnel import SSHTunnelForwarder, HandlerSSHTunnelForwarderError
-from utils.ssh_tunnel_utils import SSHTunnel
+from utils.ssh_tunnel_utils import SSHTunnelWithLibrary, SSHTunnelWithSshpass
+
 
 
 class CompToolDut(Dut):
@@ -51,6 +51,7 @@ class CompToolDut(Dut):
         workspace_dir,
         test_uri_response_check,
         redfish_response_messages,
+        default_config_path,
         logger_path,
         name: ty.Optional[str] = None,
         metadata: ty.Optional[Metadata] = None,
@@ -81,6 +82,7 @@ class CompToolDut(Dut):
         self.test_info_logger = test_info_logger
         self.test_uri_response_check = test_uri_response_check
         self.redfish_response_messages = redfish_response_messages
+        self.default_config_path = default_config_path
         self.cwd = self.get_cwd()
         super().__init__(id, name, metadata)
         self.connection_ip_address = config["properties"]["ConnectionIPAddress"][
@@ -93,7 +95,8 @@ class CompToolDut(Dut):
         self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
             self.connection_ip_address
         )
-        self.multipart_form_data = redfish_uri_config.get("GPU", {}).get("MultiPartFormData", False)
+        self.multipart_form_data = redfish_uri_config.get("GPU_FWUpdate", {}).get("MultiPartFormData", False)
+        self.multipart_push_uri_support = redfish_uri_config.get("GPU_FWUpdate", {}).get("MultiPartPushUriSupport", False)
         self.binded_port = None
         self.SSHTunnelRemoteIPAddress = None
         self.ssh_tunnel_required = config["properties"].get("SSHTunnel", {}).get("value", False)
@@ -105,7 +108,10 @@ class CompToolDut(Dut):
         
         self.redfish_ifc = None
         self.redfish_auth = config["properties"].get("AuthenticationRequired", {}).get("value", False)
-        self.ssh_tunnel = SSHTunnel(self.test_info_logger)
+        if config["properties"].get("SSHTunnelUsingSSHPASS", {}).get("value", False):
+            self.ssh_tunnel = SSHTunnelWithSshpass(self.test_info_logger)
+        else:
+            self.ssh_tunnel = SSHTunnelWithLibrary(self.test_info_logger)
     
     def get_cwd(self):
         cwd = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -133,7 +139,7 @@ class CompToolDut(Dut):
             )
         
         # TODO investigate storing FW update files via add_software_info() in super
-        self.__connection_url = f"{self.protocol}://" + self.connection_ip_address
+        self.__connection_url = f"{self.protocol}://{self.connection_ip_address}"
         self.redfish_ifc = redfish.redfish_client(
             self.__connection_url,
             username=self.__user_name,
@@ -202,10 +208,18 @@ class CompToolDut(Dut):
         try:
             start_time = time.time()
             response = None
+            caller_frame = inspect.currentframe().f_back
+            frame_info = inspect.getframeinfo(caller_frame)
+            filename = frame_info.filename
+            lineno = frame_info.lineno
             msg = {
                     "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
                     "TestName": self.current_test_name,
                     "URI": uri,
+                    "Path": filename,
+                    "LineNo": lineno,
+                    "RequestHeaders": headers if headers is not None else "{}",
+                    "RequestBody": body if (body is not None) and isinstance(body, dict) else "{}",
             }
             kwargs = {"path": uri, "headers": headers}
             if timeout is not None:
@@ -229,7 +243,7 @@ class CompToolDut(Dut):
             
             end_time = time.time()
             time_difference_seconds = end_time - start_time
-            time_difference = datetime.utcfromtimestamp(time_difference_seconds) - datetime.utcfromtimestamp(0)
+            time_difference = datetime.fromtimestamp(time_difference_seconds) - datetime.fromtimestamp(0)
             hours, remainder = divmod(time_difference.seconds, 3600)
             minutes, seconds = divmod(remainder, 60)
             milliseconds = int(time_difference.microseconds / 1000)
@@ -238,9 +252,14 @@ class CompToolDut(Dut):
             msg.update({"ResponseTime": "{}".format(formatted_time)})
 
             if response.status in range (200,204) and response.text: # FIXME: Add error handling in case the request fails
+                responseData = None
+                try:
+                    responseData = response.dict
+                except Exception as e:
+                    responseData = response.text
                 msg.update({
                     "ResponseCode": response.status,
-                    "Response":response.dict, # FIXME: self-test report cannot be converted to dict # FIXED: Throws error in some cases when response.dict is used and the response body is empty
+                    "Response":responseData, # FIXME: self-test report cannot be converted to dict # FIXED: Throws error in some cases when response.dict is used and the response body is empty
                     }) 
             elif response.status in range (200,204):
                 msg.update({
@@ -287,10 +306,18 @@ class CompToolDut(Dut):
         try:
             start_time = time.time()
             response = None
+            caller_frame = inspect.currentframe().f_back
+            frame_info = inspect.getframeinfo(caller_frame)
+            filename = frame_info.filename
+            lineno = frame_info.lineno
             msg = {
                     "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
                     "TestName": self.current_test_name,
                     "URI": uri,
+                    "Path": filename,
+                    "LineNo": lineno,
+                    "RequestHeaders": headers if headers is not None else "{}",
+                    "RequestBody": body if (body is not None) and isinstance(body, dict) else "{}",
             }
             url = self.connection_url + uri
             kwargs = {"path": uri, "headers": headers}

@@ -8,7 +8,8 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Test case of full firmware update in a loop. To verify the ongoing rollback is not affected by 
+:Description:	Before running this test case we expect to be on N image. We will do staging with N-1 image which is getting interrupted by ac
+                power reset. At least one of the components should stay on N image after ac power reset.
 :Usage 1:		python ctam.py -w ..\workspace -t F24
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Staging Interruption With AC Reset"
 
@@ -27,7 +28,7 @@ from tests.fw_update.fw_update_group_N._fw_update_group_N import (
 )
 
 
-class CTAMTestFullDeviceUpdateInterruptionWithSingleDeviceUpdate(TestCase):
+class CTAMTestFullDeviceUpdateStagingInterruptionWithAcReset(TestCase):
     """
     Verify single device fails whhen a full device fw update staging is in progress
 
@@ -38,7 +39,7 @@ class CTAMTestFullDeviceUpdateInterruptionWithSingleDeviceUpdate(TestCase):
     test_name: str = "CTAM Test Negative Full Device Update Staging Interruption With AC Reset"
     test_id: str = "F24"
     score_weight: int = 10
-    tags: List[str] = ["Negative", "L2"]
+    tags: List[str] = ["Negative", "L2", "Single_Device"]
     compliance_level: str = "L2"
 
     def __init__(self, group: FWUpdateTestGroupN):
@@ -64,12 +65,14 @@ class CTAMTestFullDeviceUpdateInterruptionWithSingleDeviceUpdate(TestCase):
         """
         actual test verification
         """
+        failure_reason = ""
         result = True
         fwupd_task_id = None
 
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if not self.group.fw_update_ifc.ctam_fw_update_precheck(image_type="backup"):
+            status, failure_reason = self.group.fw_update_ifc.ctam_fw_update_precheck(image_type="backup")
+            if not status:
                 step1.add_log(LogSeverity.INFO, f"[{self.test_id}] : FW Update Capable")
             else:
                 step1.add_log(
@@ -78,92 +81,51 @@ class CTAMTestFullDeviceUpdateInterruptionWithSingleDeviceUpdate(TestCase):
 
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
-            fwupd_status, _, fwupd_task_id = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup", 
+            fwupd_status, status_msg, fwupd_task_id = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup", 
                                                                                  wait_for_stage_completion=False)
+            failure_reason += " " + status_msg
             if fwupd_status:
                 step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
             else:
                 step2.add_log(
                     LogSeverity.ERROR, f"{self.test_id} : FW Update Stage Failed"
                 )
+                failure_reason += " " + "FW Update Stage Failed"
                 result = False
-
+                    
         if result:
             step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
             with step3.scope():
-                if component_list := self.group.fw_update_ifc.ctam_build_updatable_device_list():
-                    device = component_list[0]
-                    step1_device = self.test_run().add_step(f"{self.__class__.__name__} run(), step1_{device}")  # type: ignore
-                    with step1_device.scope():
-                        if self.group.fw_update_ifc.ctam_selectpartiallist(count=1, specific_targets=[device]):
-                            step1_device.add_log(LogSeverity.INFO, f"{self.test_id} : Single Device Selected")
-                        else:
-                            step1_device.add_log(LogSeverity.ERROR, f"{self.test_id} : Single Device Selection Failed")
-                            result = False
-
-                    if result:
-                        step2_device = self.test_run().add_step(f"{self.__class__.__name__} run(), step2_{device}")  # type: ignore
-                        with step2_device.scope():
-                            status, _, _ = self.group.fw_update_ifc.ctam_stage_fw(partial=1)
-                            if status:
-                                step2_device.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged - Unexpected")
-                                result = False
-                            else:
-                                step2_device.add_log(
-                                    LogSeverity.ERROR, f"{self.test_id} : FW Update Stage Failed as expected"
-                                )
-                else:
-                    step3.add_log(LogSeverity.INFO, f"{self.test_id} : No updatable devices, exiting")
-                    result = False
-
-        if result:
-            step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")  # type: ignore
-            with step4.scope():
-                if fwupd_task_id is not None:
-                    TaskCompleted, _ =  self.group.fw_update_ifc.ctam_monitor_task(fwupd_task_id)
-                    if TaskCompleted: 
-                        step4.add_log(
-                            LogSeverity.INFO, f"{self.test_id} : FW Update Staging Verification"
-                        )
-                    else:
-                        step4.add_log(
-                            LogSeverity.ERROR, f"{self.test_id} : FW Update Staging Verification - Task Failed"
-                        )
-                        result = False
-                else:
-                    step4.add_log(
-                        LogSeverity.ERROR,
-                        f"{self.test_id} : FW Update Staging Verification - No task ID",
-                    )
-                    result = False
-                    
-        if result:
-            step5 = self.test_run().add_step(f"{self.__class__.__name__} run(), step5")  # type: ignore
-            with step5.scope():
-                if self.group.fw_update_ifc.ctam_activate_ac():
-                    step5.add_log(
+                status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
+                failure_reason += status_msg
+                if status:
+                    step3.add_log(
                         LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
                     )
                 else:
-                    step5.add_log(
+                    step3.add_log(
                         LogSeverity.ERROR,
                         f"{self.test_id} : FW Update Activation Failed",
                     )
+                    failure_reason += " " + "FW Update Activation Failed"
                     result = False
 
         if result:
-            step6 = self.test_run().add_step(f"{self.__class__.__name__} run(), step6")
-            with step6.scope():
-                if self.group.fw_update_ifc.ctam_fw_update_verify(image_type="backup"):
-                    step5.add_log(
+            step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")
+            with step4.scope():
+                status, status_msg = self.group.fw_update_ifc.ctam_fw_update_verify(version_check=False)
+                failure_reason += " " + status_msg
+                if status:
+                    step4.add_log(
                         LogSeverity.INFO,
                         f"{self.test_id} : Update Verification Completed",
                     )
                 else:
-                    step6.add_log(
+                    step4.add_log(
                         LogSeverity.ERROR,
                         f"{self.test_id} : Update Verification Failed",
                     )
+                    failure_reason += " " + "Update Verification Failed"
                     result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -173,7 +135,7 @@ class CTAMTestFullDeviceUpdateInterruptionWithSingleDeviceUpdate(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

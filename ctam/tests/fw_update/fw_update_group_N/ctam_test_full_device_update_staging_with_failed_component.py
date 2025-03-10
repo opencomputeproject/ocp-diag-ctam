@@ -69,7 +69,7 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
         actual test verification
         """
         result = True
-        
+        failure_reason = ""
         step0 = self.test_run().add_step(f"{self.__class__.__name__} run(), step0")  # type: ignore
         with step0.scope():
             self.corrupted_component_id = self.group.fw_update_ifc.ctam_get_component_to_be_corrupted(VendorProvidedBundle=False)
@@ -78,13 +78,16 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
                     LogSeverity.ERROR, f"{self.test_id} : Corrupt Component Id Retrieval Failed"
                 )
                 result = False
+                failure_reason += f"{self.test_id} : Corrupt Component Id Retrieval Failed"
             else:
                 step0.add_log(LogSeverity.INFO, f"{self.test_id} : Corrupt Component Id Retrieved")
 
         if result:
             step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
             with step1.scope():
-                if not self.group.fw_update_ifc.ctam_fw_update_precheck():
+                status, status_msg = self.group.fw_update_ifc.ctam_fw_update_precheck()
+                failure_reason += status_msg
+                if not status:
                     step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
                 else:
                     step1.add_log(
@@ -96,12 +99,14 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
                 status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(image_type="corrupt_component", 
                     corrupted_component_id=self.corrupted_component_id
                     )
+                failure_reason += " " + status_msg
                 if status:
                     step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
                 else:
                     step2.add_log(
                         LogSeverity.ERROR, f"{self.test_id} : FW Update Stage Failed"
                     )
+                    failure_reason += " " + "FW Update Stage Failed"
                     result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -111,7 +116,7 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """
@@ -123,12 +128,12 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
         with step1.scope():
             if self.group.fw_update_ifc.ctam_activate_ac():
                 step1.add_log(
-                    LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
+                    LogSeverity.INFO, f"{self.test_id} : Teardown : FW Update Activate"
                 )
             else:
                 step1.add_log(
                     LogSeverity.WARNING,
-                    f"{self.test_id} : FW Update Activation Failed",
+                    f"{self.test_id} : Teardown : FW Update Activation Failed",
                 )
 
         # call super teardown last

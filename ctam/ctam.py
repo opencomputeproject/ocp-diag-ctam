@@ -2,14 +2,15 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+
 import argparse
 import os
+import progressbar
 import sys
 import traceback
 import json
-
 from pathlib import Path
-
+from datetime import datetime
 # until the folder structure gets fixed to a more pip/setuptools oriented format
 # we need to manually adjust the path so that running the main script's imports work
 sys.path.append(str(Path(__file__).resolve().parent))
@@ -20,6 +21,7 @@ from test_runner import TestRunner
 from sys import exit
 from version import __version__
 
+from utils.logger_utils import RedirectOutput
 
 def parse_args():
     """
@@ -73,7 +75,6 @@ def parse_args():
         help="Path to workspace directory that contains test run files",
     )
 
-
     parser.add_argument(
         "-v",
         "--version",
@@ -126,7 +127,24 @@ def main():
         if args.version:
             print(f"CTAM - version {__version__}")
             exit()
+        
+        dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+        test_dir = "CTAM_LOGS"+"_{}".format(dt)
+        if args.workspace:
+            logs_output_dir = os.path.join(args.workspace, "TestRuns", test_dir)
+            print("Output Dir is : ", logs_output_dir)
+        else:        
+            logs_output_dir = os.path.join("..{}workspace".format(os.sep), "TestRuns", test_dir)
 
+        if not os.path.exists(logs_output_dir):
+            os.makedirs(logs_output_dir)
+        # When there are multiple output sources (like stdout, stderr, or logging) which can often conflict
+        # with the progressbar, this will cause it to break onto the new lines or display inconsistently.
+        # Hence wrap_Stderr() is used.
+        progressbar.streams.wrap_stderr()
+        raw_log_file = os.path.join(logs_output_dir, "Command_Line_Logs.log")
+        redirect_output = RedirectOutput(raw_log_file)
+        redirect_output.start()
         default_config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "json_spec", "input")
         default_config_path = default_config_path.replace('/tmp/', '') if default_config_path.startswith('/tmp/') else default_config_path 
         if not args.workspace:
@@ -211,12 +229,14 @@ def main():
         if args.Discovery:
             runner = TestRunner(
                 workspace_dir=args.workspace,
+                logs_output_dir=logs_output_dir,
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
                 dut_info_json_file=dut_info_json,
                 package_info_json_file=package_info_json,
                 redfish_uri_config_file=redfish_uri_config,
                 redfish_response_messages=redfish_response_messages,
+                default_config_path=default_config_path,
                 net_rc=net_rc,
             )
             status_code, exit_string = runner.get_system_details()
@@ -225,48 +245,56 @@ def main():
         elif args.testcase:
             runner = TestRunner(
                 workspace_dir=args.workspace,
+                logs_output_dir=logs_output_dir,
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
                 dut_info_json_file=dut_info_json,
                 package_info_json_file=package_info_json,
                 redfish_uri_config_file=redfish_uri_config,
                 redfish_response_messages=redfish_response_messages,
+                default_config_path=default_config_path,
                 net_rc=net_rc,
                 single_test_override=args.testcase,
             )
         elif args.testcase_sequence:
             runner = TestRunner(
                 workspace_dir=args.workspace,
+                logs_output_dir=logs_output_dir,
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
                 dut_info_json_file=dut_info_json,
                 package_info_json_file=package_info_json,
                 redfish_uri_config_file=redfish_uri_config,
                 redfish_response_messages=redfish_response_messages,
+                default_config_path=default_config_path,
                 net_rc=net_rc,
                 sequence_test_override=args.testcase_sequence,
             )
         elif args.group:
             runner = TestRunner(
                 workspace_dir=args.workspace,
+                logs_output_dir=logs_output_dir,
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
                 dut_info_json_file=dut_info_json,
                 package_info_json_file=package_info_json,
                 redfish_uri_config_file=redfish_uri_config,
                 redfish_response_messages=redfish_response_messages,
+                default_config_path=default_config_path,
                 net_rc=net_rc,
                 single_group_override=args.group,
             )
         elif args.group_sequence:
             runner = TestRunner(
                 workspace_dir=args.workspace,
+                logs_output_dir=logs_output_dir,
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
                 dut_info_json_file=dut_info_json,
                 package_info_json_file=package_info_json,
                 redfish_uri_config_file=redfish_uri_config,
                 redfish_response_messages=redfish_response_messages,
+                default_config_path=default_config_path,
                 net_rc=net_rc,
                 sequence_group_override=args.group_sequence,
             )
@@ -274,6 +302,7 @@ def main():
             all_tests = test_hierarchy.get_all_tests()
             runner = TestRunner(
                 workspace_dir=args.workspace,
+                logs_output_dir=logs_output_dir,
                 test_hierarchy=test_hierarchy,
                 test_runner_json_file=test_runner_json,
                 dut_info_json_file=dut_info_json,
@@ -281,12 +310,13 @@ def main():
                 net_rc=net_rc,
                 redfish_uri_config_file=redfish_uri_config,
                 redfish_response_messages=redfish_response_messages,
+                default_config_path=default_config_path,
                 run_all_tests=all_tests
             )
 
         status_code, exit_string = runner.run()
         log_directory = os.path.relpath(runner.output_dir, os.getcwd())
-        return status_code, log_directory, exit_string
+        return   status_code, log_directory, exit_string
 
     except (Exception, NotImplementedError) as e:
         exception_details = get_exception_details(e)

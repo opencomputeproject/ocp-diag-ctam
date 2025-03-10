@@ -5,7 +5,7 @@ LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test AC Cycles In Loop
 :Test ID:		H100
-:Group Name:	Health_check
+:Group Name:	health_check
 :Score Weight:	10
 
 :Description:	AC Cycle is essential for activation flow of firmware update and many other flows. 
@@ -61,6 +61,7 @@ class CTAMTestAcCyclesInLoop(TestCase):
         actual test verification
         """
         result = True
+        failure_reason = ""
         loops = 1
 
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  
@@ -72,7 +73,8 @@ class CTAMTestAcCyclesInLoop(TestCase):
                         self.test_run().add_log(LogSeverity.DEBUG, msg)  
                     else:
                         msg = f"{self.test_id} : AC Cycle Failed Loop {i}"
-                        self.test_run().add_log(LogSeverity.DEBUG, msg) 
+                        self.test_run().add_log(LogSeverity.DEBUG, msg)
+                        failure_reason += msg
                         result = False
         
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -82,7 +84,7 @@ class CTAMTestAcCyclesInLoop(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

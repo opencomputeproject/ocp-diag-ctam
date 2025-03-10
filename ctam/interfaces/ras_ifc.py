@@ -18,38 +18,10 @@ except:
     from utils.ctam_utils import MetaNull as Meta
 
 class RasIfc(FunctionalIfc, metaclass=Meta):
-
-    # _instance: Optional["RasIfc"] = None
-
-    # def __new__(cls, *args, **kwargs):
-    #     """
-    #     ensure only 1 instance can be created
-
-    #     :return: instance
-    #     :rtype: RasIfc
-    #     """
-    #     if not isinstance(cls._instance, cls):
-    #         cls._instance = super(RasIfc, cls).__new__(cls, *args, **kwargs)
-    #     return cls._instance
     
     def __init__(self):
         super().__init__()
-        self.collectdiagnostic_uri_list = []
-        self.logdump_uri_list = []
-        self.dumplog_uri_list = []
-        self.JSONData = {}
 
-    # @classmethod
-    # def get_instance(cls, *args, **kwargs):
-    #     """
-    #     if there is an existing instance, return it, otherwise create the singleton instance and return it
-
-    #     :return: instance
-    #     :rtype: RasIfc
-    #     """
-    #     if not isinstance(cls._instance, cls):
-    #         cls._instance = cls(*args, **kwargs)
-    #     return cls._instance
     
     def ctam_discover_crashdump_cap(self):
         """
@@ -57,12 +29,12 @@ class RasIfc(FunctionalIfc, metaclass=Meta):
 
         :returns:				    List of all action uris with LogService.CollectDiagnosticData
         """
-        self.collectdiagnostic_uri_list = []
-        self.logservice_ras_uri_list = self.ctam_get_collectdiagnostic_logservices_uris()
-        for uri in self.logservice_ras_uri_list:
-            self.ctam_redfish_uri_deep_hunt(URI=uri, uri_hunt="LogService.CollectDiagnosticData", uri_listing = self.collectdiagnostic_uri_list, uri_analyzed=[], action=1)
-        self.write_test_info("{}".format(self.collectdiagnostic_uri_list))
-        return self.collectdiagnostic_uri_list
+        collectdiagnostic_uri_list = []
+        logservice_ras_uri_list = self.ctam_get_collectdiagnostic_logservices_uris()
+        for uri in logservice_ras_uri_list:
+            self.ctam_redfish_uri_deep_hunt(URI=uri, uri_hunt="LogService.CollectDiagnosticData", uri_listing=collectdiagnostic_uri_list, uri_analyzed=[], action=1)
+        self.write_test_info("{}".format(collectdiagnostic_uri_list))
+        return collectdiagnostic_uri_list
     
     def ctam_get_collectdiagnostic_logservices_uris(self):
         """
@@ -70,73 +42,82 @@ class RasIfc(FunctionalIfc, metaclass=Meta):
 
         :returns:				    List of all URIs with "LogServices" as a property under /redfish/v1/Managers and /redfish/v1/Systems
         """
-        self.collectdiagnostic_logservices_uri_list=[]
-        self.ctam_redfish_uri_deep_hunt("/redfish/v1/Managers", "LogServices", self.collectdiagnostic_logservices_uri_list, uri_analyzed=[])
-        self.ctam_redfish_uri_deep_hunt("/redfish/v1/Systems", "LogServices", self.collectdiagnostic_logservices_uri_list, uri_analyzed=[])
-        self.write_test_info("{}".format(self.collectdiagnostic_logservices_uri_list))
-        return self.collectdiagnostic_logservices_uri_list
+        collectdiagnostic_logservices_uri_list=[]
+        self.ctam_redfish_uri_deep_hunt("/redfish/v1/Managers", "LogServices", collectdiagnostic_logservices_uri_list, uri_analyzed=[])
+        self.ctam_redfish_uri_deep_hunt("/redfish/v1/Systems", "LogServices", collectdiagnostic_logservices_uri_list, uri_analyzed=[])
+        self.write_test_info("{}".format(collectdiagnostic_logservices_uri_list))
+        return collectdiagnostic_logservices_uri_list
             
     def ctam_collect_crashdump_manager_list(self):
-        self.collect_managers_list = []
-        self.crashdump_uri_list = self.ctam_discover_crashdump_cap()
-        for uri in self.crashdump_uri_list:
-            if "/redfish/v1/Managers" in uri:
-                self.collect_managers_list.append(uri)
-        return self.collect_managers_list
+        collect_managers_list = []
+        crashdump_uri_list = self.ctam_discover_crashdump_cap()
+        collect_managers_list = [uri for uri in crashdump_uri_list if "/redfish/v1/Managers" in uri]
+        # for uri in crashdump_uri_list:
+        #     if "/redfish/v1/Managers" in uri:
+        #         collect_managers_list.append(uri)
+        return collect_managers_list
+    
+    def check_location_list(self, JSONData):
+        """_summary_
 
-    def ctam_crashdump_task_status(self):
-        wait_for_task_completion = True
-        TaskStartTime = time.time()
-        check_time = True
+        Args:
+            JSONData (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        location_list = JSONData.get("Payload", {}).get("HttpHeaders", [])
+        if not location_list:
+            self.test_run().add_log(LogSeverity.FATAL, "Location list is not found")
+            return ""
+        
+        location = location_list[-1].split(": ")[-1]
+        if not location:
+            self.test_run().add_log(LogSeverity.FATAL, "Location list is not found")
+            return ""
+        
+        self.test_run().add_log(LogSeverity.INFO, "Location is: {}".format(location))
+        
+        location_uri = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}" + "{}".format(location), component_type="GPU")
+        self.test_run().add_log(LogSeverity.INFO, "Location URI is: {}".format(location_uri))
+        response = self.dut().run_redfish_command(uri=location_uri)
+        if not response.status in range(200,202):
+            self.test_run().add_log(LogSeverity.FATAL, "URI doesn't exist")
+            return ""
+        
+        self.test_run().add_log(LogSeverity.INFO, "{} URI exist ".format(location_uri))
+        return location_uri
+            
+
+    def ctam_crashdump_task_status(self,wait_for_task_completion=True):
         Task_completion_Status = False
+        location_uri = ""
         for uri in self.ctam_collect_crashdump_manager_list():
             body = {"DiagnosticDataType": "Manager"}
             headers = {"Content-Type": "application/json"}
             url = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}" + "{}".format(uri), component_type="GPU")
             response = self.dut().run_redfish_command(uri=url, mode="POST", body=body, headers=headers)
-            self.JSONData = response.dict
-            if "error" not in self.JSONData:
+            if "error" not in response.dict:
                 if wait_for_task_completion:
-                    TaskID = self.JSONData["@odata.id"]
-
+                    TaskID = response.dict["Id"]
                     if self.dut().is_debug_mode():
-                        self.test_run().add_log(LogSeverity.DEBUG, TaskID)
-                    v1_str = self.dut().uri_builder.format_uri(
-                        redfish_str="{GPUMC}" + "{}".format(TaskID), component_type="GPU"
-                    )
-                    response = self.dut().run_redfish_command(uri=v1_str)
-                    self.JSONData = response.dict
-
-                    FwStagingTimeMax = self.dut().dut_config["FwStagingTimeMax"]["value"]
-                    while self.JSONData["TaskState"] == "Running" \
-                            and (not check_time or (check_time and (time.time() - TaskStartTime) <= FwStagingTimeMax)):
-                        response = self.dut().run_redfish_command(uri=v1_str)
-                        self.JSONData = response.dict
-                        if self.dut().is_debug_mode():
-                            print(
-                                f"Task completion = {self.JSONData['PercentComplete']}"
-                            )
-                        msg = f"Task completion = {self.JSONData['PercentComplete']}"
-                        self.test_run().add_log(LogSeverity.DEBUG, msg)
-
-                        time.sleep(5)
-                    if self.JSONData["TaskState"] == "Completed":
-                        Task_completion_Status = True
-                    else:
-                        Task_completion_Status = False
-                    
-        return Task_completion_Status
+                            self.test_run().add_log(LogSeverity.DEBUG, TaskID)
+                    Task_completion_Status, MonitorJSONData = self.ctam_monitor_task(TaskID)
+                    location_uri = self.check_location_list(MonitorJSONData)                                
+        return Task_completion_Status, location_uri
 
     def ctam_download_crashdump_attachment(self):
-        result = True
-        if self.ctam_crashdump_task_status():
-            location_list = self.JSONData.get("Payload", {}).get("HttpHeaders", [])
-            if location_list:
-                location = location_list[-1].split(": ")[-1]
-                location_uri = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}" + "{}".format(location), component_type="GPU")
+        result = False
+        status, location_uri = self.ctam_crashdump_task_status()
+        if status and location_uri:
+            # location_uri = self.check_location_list()
+            if self.RedfishDownloadDump(location_uri):
                 self.test_run().add_log(LogSeverity.INFO, "Dump is downloaded.")
-                self.RedfishDownloadDump(location_uri)
+                result = True
             else:
-                self.test_run().add_log(LogSeverity.FATAL, "Empty list or dictionary.")
+                self.test_run().add_log(LogSeverity.INFO, "Dump download Failed.")
                 result = False
+        else:
+            self.test_run().add_log(LogSeverity.FATAL, "Empty list or dictionary.")
+            result = False
         return result

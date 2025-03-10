@@ -3,15 +3,15 @@ Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-:Test Name:		CTAM Test Redfish Interop Validator Firmware Inventory
-:Test ID:		H5
-:Group Name:	health_check
+:Test Name:		CTAM Test Redfish Interop Validator
+:Test ID:		T97
+:Group Name:	Telemetry
 :Score Weight:	10
 
-:Description:	This test validates the Firmware Inventory using RIV
+:Description:	This test case will clone the RIV in temp folder and take json profiles as input.
 
-:Usage 1:		python ctam.py -w ..\workspace -t H5
-:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Interop Validator Firmware Inventory"
+:Usage 1:		python ctam.py -w ..\workspace -t T97
+:Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Interop Validator"
 
 """
 from typing import Optional, List
@@ -25,28 +25,25 @@ from ocptv.output import (
     TestResult,
     TestStatus,
 )
-from tests.health_check.basic_health_check_group.basic_health_check_test_group import (
-    BasicHealthCheckTestGroup,
+from tests.telemetry.basic_telemetry_group.basic_telemetry_group import (
+    BasicTelemetryTestGroup,
 )
 from utils.ctam_utils import GitUtils
 
-class CTAMTestRedfishInteropValidatorFirmwareInventory(TestCase):
+class CTAMTestRedfishInteropValidator(TestCase):
     """
-    Verify values of Firmware Inventory Collection are present
 
     :param TestCase: super class for all test cases
     :type TestCase:
     """
 
-    test_name: str = "CTAM Test Redfish Interop Validator Firmware Inventory"
-    test_id: str = "H5"
+    test_name: str = "CTAM Test Redfish Interop Validator"
+    test_id: str = "T97"
     score_weight: int = 10
-    tags: List[str] = ["HCheck", "L1"]
-    compliance_level: str ="L1"
+    tags: List[str] = ["L0"]
+    compliance_level: str = "L0"
 
-    # exclude_tags: List[str] = ["NotCheck"]
-
-    def __init__(self, group: BasicHealthCheckTestGroup):
+    def __init__(self, group: BasicTelemetryTestGroup):
         """
         _summary_
         """
@@ -70,8 +67,8 @@ class CTAMTestRedfishInteropValidatorFirmwareInventory(TestCase):
         """
         actual test verification
         """
-        failure_reason = ""
         result = True
+        failure_reason = ""
         logger_path = os.path.join(self.dut().logger_path, "RedfishInteropValidator", f"{self.__class__.test_id}_{self.__class__.__name__}")
 
         #cloning Redfish Interop Validator under temp folder which will be deleted after completion of test case.
@@ -84,7 +81,7 @@ class CTAMTestRedfishInteropValidatorFirmwareInventory(TestCase):
             step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
             with step2.scope():
                 # Change this JSON file name and path if you want to run any other excel.
-                source_json = "FirmwareInventory.json"
+                source_json = "OCP_UBB_BaselineManagement.v1.0.0.json"
                 json_file_path = os.path.join(self.dut().default_config_path, source_json)
                 #Running RedfishInteropValidator using json profiles.
                 file_name="RedfishInteropValidator"
@@ -95,8 +92,7 @@ class CTAMTestRedfishInteropValidatorFirmwareInventory(TestCase):
                 result,error_count = GitUtils.ctam_redfish_interop_validator(file_name=repo_file_name, connection_url=self.dut().connection_url,
                                                 user_name=self.dut().user_name, user_pass=self.dut().user_pass,
                                                 log_path=logger_path, passthrough=base_uri,
-                                                payload="NodeTree /redfish/v1/UpdateService/FirmwareInventory",
-                                                profile=json_file_path,
+                                                profile=json_file_path
                                                 )
                 if not result:
                     step2.add_log(LogSeverity.ERROR, f"Validation has failed: {error_count} problems found")
@@ -118,10 +114,11 @@ class CTAMTestRedfishInteropValidatorFirmwareInventory(TestCase):
         undo environment state change from setup() above, this function is called even if run() fails or raises exception
         """
         # add custom teardown here
+
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():
             step1.add_log(LogSeverity.INFO, f"Cleaning repo after running Redfish Interop Validator.")
             self.git_utils.clean_repo()
-
+            
         # call super teardown last
         super().teardown()

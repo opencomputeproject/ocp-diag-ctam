@@ -9,6 +9,7 @@
 ##
 
 ocptv
+openpyxl
 prettytable
 redfish
 regex
@@ -24,6 +25,7 @@ requests-ntlm
 requests-toolbelt
 requests-unixsocket
 alive_progress>=3.1.4
+progressbar2
 sshtunnel
 Sphinx
 sphinx-rtd-theme
@@ -40,4 +42,3 @@ sphinxcontrib-qthelp
 sphinxcontrib-serializinghtml
 black>=23.3
 bumpver>=2023.1126
-sshtunnel

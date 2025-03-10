@@ -68,12 +68,13 @@ class CTAMTestRedfishEventService(TestCase):
         actual test verification
         """
         result = True
-        
+        failure_reason = ""
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
             JSONData = self.group.health_check_ifc.ctam_getes()
             if JSONData is None or len(JSONData) == 0:
                 step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Redfish Event Service Check - Failed")
+                failure_reason += "Redfish Event Service Check - Failed"
                 result = False
             else:
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish Event Service Check - Completed")
@@ -85,7 +86,7 @@ class CTAMTestRedfishEventService(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

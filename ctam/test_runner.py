@@ -35,8 +35,10 @@ from ocptv.output import (
     TestStatus,
 )
 from interfaces.comptool_dut import CompToolDut
+from utils.logger_utils import LoggingWriter, LogSanitizer, BuiltInLogSanitizers
 
 from version import __version__
+COUNTER = 0   
 
 
 class TestRunner:
@@ -47,12 +49,14 @@ class TestRunner:
     def __init__(
         self,
         workspace_dir,
+        logs_output_dir,
         test_hierarchy,
         test_runner_json_file,
         dut_info_json_file,
         package_info_json_file,
         redfish_uri_config_file,
         redfish_response_messages,
+        default_config_path,
         net_rc,
         single_test_override=None,
         sequence_test_override=None,
@@ -92,7 +96,7 @@ class TestRunner:
         self.group_sequence = []
         self.test_result_data = []
         self.total_cases = 0        
-        self.output_dir = ""
+        self.output_dir = logs_output_dir
         self.workspace_dir = workspace_dir
         self.response_check_name = None
         self.compliance_data = {}
@@ -105,24 +109,24 @@ class TestRunner:
         self.progress_bar = False
         self.package_config = package_info_json_file
         self.redfish_response_messages = {}
+        self.default_config_path = default_config_path
         self.single_test_override = single_test_override
         runner_config = self._get_test_runner_config(test_runner_json_file)
 
         with open(dut_info_json_file) as dut_info_json:
             self.dut_config = json.load(dut_info_json)
-        
+            
         with open(redfish_uri_config_file) as redfish_uri:
             self.redfish_uri_config = json.load(redfish_uri)
 
-        with open(redfish_uri_config_file) as redfish_uri:
-            self.redfish_uri_config = json.load(redfish_uri)
 
         self.net_rc = netrc.netrc(net_rc)
-        
+        self.sanitize_logs = self.dut_config.get("properties", {}).get("SanitizeLog", {}).get("value", False)
+        self.words_to_skip = self.get_words_to_skip()
+
         if redfish_response_messages:
             with open(redfish_response_messages) as resp_file:
                 self.redfish_response_messages = json.load(resp_file)
-
         # use override output directory if specified in test_runner.json, otherwise
         # use TestRuns directory below workspace directory
 
@@ -136,8 +140,6 @@ class TestRunner:
             self.test_sequence = sequence_test_override
         elif sequence_group_override != None:
             self.group_sequence = sequence_group_override
-        # elif runner_config["test_cases"]:
-        #     self.test_cases = runner_config["test_cases"]
         elif runner_config.get("test_sequence", None):
             self.test_sequence = runner_config.get("test_sequence", None)
         elif runner_config.get("group_sequence", None):
@@ -145,8 +147,6 @@ class TestRunner:
         elif runner_config.get("active_test_suite", None):
             test_suite_to_select = runner_config.get("active_test_suite", None)
             # Remove the active_test_suite key before selecting the test suite
-            #del runner_config["active_test_suite"]
-
             # Select the test suite from test_runner_data
             for test_suite in test_suite_to_select:
                 selected_test_suite_cases = runner_config.get(test_suite)
@@ -161,17 +161,16 @@ class TestRunner:
                     )
         elif run_all_tests:
             self.test_sequence = run_all_tests
-        # else:
-        #     raise Exception(
-        #         "Specify test cases/groups with -t, -g command line options or use test_runner.json"
-        #     )
+    
+    def get_words_to_skip(self):
+        return [item for sublist in self.net_rc.hosts.values() for item in sublist if isinstance(item, str) if item]
 
     def _get_test_runner_config(self, test_runner_json_file):
         runner_config = {}
         if os.path.isfile(test_runner_json_file):
             with open(test_runner_json_file) as test_runner_json:
                 runner_config = json.load(test_runner_json)
-                self.output_dir = runner_config["output_override_directory"]
+                # self.output_dir = runner_config["output_override_directory"]
                 self.response_check_name = runner_config.get("test_uri_response_excel", None)
                 
                 self.include_tags_set = set(runner_config["include_tags"])
@@ -242,17 +241,14 @@ class TestRunner:
         :param testrun_name: name for the testrun
         :type testrun_name: str
         """
-        #system is up or not
+        # system is up or not
         # If up then establish the connection and the discovery 
         self.cwd = os.path.dirname(os.path.dirname(__file__))
         self.dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        test_dir = f'Tags-{"-".join(self.include_tags_set)}' if self.include_tags_set  and not self.single_test_override else testrun_name+"_{}".format(self.dt)
-
-        if self.workspace_dir:
-            self.output_dir = os.path.join(self.workspace_dir, self.output_dir, "TestRuns", test_dir)
-        else:
-            self.output_dir = os.path.join("workspace", "TestRuns", test_dir)
-        print("Output Dir is : ", self.output_dir)
+        test_dir = ""
+        if self.include_tags_set  and not self.single_test_override:
+            test_dir = f'Tags-{"-".join(self.include_tags_set)}'
+            self.output_dir = os.path.join(self.workspace_dir, "TestRuns", test_dir)
        
         self.cmd_output_dir = os.path.join(self.output_dir, "RedfishCommandDetails")
         if not os.path.exists(self.output_dir):
@@ -260,13 +256,16 @@ class TestRunner:
         if not os.path.exists(self.cmd_output_dir):
             os.makedirs(self.cmd_output_dir)
         dut_logger = LoggingWriter(
-            self.cmd_output_dir, self.console_log, "RedfishCommandDetails_"+testrun_name, "json", self.debug_mode
+            self.cmd_output_dir, self.console_log, testrun_name, "json", self.debug_mode,
+            desanitize_log=self.sanitize_logs, words_to_skip=self.words_to_skip
         )
         test_info_logger = LoggingWriter(
-            self.output_dir, self.console_log, "TestInfo_"+testrun_name, "json", self.debug_mode
+            self.output_dir, self.console_log, "TestInfo_"+testrun_name, "json", self.debug_mode,
+            desanitize_log=self.sanitize_logs, words_to_skip=self.words_to_skip
         )
         self.score_logger = LoggingWriter(
-            self.output_dir, self.console_log, "TestScore_"+testrun_name, "json", self.debug_mode
+            self.output_dir, self.console_log, "TestScore_"+testrun_name, "json", self.debug_mode,
+            desanitize_log=self.sanitize_logs, words_to_skip=self.words_to_skip
         )
         self.test_result_file = os.path.join(self.output_dir, "TestReport_{}.log".format(self.dt))
         self.test_uri_response_check = None
@@ -286,6 +285,7 @@ class TestRunner:
             test_info_logger=test_info_logger,
             test_uri_response_check=self.test_uri_response_check,
             redfish_response_messages=self.redfish_response_messages,
+            default_config_path=self.default_config_path,
             logger_path=self.output_dir,
             workspace_dir=self.workspace_dir
         )
@@ -293,7 +293,8 @@ class TestRunner:
         
 
         self.writer = LoggingWriter(
-            self.output_dir, self.console_log, "OCPTV_"+testrun_name, "json", self.debug_mode
+            self.output_dir, self.console_log, "OCPTV_CTAM_LOGS_", "json", self.debug_mode,
+            desanitize_log=self.sanitize_logs, words_to_skip=self.words_to_skip
         )
         tv.config(writer=self.writer)
 
@@ -319,7 +320,7 @@ class TestRunner:
         #     )
         #     self.system_details_logger.write(json.dumps(self.system_details))
         
-        self.active_run.start(dut=tv.Dut(id="dut0"))
+        # self.active_run.start(dut=tv.Dut(id="dut0"))
 
     def _end(self, run_status, run_result):
         """
@@ -347,6 +348,8 @@ class TestRunner:
         :rtype: int, str 
         """
         try:
+            status_code = 0
+            self.create_json_configuration()
             if self.progress_bar:
                 progress_thread = threading.Thread(target=self.display_progress_bar)
                 progress_thread.daemon = True
@@ -376,8 +379,32 @@ class TestRunner:
                 if self.progress_bar and self.console_log is False:
                         self.total_cases = len(self.test_sequence)
                         progress_thread.start()
-                        
-                for test in self.test_sequence:
+
+                """
+                1.Initialize previous_test_result:
+                    The variable previous_test_result is initialized as True, representing the result of the previous test.
+                2.Iterate Over Test Sequence:
+                    Loop through self.test_sequence using enumerate to process each test case in sequence.
+                3.Check for "PROF" Test:
+                    If the current test is "PROF", get the previous test from the sequence (prev_test).
+                    If the result of the previous test (previous_test_result) is "FAIL", log the message and exit the loop.
+                    Otherwise, continue to the next iteration.
+                4.Update Previous Test Result:
+                    Assign the result of the current test (group_result.value) to previous_test_result.
+
+                """
+                previous_test_result = True       
+                for index, test in enumerate(self.test_sequence):          
+                    if test == "PROF":
+                        prev_test = self.test_sequence[index - 1]
+
+                        if previous_test_result == "FAIL":
+                            msg = f"PROF encountered at index {index}... result of previous test: {prev_test} -> {previous_test_result}"
+                            self.active_run.add_log(severity=LogSeverity.INFO, message=msg)
+                            break
+                        else:
+                            continue
+                                            
                     (
                         group_instance,
                         test_case_instances,
@@ -387,6 +414,8 @@ class TestRunner:
                     # group_exc_tags = group_instance.exclude_tags
 
                     group_status, group_result = self._run_group_test_cases(group_instance, test_case_instances)
+                    previous_test_result = group_result.value
+
                     group_status_set.add(group_status)
                     group_result_set.add(group_result)
 
@@ -447,8 +476,8 @@ class TestRunner:
             self.score_logger.write(json.dumps(msg))
             self.test_result_data.append(("Total", "", 
                                         timedelta(seconds=TestCase.total_execution_time),
-                                        TestCase.total_compliance_score, 
-                                        TestCase.max_compliance_score,"{}%".format(gtotal)))
+                                        TestCase.max_compliance_score,
+                                        TestCase.total_compliance_score,"{}%".format(gtotal)))
             self.generate_domain_test_report()
             if self.weighted_scores:
                 self.generate_compliance_level_test_report()
@@ -470,12 +499,21 @@ class TestRunner:
             self.active_run.add_log(
                 severity=LogSeverity.FATAL, message=exception_details
             )
+            msg = {
+                "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                "TotalExecutionTime": str(timedelta(seconds=TestCase.total_execution_time)),
+                "TotalScore": TestCase.total_compliance_score,
+                "MaxComplianceScore": TestCase.max_compliance_score,
+                "Grade": "{}%".format(gtotal),
+                "FailureReason": exception_details
+                }
+            self.score_logger.write(json.dumps(msg))
             status_code, exit_string =  1, f"Test failed due to execption: {repr(e)}"
         finally:
             if self.comp_tool_dut:
                 self.comp_tool_dut.clean_up()
+            self.post_proces_logs(self.writer.log_file)
             return status_code, exit_string
-        
         
     def _run_group_test_cases(self, group_instance, test_case_instances):
         """
@@ -489,14 +527,15 @@ class TestRunner:
         :returns: group_status, group_result
         :rtype:  ocptv.output.TestStatus, ocptv.output.TestResult
         """
-
+        global COUNTER
         group_status = TestStatus.ERROR
         group_result = TestResult.PASS
 
         try:
             if not self.comp_tool_dut:
                 self._start(group_instance.__class__.__name__)
-
+            self.active_run.start(dut=tv.Dut(id=group_instance.__class__.__name__))
+            
             group_instance.setup()
 
             for test_instance in test_case_instances:
@@ -509,29 +548,39 @@ class TestRunner:
                 )
                 if not valid and not self.single_test_override:
                     msg = f"Test {test_instance.__class__.__name__} skipped due to tags. tags = {test_inc_tags}"
+                    skipped_test = self.active_run.add_step(name=f"<{test_instance.test_id} - {test_instance.test_name}>")
+                    skipped_test.start()
                     self.active_run.add_log(severity=LogSeverity.INFO, message=msg)
+                    skipped_test.end(status=TestStatus.COMPLETE)
                     continue
                 if self.weighted_scores:
                     self.__compliance_level_score(testcase=test_instance)
                 # this exception block goal is to ensure test case teardown() is called even if setup() or run() fails
                 try:
                     test_starttime = time.perf_counter()
+                    # added this step as we need to get the test case name in log post processing
+                    test_case_step = self.active_run.add_step(name=f"<{test_instance.test_id} - {test_instance.test_name}>") 
+                    test_case_step.start()
                     test_instance.setup()
                     self.comp_tool_dut.current_test_name = test_instance.test_name
-                    file_name = "RedfishCommandDetails_{}_{}".format(test_instance.test_id,
+                    file_name = "{}_{}_{}".format(COUNTER, test_instance.test_id,
                                                                         test_instance.test_name)
+                    COUNTER += 1
                     logger = LoggingWriter(
-                        self.cmd_output_dir, self.console_log, file_name, "json", self.debug_mode
+                        self.cmd_output_dir, self.console_log, file_name, "json", self.debug_mode,
+                        desanitize_log=self.sanitize_logs, words_to_skip=self.words_to_skip
                     )
                     self.comp_tool_dut.logger = logger
                     execution_starttime = time.perf_counter()
-                    test_result = test_instance.run()
+                    failure_reason = ""
+                    test_result, failure_reason = test_instance.run()
                     if (
                         test_result == TestResult.FAIL
                     ):  # if any test fails, the group fails
                         group_result = TestResult.FAIL
                 except:  
                     exception_details = traceback.format_exc()
+                    failure_reason += " " + exception_details
                     self.active_run.add_log(
                         severity=LogSeverity.FATAL, message=exception_details
                     )
@@ -540,6 +589,7 @@ class TestRunner:
                 finally:
                     # attempt test cleanup even if test exception raised
                     test_instance.teardown()
+                    test_case_step.end(status=TestStatus.COMPLETE)
                     execution_endtime = time.perf_counter()
                     execution_time = round(execution_endtime - execution_starttime, 3)
                     test_instance.execution_time = timedelta(seconds=round(execution_endtime - test_starttime, 3))
@@ -551,8 +601,10 @@ class TestRunner:
                         "TestName": test_instance.test_name,
                         "TestCaseScoreWeight":test_instance.score_weight,
                         "TestCaseScore": test_instance.score,
-                        "TestCaseResult": TestResult(test_instance.result).name
+                        "TestCaseResult": TestResult(test_instance.result).name,
+                        "FailureReason": failure_reason + " For more details check Command_Line_Logs.log file"
                     }
+                    msg = {key: value for key, value in msg.items() if (key != "FailureReason") or (TestResult(test_instance.result).name == "FAIL")}
                     test_tuple = (test_instance.test_id,
                                                    test_instance.test_name,
                                                    test_instance.execution_time,
@@ -591,7 +643,17 @@ class TestRunner:
             self.active_run.add_log(
                 severity=LogSeverity.FATAL, message=exception_details
             )
-
+            msg = {
+                "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                "ExecutionTime": f"{execution_time} seconds",
+                "TestID": test_instance.test_id,
+                "TestName": test_instance.test_name,
+                "TestCaseScoreWeight":test_instance.score_weight,
+                "TestCaseScore": test_instance.score,
+                "TestCaseResult": TestResult(test_instance.result).name,
+                "FailureReason": exception_details
+            }
+            self.score_logger.write(json.dumps(msg))
             group_status = TestStatus.ERROR
             group_result = TestResult.FAIL
 
@@ -599,6 +661,7 @@ class TestRunner:
             # attempt group cleanup even if test exception raised
             group_instance.teardown()
             self._end(group_status, group_result)
+
             return group_status, group_result
 
     def get_system_details(self):
@@ -623,8 +686,7 @@ class TestRunner:
             if self.comp_tool_dut:
                 self.comp_tool_dut.clean_up()
             return status_code, exit_string
-            
-
+    
     def update_weighted_data(self, test_instance):
         c_level = test_instance.compliance_level
         w_score = self.weighted_scores.get(test_instance.compliance_level, 10)
@@ -900,7 +962,44 @@ class TestRunner:
             f.write("\n" + str(dt))
         print(dt)
 
-
+    def create_json_configuration(self):
+        try:
+            # Create 'Configuration' folder inside the CTAM_LOGS_date_time directory if it doesn't exist
+            config_files = ["test_runner", "package_info", "dut_info", "redfish_uri_config", "redfish_response_messages"]
+            config_folder_path = os.path.join(self.output_dir, "Configuration")
+            if not os.path.exists(config_folder_path):
+                os.makedirs(config_folder_path)
+            sanitizer = LogSanitizer(additional_regex=[
+                BuiltInLogSanitizers.CURL, BuiltInLogSanitizers.PASS_WD,
+            ])
+            def sanitizeData(data):
+                if isinstance(data, dict):
+                    for key, value in data.items():
+                        if isinstance(value, str):
+                            data[key] = sanitizer.format(value)
+                        elif isinstance(value, (dict, list)):
+                            sanitizeData(value)
+                elif isinstance(data, list):
+                    for item in data:
+                        sanitizeData(item)
+            resuld_data = {}
+            for file_name in os.listdir(self.workspace_dir):
+                file_path = os.path.join(self.workspace_dir, file_name)
+                if os.path.isfile(file_path):
+                   if any(file_name.startswith(f_name) for f_name in config_files):
+                       with open(file_path, 'r') as file:
+                            data = json.load(file)
+                            if self.sanitize_logs:
+                                sanitizeData(data)
+                            resuld_data[file_name.split(".")[0].replace("_", " ").upper()] = data
+            json_file_path = os.path.join(config_folder_path, "ConfigData.json")
+            
+            with open(json_file_path, 'w') as jsonfile:
+                json.dump(resuld_data, jsonfile, indent=4)
+                       
+        except Exception as e:
+            return f"Failed to create Configuration folder or store files: {e}"
+    
     def display_progress_bar(self):
         """
         shows a real-time progress bar in the console displaying the percentage of test cases completed.
@@ -918,95 +1017,50 @@ class TestRunner:
                 if count == self.total_cases:
                     break
 
-
-class LoggingWriter(Writer):
-    """
-    Helper class registers python logger with OCP logger to be used for file output etc
-
-    :param Writer: OCP Writer super class
-    :type Writer:
-    """
-
-    def __init__(self, output_dir, console_log, testrun_name,extension_name,  debug):
-        """
-        Initialize file logging parameters
-
-        :param output_dir: location of log file
-        :type output_dir: str
-        :param console_log: true if desired to print to console as well as log
-        :type console_log: bool
-        :param testrun_name: name for current testrun
-        :type testrun_name: str
-        :param debug: if true, log LogSeverity.DEBUG messages
-        :type debug: bool
-        """
-        # Create a logger
-        self.logger = logging.getLogger(testrun_name)
-        self.debug = debug
-
-        # Set the level for this logger. This means that unless specified otherwise, all messages
-        # with level INFO and above will be logged.
-        # If you want to log all messages you can use logging.DEBUG
-        self.logger.setLevel(logging.INFO)
-
-        # Create formatters and add them to the handlers
-        # formatter = logging.Formatter("%(message)s")
-
-        # Create a file handler that logs messages to a file
-        dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        file_name_tmp = "/{}_{}.{}".format(testrun_name, dt, extension_name)
-        self.file_handler = logging.FileHandler(output_dir + file_name_tmp)
-        self.file_handler.setLevel(logging.INFO)
-        self.file_handler.setFormatter(JsonFormatter())
-        self.logger.addHandler(self.file_handler)
-
-        if console_log:
-            # Create a console handler that logs messages to the console
-            self.console_handler = logging.StreamHandler()
-            self.console_handler.setLevel(logging.INFO)
-            self.console_handler.setFormatter(JsonFormatter())
-            self.logger.addHandler(self.console_handler)
-
-    def write(self, buffer: str):
-        """
-        Called from the OCP framework for logging messages.  Use debug switch to filter
-        LogSeverity.DEBUG messages.
-
-        :param buffer: _description_
-        :type buffer: str
-        """
-        if not self.debug:
-            if '"severity": "debug"' in buffer.lower():
-                return
-
-        self.logger.info(buffer)
-        
-    def log(self, msg: str):
-        """
-        Called from the OCP framework for logging messages. This method is a wrapper
-        of the "write" method to add timestamp to a message.
-
-        :param msg: Message to be logged
-        :type msg: str
-        """
-        json_msg = {
-                    "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
-                    "Message": msg
-        }
-
-        self.write(json.dumps(json_msg))
-
-
-class JsonFormatter(logging.Formatter):
-    def format(self, record):
-        """
-        :Description:                       Format method for formatting data into json output
-
-        :param JSON Dict record:		    Dict object for Log JSON Data
-
-        :returns:                           JSON object with indent 4
-        :rtype                              JSON Dict
-        """
-        msg = json.loads(getattr(record, "msg", None))
-        f_msg = json.dumps(msg, indent=4) 
-        return f_msg + ","
+    def post_proces_logs(self, log_path: str = "") -> None:
+        try:
+            log_data = ""
+            with open(log_path, 'r') as log_file:
+                log_data = f"[{log_file.read()}]"
+                import re
+                import ast
+                json_data = ast.literal_eval(log_data)
+                
+                test_start_idx = 0
+                test_end_idx = 0
+                test_data = []
+                file_name = ""
+                test_no = 0
+                while test_start_idx < len(json_data):
+                    if testRunArtifact:= json_data[test_start_idx].get("testRunArtifact", {}):
+                        if testRunStart:= testRunArtifact.get("testRunStart", {}): 
+                            test_end_idx = test_start_idx
+                            while test_end_idx < len(json_data):
+                                if testStepArtifact:= json_data[test_end_idx].get("testStepArtifact", {}):
+                                    if testStepStart:= testStepArtifact.get("testStepStart", {}): 
+                                        check_data = re.findall(r"<(\w+.*)>", testStepStart["name"])  
+                                        if check_data:
+                                            file_name = check_data[0]
+                                            
+                                if testRunArtifactInside:= json_data[test_end_idx].get("testRunArtifact", {}): 
+                                    if testRunEnd:=testRunArtifactInside.get("testRunEnd", {}):
+                                        test_result = testRunEnd["result"]
+                                        break
+                                test_end_idx += 1
+                            test_no += 1
+                            test_data.append(("{}_{}_{}".format(test_no, test_result, file_name), json_data[test_start_idx:test_end_idx + 1]))
+                            test_start_idx = test_end_idx
+                    test_start_idx += 1
+                output_path = os.path.join(self.output_dir, "OCPTV_Processed_TestCase_Logs")
+                if not os.path.exists(output_path):
+                    os.makedirs(output_path)
+                for file_name, data in test_data:
+                    output_file = os.path.join(output_path, "{}.json".format(file_name))
+                    with open(output_file, "w") as f:
+                        f.write(json.dumps(data, indent=4))
+        except Exception as e:
+            exception_details = traceback.format_exc()
+            self.active_run.add_log(
+                severity=LogSeverity.FATAL, message=exception_details
+            )
+            # status_code, exit_string = 1,  f"Test failed due to execption: {repr(e)}"

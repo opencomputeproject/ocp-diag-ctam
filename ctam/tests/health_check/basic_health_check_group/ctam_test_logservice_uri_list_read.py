@@ -66,6 +66,7 @@ class CTAMTestLogServicesURIListRead(TestCase):
         """
         actual test verification
         """
+        failure_reason = ""
         result = True
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
@@ -74,6 +75,7 @@ class CTAMTestLogServicesURIListRead(TestCase):
                     LogSeverity.FATAL,
                     f"{self.test_id} : Redfish LogService URI list Read Failed - LogService list is empty",
                 )
+                failure_reason += "Redfish LogService URI list Read Failed - LogService list is empty"
                 result = False
             else:
                 #pprint(logservice)
@@ -89,6 +91,7 @@ class CTAMTestLogServicesURIListRead(TestCase):
                     step2.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish LogService URI list Verification - Passed")
                 else:
                     step2.add_log(LogSeverity.ERROR,f"{self.test_id} : Redfish LogService URI list Verification - Failed")
+                    failure_reason += "Redfish LogService URI list Verification - Failed"
                     result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -98,7 +101,7 @@ class CTAMTestLogServicesURIListRead(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

@@ -67,9 +67,10 @@ class CTAMTestCollectCrashdumpOEMSelfTest(TestCase):
         """
         actual test verification
         """
+        failure_reason = ""
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            self.group.health_check_ifc.ctam_getes()
+            self.group.ras_ifc.ctam_getes()
 
         step2 = self.test_run().add_step(f"{self.__class__.__name__} step2")  # type: ignore
         with step2.scope():
@@ -84,7 +85,7 @@ class CTAMTestCollectCrashdumpOEMSelfTest(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

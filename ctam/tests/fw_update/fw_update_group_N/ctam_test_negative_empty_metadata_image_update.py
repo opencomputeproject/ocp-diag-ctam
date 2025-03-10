@@ -41,7 +41,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
     test_name: str = "CTAM Test Negative Empty Metadata Image Update"
     test_id: str = "F26"
     score_weight: int = 10
-    tags: List[str] = ["Negative", "L2"]
+    tags: List[str] = ["Negative", "L2", "Single_Device"]
     compliance_level: str = "L2"
 
     def __init__(self, group: FWUpdateTestGroupN):
@@ -68,35 +68,50 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
         actual test verification
         """
         result = True
-        
+        failure_reason = ""
+
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
+            status, failure_reason = self.group.fw_update_ifc.ctam_fw_update_precheck()
+            if not status:
+                step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
+            else:
+                step1.add_log(
+                    LogSeverity.INFO, f"{self.test_id} : FW Update Not Required"
+                )
+        
+        step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
+        with step2.scope():
             corrupted_component_id  = self.group.fw_update_ifc.ctam_get_component_to_be_corrupted(VendorProvidedBundle=False)
             corrupted_component_list = self.group.fw_update_ifc.ctam_get_component_list(component_id=corrupted_component_id)
-            step1.add_log(LogSeverity.INFO, f"{self.test_id} : Selected component to corrupt -> ID: {corrupted_component_id} List: {corrupted_component_list}")
+            step2.add_log(LogSeverity.INFO, f"{self.test_id} : Selected component to corrupt -> ID: {corrupted_component_id} List: {corrupted_component_list}")
         
-        step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2_{corrupted_component_list[0]}")  # type: ignore
-        with step2.scope():
-            if self.group.fw_update_ifc.ctam_selectpartiallist(count=1, specific_targets=[corrupted_component_list[0]]):
-                step2.add_log(LogSeverity.INFO, f"{self.test_id} : Single Device Selected")
-            else:
-                step2.add_log(LogSeverity.ERROR, f"{self.test_id} : Single Device Selection Failed")
-                result = False
-
         step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3_{corrupted_component_list[0]}")  # type: ignore
         with step3.scope():
+            if self.group.fw_update_ifc.ctam_selectpartiallist(count=1, specific_targets=[corrupted_component_list[0]]):
+                step3.add_log(LogSeverity.INFO, f"{self.test_id} : Single Device Selected")
+            else:
+                step3.add_log(LogSeverity.ERROR, f"{self.test_id} : Single Device Selection Failed")
+                failure_reason += f"{self.test_id} : Single Device Selection Failed"
+                result = False
+
+        step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4_{corrupted_component_list[0]}")  # type: ignore
+        with step4.scope():
             status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="empty_metadata", 
-                                                                                 corrupted_component_id=corrupted_component_id)
+                                                                                 corrupted_component_id=corrupted_component_id,
+                                                                                 specific_targets=[corrupted_component_list[0]])
+            failure_reason += " " + status_msg
             if status:
-                step3.add_log(
+                step4.add_log(
                     LogSeverity.INFO,
                     f"{self.test_id} : FW Update Stage Initiation Failed as Expected",
                 )
             else:
-                step3.add_log(
+                step4.add_log(
                     LogSeverity.ERROR,
                     f"{self.test_id} : FW Update Staging Initiated - Unexpected",
                 )
+                failure_reason += " " + "FW Update Staging Initiated - Unexpected"
                 result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -106,7 +121,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """
@@ -123,10 +138,10 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")
         with step2.scope():
             if self.group.fw_update_ifc.ctam_activate_ac(gpu_check=False, fwupd_hyst_wait=False):
-                msg = f"{self.test_id} : AC Cycle Passed"
+                msg = f"{self.test_id} : Teardown : AC Cycle Passed"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)  
             else:
-                msg = f"{self.test_id} : AC Cycle Failed"
+                msg = f"{self.test_id} : Teardown : AC Cycle Failed"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
         
         # call super teardown last

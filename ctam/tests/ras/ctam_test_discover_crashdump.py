@@ -72,6 +72,7 @@ class CTAMTestDiscoverCrashdump(TestCase):
         """
         actual test verification
         """
+        failure_reason = ""
         result = True
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
@@ -80,6 +81,7 @@ class CTAMTestDiscoverCrashdump(TestCase):
                     LogSeverity.FATAL,
                     f"{self.test_id} : Test case Failed - CollectDiagnostic list is empty",
                 )
+                failure_reason += "Test case Failed - CollectDiagnostic list is empty."
                 result = False
             else:
                 print(collectdata)
@@ -96,7 +98,7 @@ class CTAMTestDiscoverCrashdump(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """
