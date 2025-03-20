@@ -10,6 +10,11 @@ LICENSE file in the root directory of this source tree.
 :Score Weight:	10
 
 :Description:	This test case verifies if self-test reports any failures.
+                The test triggers a self-test, downloads the report, and checks for any failures.
+
+                PASS Criteria: The test passes if the self-test report is successfully retrieved and contains no failures.
+                FAIL Criteria: The test fails if the self-test report cannot be retrieved or contains failures.
+
 :Usage 1:		python ctam.py -w ..\workspace -T H50
 :Usage 2:		python ctam.py -w ..\workspace -T "CTAM Test Verify Self-Test Report"
 

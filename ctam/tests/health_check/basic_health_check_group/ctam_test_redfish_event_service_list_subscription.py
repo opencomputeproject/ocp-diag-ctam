@@ -5,10 +5,16 @@ LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Redfish Event Service List Subscriptions
 :Test ID:		H80
-:Group Name:	fw_update
+:Group Name:	health_check
 :Score Weight:	10
 
-:Description:	This test attempts to get event subscriptions
+:Description:	This test case attempts to get event subscriptions and verifies their presence.
+
+                PASS Criteria:
+                1. The event subscriptions are retrieved successfully and are not empty.
+
+                FAIL Criteria:
+                1. The event subscriptions retrieval fails or returns an empty list.
 
 :Usage 1:		python ctam.py -w ..\workspace -t H80
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Event Service List Subscriptions"

@@ -9,9 +9,16 @@ LICENSE file in the root directory of this source tree.
 :Score Weight:	10
 
 :Description:	This test case focuses on the scenario where an image transfer is initiated for a firmware update.
-				The objective is to ensure that after the image transfer is completed, the system proceeds without waiting
+				The objective is to ensure that after the image transfer is initiated, the system proceeds without waiting
 				for its full completion. Instead, it should immediately move on to resetting the activation flow for the full
 				firmware update process.
+
+				PASS Criteria:
+				- The system proceeds to reset the activation flow without waiting for the full completion of the image transfer.
+				
+				FAIL Criteria:
+				- The system waits for the full completion of the image transfer before proceeding to reset the activation flow.
+
 :Usage 1:		python ctam.py -w ..\workspace -t F62
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Single FW update staging interruption with AC reset"
 

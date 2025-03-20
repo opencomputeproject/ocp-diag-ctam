@@ -88,6 +88,9 @@ class CompToolDut(Dut):
         self.connection_ip_address = config["properties"]["ConnectionIPAddress"][
             "value"
         ]
+        self.connection_port = config["properties"]["ConnectionPort"][
+            "value"
+        ]
         self.default_prefix = self.uri_builder.format_uri(redfish_str="{BaseURI}", component_type="GPU")
         self.port_list = config["properties"]["SSHTunnelPortList"]["value"]
         self.protocol = config["properties"]["SSHTunnelProtocol"]["value"]
@@ -137,6 +140,8 @@ class CompToolDut(Dut):
             self.__user_name, _, self.__user_pass = self.net_rc.authenticators(
                 self.SSHTunnelRemoteIPAddress
             )
+        else:
+            self.connection_ip_address = f"{self.connection_ip_address}:{self.connection_port}"
         
         # TODO investigate storing FW update files via add_software_info() in super
         self.__connection_url = f"{self.protocol}://{self.connection_ip_address}"
@@ -254,9 +259,11 @@ class CompToolDut(Dut):
             if response.status in range (200,204) and response.text: # FIXME: Add error handling in case the request fails
                 responseData = None
                 try:
-                    responseData = response.dict
+                    import ast
+                    data = ast.literal_eval(response.text) # Convert response text to a Python dictionary
+                    responseData = response.dict # Get the response data as a dictionary
                 except Exception as e:
-                    responseData = response.text
+                    responseData = response.text # If conversion fails, use the raw response text
                 msg.update({
                     "ResponseCode": response.status,
                     "Response":responseData, # FIXME: self-test report cannot be converted to dict # FIXED: Throws error in some cases when response.dict is used and the response body is empty

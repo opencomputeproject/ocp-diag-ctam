@@ -8,9 +8,16 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Firmware Update Stack Robustness Test. If one component copying (staging) fails, verify other component copying (staging) goes through.
-                Vendor needs to provide a fwpkg where a component image is corrupted, and all other component images are good (i.e. it will not fail the update).
-                
+:Description:	
+    Firmware Update Stack Robustness Test. If one component copying (staging) fails, verify other component copying (staging) goes through.
+    Vendor needs to provide a fwpkg where a component image is corrupted (If it not provided in package info testcase can generate), and all other component images are good (i.e. it will not fail the update).
+
+:PASS Criteria:	
+    - The corrupted component staging fails, while other component staging goes through.
+
+:FAIL Criteria:	
+    - The corrupted component staging fails, as well as other component staging also fails.
+
 :Usage 1:		python ctam.py -w ..\workspace -t F55
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Staging With Failed Component"
 

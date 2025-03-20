@@ -5,10 +5,16 @@ LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Redfish Event Service
 :Test ID:		H83
-:Group Name:	fw_update
+:Group Name:	health_check
 :Score Weight:	10
 
-:Description:	This test attempts to create event service subscription
+:Description:	This test case attempts to create an event service subscription and verifies its success.
+
+                PASS Criteria:
+                1. The event service subscription is created successfully without errors.
+
+                FAIL Criteria:
+                1. The event service subscription creation fails or returns an error.
 
 :Usage 1:		python ctam.py -w ..\workspace -t H83
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Event Service Create Subscription"

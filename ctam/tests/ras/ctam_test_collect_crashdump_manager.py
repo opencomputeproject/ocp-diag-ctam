@@ -8,7 +8,24 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	ras
 :Score Weight:	10
 
-:Description:	Placeholder only. Post CollectDiagnisticData for '\redfish\v1\Managers\{Manager}\LogService\EventLog with DiagnosticDataType = Manager
+:Description:	
+This test verifies the functionality of collecting crashdump diagnostic data for a specific manager in the system. It performs the following steps:
+
+1. Discover the crashdump capabilities using the Redfish API.
+   Example URI: /redfish/v1/Managers/{ManagerID}/LogServices
+2. Trigger the collection of crashdump data for the manager.
+   Post CollectDiagnisticData for '\redfish\v1\Managers\{Manager}\LogService\EventLog with DiagnosticDataType = Manager
+   Example URI: /redfish/v1/Managers/{ManagerID}/LogServices/{LogServiceID}/Actions/LogService.CollectDiagnosticData
+3. Download the crashdump attachment.
+4. Check if the crashdump attachment is successfully downloaded.
+5. If the crashdump attachment is not successfully downloaded, log the failure and mark the test as failed.
+6. If the crashdump attachment is successfully downloaded, mark the test as passed.
+
+PASS Criteria:
+- The crashdump attachment is successfully downloaded.
+
+FAIL Criteria:
+- The crashdump attachment is not successfully downloaded
 
 :Usage 1:		python ctam.py -w ..\workspace -t R2
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Collect Crashdump Manager"

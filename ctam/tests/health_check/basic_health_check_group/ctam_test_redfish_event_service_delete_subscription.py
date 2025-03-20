@@ -5,10 +5,16 @@ LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Redfish Event Service Delete Subscriptions
 :Test ID:		H81
-:Group Name:	fw_update
+:Group Name:	health_check
 :Score Weight:	10
 
-:Description:	This test attempts to delete event subscriptions
+:Description:	This test case attempts to delete event subscriptions and verifies its success.
+
+                PASS Criteria:
+                1. The event subscriptions are deleted successfully without errors.
+
+                FAIL Criteria:
+                1. The event subscriptions deletion fails or returns an error.
 
 :Usage 1:		python ctam.py -w ..\workspace -t H81
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Event Service Delete Subscriptions"

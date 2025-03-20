@@ -9,7 +9,13 @@ LICENSE file in the root directory of this source tree.
 :Score Weight:	10
 
 :Description:	This test case entails performing firmware updates in a loop, one device at a time but using different versions
-				for each update.
+				for each update.The test flow should go from N to N-1 image during the firmware update process.
+
+				PASS Criteria:
+				- Each firmware update completes successfully using different versions in each loop iteration.
+				
+				FAIL Criteria:
+				- Any firmware update fails during the loop iterations.
 
 :Usage 1:		python ctam.py -w ..\workspace -t F89
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Single Device Update Ping Pong"

@@ -8,7 +8,13 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	health_check
 :Score Weight:	10
 
-:Description:	This test validates the Firmware Inventory using RIV
+:Description:	This test case validates the Firmware Inventory using the Redfish Interop Validator (RIV). It ensures that the values of the Firmware Inventory Collection are present and correct.
+
+                PASS Criteria:
+                1. The Firmware Inventory is validated successfully without errors.
+
+                FAIL Criteria:
+                1. The Firmware Inventory validation fails or returns errors.
 
 :Usage 1:		python ctam.py -w ..\workspace -t H5
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Interop Validator Firmware Inventory"

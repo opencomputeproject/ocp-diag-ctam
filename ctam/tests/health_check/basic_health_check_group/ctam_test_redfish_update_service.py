@@ -8,7 +8,11 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	health_check
 :Score Weight:	10
 
-:Description:	This test attempts to get update service
+:Description:	This test verifies the availability and correctness of the Redfish Update Service.
+                The test attempts to retrieve update service data from the service and checks for errors.
+
+                PASS Criteria: The test passes if the update service data is successfully retrieved and contains no errors.
+                FAIL Criteria: The test fails if the update service data cannot be retrieved or contains errors.
 
 :Usage 1:		python ctam.py -w ..\workspace -t H4
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Update Service"

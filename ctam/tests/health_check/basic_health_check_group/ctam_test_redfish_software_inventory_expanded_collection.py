@@ -8,7 +8,15 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	health_check
 :Score Weight:	10
 
-:Description:	This test attempts to get the expanded Software inventory from update service
+:Description:	This test case attempts to get the expanded Software inventory from the update service and verifies its presence and correctness.
+
+                PASS Criteria:
+                1. The expanded Software inventory is retrieved successfully and is not empty.
+                2. The expanded Software inventory is verified successfully.
+
+                FAIL Criteria:
+                1. The expanded Software inventory retrieval fails or returns an empty result.
+                2. The expanded Software inventory verification fails.
 
 :Usage 1:		python ctam.py -w ..\workspace -t H11
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Software Inventory Expanded Collection"

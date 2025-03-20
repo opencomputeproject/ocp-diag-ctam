@@ -9,7 +9,12 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Test case of full firmware update in a loop. To verify the ongoing rollback is not affected by subsequent update.
+:Description:	This test case performs a full firmware update in a loop to ensure stability and verify that ongoing rollbacks are not affected by subsequent updates.
+                The test stages the firmware update, activates it, and verifies the update in a loop.
+
+                PASS Criteria: The test passes if N-1 & N firmware updates complete successfully without errors in the loop.
+                FAIL Criteria: The test fails if any firmware update encounters an error in the loop.
+
 :Usage 1:		python ctam.py -w ..\workspace -t F8
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update In Loop"
 

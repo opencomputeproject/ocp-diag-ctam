@@ -678,7 +678,7 @@ class FunctionalIfc:
             
             dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
             dump_tarball_path = os.path.join( 
-                    self.dut().workspace_dir,
+                    self.dut().workspace_dir,self.dut().logger_path,
                     "{}_dump.tar.xz".format(dt))
             
             response =  self.dut().run_redfish_command(uri=URL)
@@ -689,7 +689,7 @@ class FunctionalIfc:
                 import tarfile
                 dump = tarfile.open(dump_tarball_path)
                 DumpPath = os.path.join( 
-                    self.dut().workspace_dir, 
+                    self.dut().workspace_dir,self.dut().logger_path,
                     "{}_dump".format(dt))
                 dump.extractall(DumpPath) # This will create a directory if it's not present already.
                 dump.close()

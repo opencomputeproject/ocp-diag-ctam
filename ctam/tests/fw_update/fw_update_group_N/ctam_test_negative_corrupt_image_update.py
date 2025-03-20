@@ -8,8 +8,16 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test case is a Negative test. It would search for GPU_FW_IMAGE_CORRUPT referenced by package_info.json and attempt
-                firmware update using the corrupted image.
+:Description:	
+    This test case is a negative test. It searches for GPU_FW_IMAGE_CORRUPT referenced by package_info.json and attempts
+    a firmware update using the corrupted image. The objective is to ensure that the system correctly handles the corrupted
+    image and does not proceed with the update.
+
+:PASS Criteria:	
+    - The firmware staging operation fails as expected due to the corrupted image.
+
+:FAIL Criteria:	
+    - The firmware staging operation succeeds unexpectedly with the corrupted image.
 
 :Usage 1:		python ctam.py -w ..\workspace -t F23
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Corrupt Image Update"

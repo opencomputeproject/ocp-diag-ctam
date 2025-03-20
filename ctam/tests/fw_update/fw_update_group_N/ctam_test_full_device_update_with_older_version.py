@@ -8,8 +8,17 @@ LICENSE file in the root directory of this source tree.
 :Group Name: fw_update
 :Score Weight: 10
 
-:Description: This test case focuses on updating the firmware of the full device using an older or previous version
-of the current version that is already installed.
+:Description: 
+    This test case focuses on updating the firmware of the full device using an older or previous version
+    of the current version that is already installed. The objective is to ensure that the device can be
+    downgraded to a previous firmware version without issues.
+
+:PASS Criteria:	
+    - The firmware staging operation completes successfully with the older version.
+
+:FAIL Criteria:	
+    - The firmware staging operation fails or does not complete with the older version.
+
 :Usage 1: python ctam.py -w ..\workspace -t F19
 :Usage 2: python ctam.py -w ..\workspace -t "CTAM Test Full Device Update With Older Version"
 

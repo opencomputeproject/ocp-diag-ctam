@@ -8,8 +8,12 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	health_check
 :Score Weight:	10
 
-:Description:	AC Cycle is essential for activation flow of firmware update and many other flows. 
-                This test would run AC cycles in a loop and test platform stability.This is a prerequisite to many other test cases that need the activation flow.   
+:Description:	AC Cycle is essential for activation flow of firmware update and many other flows.
+                This test runs AC cycles in a loop to test platform stability. This is a prerequisite
+                to many other test cases that need the activation flow.
+
+                PASS Criteria: The test passes if all AC cycles complete successfully without errors.
+                FAIL Criteria: The test fails if any AC cycle encounters an error.
 
 :Usage 1:		python ctam.py -w ..\workspace -t H100
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test AC Cycles In Loop"

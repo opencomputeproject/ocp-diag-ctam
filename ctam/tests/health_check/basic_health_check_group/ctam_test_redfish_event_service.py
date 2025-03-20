@@ -5,10 +5,16 @@ LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Redfish Event Service
 :Test ID:		H8
-:Group Name:	fw_update
+:Group Name:	health_check
 :Score Weight:	10
 
-:Description:	This test attempts to get event service
+:Description:	This test case attempts to get the event service and verifies its presence.
+
+                PASS Criteria:
+                1. The event service is retrieved successfully and is not empty.
+
+                FAIL Criteria:
+                1. The event service retrieval fails or returns an empty result.
 
 :Usage 1:		python ctam.py -w ..\workspace -t H8
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Event Service"
