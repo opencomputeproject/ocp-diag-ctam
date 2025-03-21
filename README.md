@@ -1,3 +1,15 @@
+# 🚀 Project Name
+   <pre> 
+   ██████╗  ████████╗   █████╗   ███╗   ███╗
+  ██╔════╝  ╚══██╔══╝  ██╔══██╗  ████╗ ████║
+  ██║          ██║     ███████║  ██╔████╔██║
+  ██║          ██║     ██╔══██║  ██║╚██╔╝██║
+  ╚██████╗     ██║     ██║  ██║  ██║ ╚═╝ ██║
+   ╚═════╝     ╚═╝     ╚═╝  ╚═╝  ╚═╝     ╚═╝
+  
+   <b>Ｃｏｍｐｌｉａｎｃｅ - Ｔｏｏｌ - ｆｏｒ - Ａｃｃｅｌｅｒａｔｏｒ - Ｍａｎａｇｅｍｅｎｔ </b> </pre>
+   
+## 📌 Description
 # Compliance Tool for Accelerator Management
 
 The [**OCP Test & Validation Initiative**](https://github.com/opencomputeproject/ocp-diag-core) is a collaboration between datacenter hyperscalers having the goal of standardizing aspects of the hardware validation/diagnosis space, along with providing necessary tooling to enable both diagnostic developers and executors to leverage these interfaces.
@@ -8,9 +20,29 @@ Specifically, the [ocp-diag-ctam](https://github.com/opencomputeproject/ocp-diag
 
 This project is part of [OCPTV](https://github.com/opencomputeproject/ocp-diag-core) and exists under the same [MIT License Agreement](https://github.com/opencomputeproject/ocp-diag-ctam/LICENSE).
 
-## Getting Started
+## 🚀 Getting Started
 
-### Prerequisites
+To help users quickly understand and navigate through the CTAM repository, the following documents provide detailed guidance:
+
+1. **CTAM Onboarding Document**
+	- This document serves as a guide for users to set up and get started with the CTAM tool.
+	- [CTAM Onboarding Document](<CTAM_REPO_PATH>/ocp-diag-ctam/docs/CTAM - OnBoarding Document.docx)
+
+2. **CTAM Detailed Documentation**
+    - Refer for detailed documentation setup [Sphinx Documentation](#sphinx-documentation)
+    - Once setup is done, [View Documentation](<CTAM_REPO_PATH>/ocp-diag-ctam/docs/build/html/index.html)
+    - This is the complete technical documentation for CTAM. It contains architecture details, test scenarios, and more.
+    - Use the search bar for finding the detailed documentation of CTAM testcases.
+
+3. **CTAM for Internal Testing & Validation**
+    - This helps users to repurpose the CTAM Framework to run additional scenarios which are not a part of the compliance specification.
+	- [CTAM Internal Testing Feature](<CTAM_REPO_PATH>/ocp-diag-ctam/docs/CTAM Internal Testing Feature.docx)
+
+
+
+## 🛠️ Installation
+### **Prerequisites**
+```
 Before you begin, ensure you have met the following requirements:
 
     - Python 3.9 or higher is installed
@@ -19,20 +51,20 @@ Before you begin, ensure you have met the following requirements:
          sudo apt-get install python3-tk sshpass jq
     - Docker is installed (Skip unless you want to create a binary). Please refer to docker.md file for docker set-up instructions.    
 
-
-### Setup 
+```
+### 📂 Setup
 
 1. Clone the repo,
 
     ```https://github.com/opencomputeproject/ocp-diag-ctam```
 
-### Setting up the workspace
+### 🔧 Setting up the workspace
 
 1. Sample workspace files are present inside `json_spec` directory. Modify these file as per your infra details.
 
-1. `input` dir inside `json_spec` contains sample input file that ctam require to run
+2. `input` dir inside `json_spec` contains sample input file that ctam require to run
 
-1. Create a workspace directory and copy the configuration files from `json_spec/input` directory into `workspace` dir.
+3. Create a workspace directory and copy the configuration files from `json_spec/input` directory into `workspace` dir.
 
    -  `.netrc` - contains bmc ipaddress, username and password
    -  `dut_config.json` - contains various params for running the test cases
@@ -42,8 +74,7 @@ Before you begin, ensure you have met the following requirements:
    - `redfish_response_messages.json` - config file for redfish response messages (default will be picked from json_spec/input).
   
 
-### Flag description
-
+### 🚩 Flag description
 
 | CLI Argument         | Type    | Definition |
 | :---                 | :---    | :---       |
@@ -57,88 +88,114 @@ Before you begin, ensure you have met the following requirements:
 |  `-v` or `--version`                |   |    Lists the current version
 
 
-
-### Running the tool locally
+### 💻 Running the tool locally
 
 1. Optional: create python [virtual environment](https://docs.python.org/3/library/venv.html) and activate.
     ```
     python -m venv venv
     source ./venv/bin/activate
     ```
-1. Install dependencies
+2. Install dependencies
     ```
     python -m pip install -r pip-requirements.txt
     ```
-1. For full documentation, from `/docs` directory, run
+3. For full documentation, from `/docs` directory, run
     ```
     ./make html
     ``````
     Open `docs/build/html/index.html` for full documentation including architecture and test case details
 
-1. To run suite,
+4. To run suite,
     ```
     cd ctam
     python ctam.py -w ..\example_workspace
     ```
     Logs will be created under `example_workspace\TestRuns`
-1. To list all test cases 
+5. To list all test cases 
     ```
     cd ctam
     python ctam.py -l
     ```
-1. To run a specific test case 
+6. To run a specific test case 
     ```
     cd ctam
     python ctam.py -w ..\example_workspace -t <test case id>
     ```
     Logs will be created under `example_workspace\TestRuns`
-1. To run test cases of a specifc test group
+7. To run test cases of a specifc test group
     ```
     cd ctam
     python ctam.py -w ..\example_workspace -g <test group name>
     ```
     Logs will be created under `example_workspace\TestRuns`
-1. To run test cases with sequence
+8. To run test cases with sequence
     ```
     cd ctam
     python ctam.py -w ..\example_workspace -test_seq <test case name or id> <test case name or id>
     ```
     Logs will be created under `example_workspace\TestRuns`
-1. To run groups with sequence
+9. To run groups with sequence
     ```
     cd ctam
     python ctam.py -w ..\example_workspace -group_seq <group name or id> <group name or id>
     ```
     Logs will be created under `example_workspace\TestRuns`
-1. Choose test cases to run by using tags and specifying the tags to include/exclude in test_runner.json 
-1. Choose test sequence in test_runner.json if you want to run it from test runner config.
+10. Choose test cases to run by using tags and specifying the tags to include/exclude in test_runner.json 
+11. Choose test sequence in test_runner.json if you want to run it from test runner config.
 
-### Binary
+
+### Sphinx-Documentation
+
+To create documentation for CTAM using Sphinx, follow these steps:
+
+1. Navigate to the `docs` directory:
+    
+    `cd docs`
+    
+2. Build the HTML documentation:
+
+    `make html`
+    
+3. Open `docs/build/html/index.html` to view the generated documentation.
+
+4. If you’ve made modifications to your code and need to reconstruct the documentation HTML, run:
+    - To clear build files, run:
+
+        ``` make clean html ``` 
+    
+    - Build the HTML documentation:
+        
+        ```make html```
+    
+    It will recreate the documentation including changes you’ve made.
+
+
+### 📦 Binary
 
 1. One file Binary executable can be created using Makefile, to create binary run following command. This will create binary and sample workspace dir inside the dist folder. 
     
     `make build_image`
 
-1. You can run the binary the same way running the python file. Just that now python file replaced by binary executalbe. Sample command to list all test cases. 
+2. You can run the binary the same way running the python file. Just that now python file replaced by binary executalbe. Sample command to list all test cases. 
 
     Note: Please move your workspace directory inside dist directory before running the binary.
 
     `cd dist  && ./ctam -l`
 
-1. To clear build files, run:
+3. To clear build files, run:
 
     ```make clean```
 
 
-## Log Files created
+## 📑 Log Files created
 
 1. OCPTV Log file - All logs in OCPTV defined logging format. 
-1. Test_Score_<>.json - All test cases result + Final score. 
-1. Test_Report_<>.log - Tabulated report of test run
-1. Test_Info_<>.json - Optional log file used by test interfaces (for debug)
-1. RedfishCommandDetails/RedfishCommandDetails_<Test_ID>_ <Test_Name>_<>.json - Redfish Commands used & return values (for debug)
+2. Test_Score_<>.json - All test cases result + Final score. 
+3. Test_Report_<>.log - Tabulated report of test run
+4. Test_Info_<>.json - Optional log file used by test interfaces (for debug)
+5. RedfishCommandDetails/RedfishCommandDetails_<Test_ID>_ <Test_Name>_<>.json - Redfish Commands used & return values (for debug)
 
-## Test Runner Knobs
+## 🕹️ Test Runner Knobs
 Test runner knobs can be modified in `test_runner.json` to enable different logging mode.
 
 | Variable           | Type    | Definition |
@@ -147,63 +204,67 @@ Test runner knobs can be modified in `test_runner.json` to enable different logg
 | `console_mode`               | boolean  | For console logs
 | `progress_bar`               | boolean  | For for progress bar indicator
 
-## Tags
-
+## 🏷️ Tags
 ### 1. Group Tag
 
-- We can give tags at group level also.
-- If we provide any tag to a particular group, then all the test case under that group will be considered as the same tag.
-- If we run according to group tag, then all the test case will run under the group irrespective of the test case tag. 
+    - We can give tags at group level also.
+    - If we provide any tag to a particular group, then all the test case under that group will be considered as the same tag.
+    - If we run according to group tag, then all the test case will run under the group irrespective of the test case tag. 
 
 ### 2. Test Case Tags
-- We can assign different tags to different test cases.
-- If we run according to test case tag, then all the test cases which assigned with that tag would run irrespective of group tags.
 
-**Note: - Tags = Group Tags Union Test Case Tags
+    - We can assign different tags to different test cases.
+    - If we run according to test case tag, then all the test cases which assigned with that tag would run irrespective of group tags.
+
+**Note: - Tags = Group Tags Union Test Case Tags 
 group tags = ["G1"] and test case tags = ["L1"], so the final tags will be ["G1", "L1"]**
 
-## Local Port Forwarding
+## 🔀 Local Port Forwarding
+
 * Local port forwarding allows you to forward a port on the local (ssh client) machine to a port on the remote (ssh server) machine, which is then forwarded to a port on the destination machine.
+
 * ### How it works
   * Local port forwarding creates a tunnel from a local port on your machine to a specified port on a remote server. When you access the local port, the traffic is securely forwarded to the remote server's port through the SSH connection.
+
   * For tunneling we need to give these parameters in dut_config.json file
     * SSHTunnel 
     * SSHTunnelRemoteIPAddress
     * SSHTunnelPortList
     * SSHTunnelProtocol
     * SSHTunnelRemotePort (Use 443 as remote port address for redfish tunneling)
-  * The `sshtunnel` library in Python is a handy tool for creating SSH tunnels, allowing you to programmatically set up and manage SSH port forwarding. It can be used to establish both local and remote port forwarding
+    
+  * The `sshtunnel` library in Python is a handy tool for creating SSH tunnels, allowing you to programmatically set up and manage SSH    port forwarding. It can be used to establish both local and remote port forwarding
   
-## Developer notes
+## 📖 Developer notes
 ### VS Code
 
-`VS Code` is not required for development, however it does have workspace configurations to assist in development.
+    `VS Code` is not required for development, however it does have workspace configurations to assist in development.
 
-To use `VS Code`, open the `ctam.code-workspace` file.
+    To use `VS Code`, open the `ctam.code-workspace` file.
 
-In lieu of `VS Code` usage, the following items should be configured for other editors or the developer should perform
-steps manually to ensure the consistency of the code base.
+    In lieu of `VS Code` usage, the following items should be configured for other editors or the developer should perform
+    steps manually to ensure the consistency of the code base.
 
-- automatic file formatting using python black formatter on file save.
-    - "--line-length", "120"
-- Indent set to 4 spaces
-- Auto docstring configured for sphinx, type 3 double quotes below python class or function and the documentation header is automatically stubbed out.
-- Automatic mypy checking of code
-- Spell checking
-- Useful git extensions
-- Useful debugger configurations defined in launch.json, extensible
-- Useful Code snippets to jump start new test development
-    - Snippets for interfaces, test groups and test cases simplify new tests.
-    - easy replace of TODO in the snippet creates runnable test case quickly.
+        - automatic file formatting using python black formatter on file save.
+            - "--line-length", "120"
+        - Indent set to 4 spaces
+        - Auto docstring configured for sphinx, type 3 double quotes below python class or function and the documentation header is automatically stubbed out.
+        - Automatic mypy checking of code
+        - Spell checking
+        - Useful git extensions
+        - Useful debugger configurations defined in launch.json, extensible
+        - Useful Code snippets to jump start new test development
+            - Snippets for interfaces, test groups and test cases simplify new tests.
+            - easy replace of TODO in the snippet creates runnable test case quickly.
 
-## Upcoming changes 
+## 🔮 Upcoming changes
 
-- More test cases
-- Logging improvements
-- Ability to set test sequence
-- PLDM validator, and auto creation of PLDM bundles with error injection.
+    - More test cases
+    - Logging improvements
+    - Ability to set test sequence
+    - PLDM validator, and auto creation of PLDM bundles with error injection.
 
-### Contact
+### 📬 Contact
 
 Feel free to start a new [discussion](https://github.com/opencomputeproject/ocp-diag-ctam/discussions), or otherwise post an [issue/request](https://github.com/opencomputeproject/ocp-diag-ctam/issues).
 
