@@ -982,8 +982,8 @@ class TestRunner:
             
             # Use t_pass if consolidate is True, else use the existing logic to run the testcase.
             data["TestCases Passed"] += t_pass if t_pass else (1 if test_instance and TestResult(test_instance.result).name == TestResult.PASS.name else 0)
-            data["Total Score"] = data["Normalized Score"] * data["TestCases Passed"]
-            data["Max Score"] = data["Normalized Score"] * data["TestCases Executed"]
+            data["Total Score"] = round(data["Normalized Score"] * data["TestCases Passed"], 2)
+            data["Max Score"] = round(data["Normalized Score"] * data["TestCases Executed"], 2)
             grade = round(data["TestCases Passed"] / data["TestCases Executed"] * 100, 2)
             
             # Use e_time if consolidate is True, else use the existing logic to run the testcase.
@@ -995,8 +995,8 @@ class TestRunner:
             data["TestCases Executed"] += 1
             # Use t_pass if consolidate is True, else use the existing logic to run the testcase.
             data["TestCases Passed"] += t_pass if t_pass else (1 if test_instance and TestResult(test_instance.result).name == TestResult.PASS.name else 0)
-            data["Total Score"] = data["Normalized Score"] * data["TestCases Passed"]
-            data["Max Score"] = data["Normalized Score"] * data["TestCases Executed"]
+            data["Total Score"] = round(data["Normalized Score"] * data["TestCases Passed"], 2)
+            data["Max Score"] = round(data["Normalized Score"] * data["TestCases Executed"], 2)
             # grade = round(data["TestCases Passed"] / data["TestCases Executed"] * 100, 2)
             
             # Use e_time if consolidate is True, else use the existing logic to run the testcase.
@@ -1045,7 +1045,7 @@ class TestRunner:
 
             ct = PrettyTable(["Compliance Level", "Level Weight", "TestCases Available", "TestCases Executed", "TestCases Passed", "Total Weight", "Total Score", "Grade", "Total Execution Time"])
             ct.title = "Compliance Level Weighted Report"
-            ct.add_rows(c_data.values())
+            ct.add_rows(list(c_data.values()))
             
             ct.add_row(["","","","","","","","",""], divider=True)
             ct.add_row(["Total", "", total_available_testcases, total_test_cases, total_passed_test_cases, total_weight, total_score, f"{grade}%", timedelta(seconds=total_execution)])
@@ -1113,19 +1113,20 @@ class TestRunner:
         compScore = [0, 0, 0, 0]
         compWeight = [0, 0, 0, 0]
         # Use consolidate_data if provided, else use self.test_result_data
-        test_data = self.consolidate_data if self.consolidate_data else self.test_result_data   
+        test_data = self.consolidate_data if self.consolidate_data else self.test_result_data
         
         for i in range(len(test_data)-1):
             testID = test_data[i][0]
             testExecTime = test_data[i][2].total_seconds()
             testWeight = test_data[i][3]
             testScore = test_data[i][4]
+            testResult = test_data[i][5]
 
             # check for telemetry cases
             if testID.startswith("T"):
                 executionTimes[0] += testExecTime
                 testCases[0] += 1
-                if testScore == testWeight:
+                if testScore == testWeight and testResult == "PASS":
                     passedTests[0] += 1
                 compWeight[0] += testWeight
                 compScore[0] += testScore
@@ -1134,7 +1135,7 @@ class TestRunner:
             elif testID.startswith("R"):
                 executionTimes[1] += testExecTime
                 testCases[1] += 1
-                if testScore == testWeight:
+                if testScore == testWeight and testResult == "PASS":
                     passedTests[1] += 1
                 compWeight[1] += testWeight   
                 compScore[1] += testScore
@@ -1143,7 +1144,7 @@ class TestRunner:
             elif testID.startswith("H"):
                 executionTimes[2] += testExecTime
                 testCases[2] += 1
-                if testScore == testWeight:
+                if testScore == testWeight and testResult == "PASS":
                     passedTests[2] += 1
                 compWeight[2] += testWeight    
                 compScore[2] += testScore
@@ -1152,7 +1153,7 @@ class TestRunner:
             elif testID.startswith("F"):
                 executionTimes[3] += testExecTime
                 testCases[3] += 1
-                if testScore == testWeight:
+                if testScore == testWeight and testResult == "PASS":
                     passedTests[3] += 1
                 compWeight[3] += testWeight    
                 compScore[3] += testScore
