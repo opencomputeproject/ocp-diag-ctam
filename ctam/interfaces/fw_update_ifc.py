@@ -121,7 +121,11 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     self.included_targets == []
                     or element["@odata.id"] in self.included_targets
                 ):
-                    msg = f"Pre Install Details: {element['Id']} : {element['SoftwareId']} : {element.get('Version', 'NA')} : "
+                    if element["Id"] in self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("exclude_targets_list", []):
+                            msg = f"Skipping {element['Id']} as it is in the exclude list"
+                            self.test_run().add_log(LogSeverity.DEBUG, msg)
+                            continue
+                    msg = f"Pre Install Details: {element['Id']} : {element.get('SoftwareId', None)} : {element.get('Version', 'NA')} : "
                     if str(element["Updateable"]) == "True":
                         
                         SoftwareId = str(hex(int(element["SoftwareId"], 16)))
@@ -130,9 +134,6 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                             Package_Version = self.PLDMComponentVersions(image_type=image_type).get(SoftwareId)
                             if not Package_Version:
                                 msg += "Not in the PLDM bundle"
-                            
-                            elif element["Id"] in self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("exclude_targets_list", []):
-                                msg += "Skipping as it is in the exclude list"
                             
                             elif element["Version"] not in Package_Version and (
                                 self.included_targets == []
