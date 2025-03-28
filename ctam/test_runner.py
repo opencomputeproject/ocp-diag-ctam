@@ -343,7 +343,10 @@ class TestRunner:
     def __compliance_level_score(self, testcase):
         
         for tag in self.weighted_scores:
-            if tag in testcase.compliance_level:
+            if not testcase.compliance_level:
+                testcase.score_weight = self.weighted_scores["L3"]
+
+            elif tag in testcase.compliance_level:
                 testcase.score_weight = self.weighted_scores[tag]
             
     def run(self):
@@ -577,7 +580,6 @@ class TestRunner:
                             continue
                         
                         # Extract test scores and results
-                        score_weight = float(entry.get("TestCaseScoreWeight", 0) or 0)
                         test_score = float(entry.get("TestCaseScore", 0) or 0)
                         result = entry.get("TestCaseResult", "UNKNOWN")
                         
@@ -590,20 +592,23 @@ class TestRunner:
                             
                             # Determine if the test case passed (1 for "PASS", 0 otherwise)
                             t_pass = 1 if result == "PASS" else 0
-                            
+
+                            # Determine the compliance level weight of the testcase
+                            score_weight = test_instance.score_weight                      
+
                             # Update scores based on configurations
                             if self.weighted_scores:
                                 self.update_weighted_data(test_instance, exec_time, t_pass, test_score)
                             if self.normalized_scores:
                                 self.update_normalized_compliance_data(test_instance, t_pass, exec_time)
                             
-                        # Store processed data
-                        self.consolidate_data.append((test_id, test_name, exec_time, score_weight, test_score, result))
-                        
-                        # Accumulate total execution time, weight, and score
-                        total_execution_time += exec_time
-                        total_score_weight += score_weight
-                        total_score += test_score
+                            # Store processed data
+                            self.consolidate_data.append((test_id, test_name, exec_time, score_weight, test_score, result))
+                            
+                            # Accumulate total execution time, weight, and score
+                            total_execution_time += exec_time
+                            total_score_weight += score_weight
+                            total_score += test_score
             
                 # Calculate overall test grade percentage
                 if total_score_weight > 0:
@@ -1075,7 +1080,10 @@ class TestRunner:
             total_score += value['Total Score']
             sum_max_score += value['Max Score']
             total_execution_time += value['Execution Time']
-
+        
+        total_normalized_score = round(total_normalized_score, 2)
+        total_score = round(total_score, 2)
+        sum_max_score = round(sum_max_score, 2)
         grade = round((total_score / sum_max_score * 100), 2) if sum_max_score else 0
         normalized_grade = round((total_test_cases_passed / total_test_cases_available * 100), 2)
         dt = PrettyTable(list(self.comp_data[data].keys()))
