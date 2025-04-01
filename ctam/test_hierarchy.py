@@ -366,6 +366,10 @@ class TestHierarchy:
             for testcase in group_info["test_cases"]:
                 # Check if the param matches the testcase name or the test_id
                 c_data = testcase["attributes"].get("compliance_level")
+
+                if not c_data:  # If compliance_level is missing or empty,consider it as "L3"
+                    c_data = "L3"
+                
                 if c_data and c_data not in compliance_test_count:
                     compliance_test_count[c_data] = 1
                 elif c_data and c_data in compliance_test_count:
