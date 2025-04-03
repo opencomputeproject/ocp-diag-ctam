@@ -45,8 +45,8 @@ class CTAMTestRedfishEventServiceDeleteSubscription(TestCase):
     test_name: str = "CTAM Test Redfish Event Service Delete Subscriptions"
     test_id: str = "H81"
     score_weight: int = 10
-    tags: List[str] = ["HCheck"]
-    compliance_level: str =""
+    tags: List[str] = ["HCheck", "L2"]
+    compliance_level: str = "L2"
 
     # exclude_tags: List[str] = ["NotCheck"]
 

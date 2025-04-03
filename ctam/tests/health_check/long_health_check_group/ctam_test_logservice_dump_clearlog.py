@@ -41,8 +41,8 @@ class CTAMTestLogserviceDumpClearlog(TestCase):
     test_name: str = "CTAM Test LogService Dump Clear"
     test_id: str = 'H96'
     score_weight:int = 10
-    tags: List[str] = []
-    compliance_level: str =""
+    tags: List[str] = ["L3"]
+    compliance_level: str = "L3"
 
     def __init__(self, group: LongHealthCheckTestGroup):
         """

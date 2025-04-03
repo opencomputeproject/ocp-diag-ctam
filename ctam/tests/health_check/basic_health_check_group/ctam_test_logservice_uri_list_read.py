@@ -48,8 +48,8 @@ class CTAMTestLogServicesURIListRead(TestCase):
     test_name: str = "CTAM Test LogServices URI List Read"
     test_id: str = "H99"
     score_weight: int = 10
-    tags: List[str] = ["HCheck"]
-    compliance_level: str =""
+    tags: List[str] = ["HCheck", "L3"]
+    compliance_level: str = "L3"
 
     def __init__(self, group: BasicHealthCheckTestGroup):
         """

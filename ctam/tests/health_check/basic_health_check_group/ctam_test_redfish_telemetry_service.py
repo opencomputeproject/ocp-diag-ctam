@@ -43,8 +43,8 @@ class CTAMTestRedfishTelemetryService(TestCase):
     test_name: str = "CTAM Test Redfish Telemetry Service"
     test_id: str = "H7"
     score_weight: int = 10
-    tags: List[str] = ["HCheck"]
-    compliance_level: str =""
+    tags: List[str] = ["HCheck", "L3"]
+    compliance_level: str = "L3"
 
     # exclude_tags: List[str] = ["NotCheck"]
 

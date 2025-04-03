@@ -56,8 +56,8 @@ class CTAMTestCollectCrashdumpManager(TestCase):
     test_name: str = "CTAM Test Collect Crashdump Manager"
     test_id: str = "R2"
     score_weight: int = 10
-    tags: List[str] = []
-    compliance_level: str =""
+    tags: List[str] = ["L3"]
+    compliance_level: str = "L3"
 
     # exclude_tags: List[str] = ["NotCheck"]
 

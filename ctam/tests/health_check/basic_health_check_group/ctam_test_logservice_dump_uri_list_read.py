@@ -52,8 +52,8 @@ class CTAMTestLogServiceDumpURIListRead(TestCase):
     test_name: str = "CTAM Test LogService Dump URI List Read"
     test_id: str = "H97"
     score_weight: int = 10
-    tags: List[str] = []
-    compliance_level: str =""
+    tags: List[str] = ["L3"]
+    compliance_level: str = "L3"
 
     def __init__(self, group: BasicHealthCheckTestGroup):
         """

@@ -50,8 +50,8 @@ class CTAMTestDiscoverCrashdump(TestCase):
     test_name: str = "CTAM Test Discover Crashdump"
     test_id: str = "R1"
     score_weight: int = 10
-    tags: List[str] = []
-    compliance_level: str =""
+    tags: List[str] = ["L3"]
+    compliance_level: str = "L3"
 
     # exclude_tags: List[str] = ["NotCheck"]
 

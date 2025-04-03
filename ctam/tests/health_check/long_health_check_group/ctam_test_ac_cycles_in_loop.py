@@ -41,8 +41,8 @@ class CTAMTestAcCyclesInLoop(TestCase):
     test_name: str = "CTAM Test AC Cycles In Loop"
     test_id: str = 'H100'
     score_weight:int = 10
-    tags: List[str] = []
-    compliance_level: str = ""
+    tags: List[str] = ["L3"]
+    compliance_level: str = "L3"
 
     def __init__(self, group: LongHealthCheckTestGroup):
         """

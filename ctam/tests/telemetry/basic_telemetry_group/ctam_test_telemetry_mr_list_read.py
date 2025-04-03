@@ -40,8 +40,8 @@ class CTAMTestTelemetryMRListRead(TestCase):
     test_name: str = "CTAM Test Telemetry MR List Read"
     test_id: str = "T2"
     score_weight: int = 10
-    tags: List[str] = []
-    compliance_level: str =""
+    tags: List[str] = ["L3"]
+    compliance_level: str = "L3"
 
     def __init__(self, group: BasicTelemetryTestGroup):
         """
