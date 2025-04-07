@@ -31,9 +31,11 @@ FAIL Criteria:
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Collect Crashdump Manager"
 
 
-:Dependencies: 
+:Dependencies:
 
-<redfish_uri_config.json> : Required - <TaskServiceURI>
+    .. code-block:: text 
+
+        <redfish_uri_config.json>         : Required - <TaskServiceURI>
 
 """
 from typing import Optional, List

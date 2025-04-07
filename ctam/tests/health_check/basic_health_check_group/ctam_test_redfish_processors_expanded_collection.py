@@ -23,8 +23,10 @@ LICENSE file in the root directory of this source tree.
 
 :Dependencies: 
 
-<redfish_uri_config.json> : Required - <BaseboardIDs>
-                            Optional - None
+    .. code-block:: text
+
+        <redfish_uri_config.json>         : Required - <BaseboardIDs>
+                                           Optional - None
 """
 from typing import Optional, List
 from tests.test_case import TestCase

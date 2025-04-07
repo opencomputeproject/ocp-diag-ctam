@@ -20,11 +20,13 @@ LICENSE file in the root directory of this source tree.
  
 :Dependencies: 
 
-<redfish_uri_config.json> : Required - <GPUCheckURI>
-                            Optional - None
+    .. code-block:: text
+
+        <redfish_uri_config.json>         : Required - <GPUCheckURI>
+                                           Optional - None
                             
-<dut_info.json>           : Required - <FwActivationTimeMax>, <PowerOnWaitTime>, <PowerOffCommand>, <PowerOnCommand>, <PowerOffWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>
-                            Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+        <dut_info.json>                   : Required - <FwActivationTimeMax>, <PowerOnWaitTime>, <PowerOffCommand>, <PowerOnCommand>, <PowerOffWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
 """
 
 from typing import List
