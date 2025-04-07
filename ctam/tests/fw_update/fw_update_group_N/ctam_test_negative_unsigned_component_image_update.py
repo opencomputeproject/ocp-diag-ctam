@@ -20,6 +20,19 @@ LICENSE file in the root directory of this source tree.
 :Usage 1:		python ctam.py -w ..\workspace -t F18
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Unsigned Image Update"
 
+:Dependencies: 
+
+<redfish_uri_config.json> : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
+                            Optional - <exclude_targets_list>, <HttpPushUriTargets>, <MultiPartFormData>, <IsMultiPart>
+                            
+<dut_info.json>           : Required - <FwStagingTimeMax>
+                            Optional - None
+                            
+<package_info.json>       : Required - <Path>, <Package>, <JSON>
+                            Optional - <HasSignature>, <SignatureStructBytes>
+                                                      
+<redfish_response_messages.json> : Required - <UpdateProgress_Message>
+                                   Optional -  <LargeFWImageUpdate>
 """
 
 from typing import Optional, List

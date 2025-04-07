@@ -17,6 +17,8 @@ LICENSE file in the root directory of this source tree.
 :Usage 1:		python ctam.py -w ..\workspace -t H96
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test LogService Dump Clear"
 
+:Dependencies: None
+
 """
 from typing import List
 from tests.test_case import TestCase

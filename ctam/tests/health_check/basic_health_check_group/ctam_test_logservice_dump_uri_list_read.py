@@ -26,6 +26,8 @@ FAIL Criteria:
 :Usage 1:		python ctam.py -w ..\workspace -t H97
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test LogService Dump URI List Read"
 
+:Dependencies: None
+                        
 """
 from typing import Optional, List
 from tests.test_case import TestCase

@@ -21,6 +21,8 @@ LICENSE file in the root directory of this source tree.
 :Usage 1:		python ctam.py -w ..\workspace -t H99
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test LogServices URI List Read"
 
+:Dependencies: None
+                     
 """
 from typing import Optional, List
 from tests.test_case import TestCase

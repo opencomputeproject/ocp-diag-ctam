@@ -20,6 +20,19 @@ LICENSE file in the root directory of this source tree.
 :Usage 1:		python ctam.py -w ..\workspace -T F67
 :Usage 2:		python ctam.py -w ..\workspace -T "CTAM Test Full Device Update with Self-test Verification"
 
+:Dependencies: 
+
+<redfish_uri_config.json> : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
+                            Optional - <exclude_targets_list>, <HttpPushUriTargets>, <IsMultiPart>, <MultiPartFormData>
+                            
+<dut_info.json>           : Required - <CompareFirmwareInventoryCount>, <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
+                            Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+                            
+<package_info.json>       : Required - <Path>, <Package>, <JSON>
+                            Optional - <HasSignature>, <SignatureStructBytes>
+                                                      
+<redfish_response_messages.json> : Required - <UpdateProgress_Message>
+                                   Optional -  <LargeFWImageUpdate>
 """
 
 from typing import Optional, List
