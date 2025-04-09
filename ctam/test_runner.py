@@ -1092,10 +1092,10 @@ class TestRunner:
         dt.add_rows(vals)
         dt.add_row(["","","","","","","","", "", ""], divider=True)
         dt.add_row(["Total", total_normalized_weight, total_test_cases_available, total_normalized_score, total_test_cases_executed, total_test_cases_passed, total_score, sum_max_score, f"{grade}%", total_execution_time])
-        dt2 = PrettyTable(["TestCases Available", "TestCases Passed", "Grade"])
-        dt2.title = "Compliance Level Normalized Weight Overall Report"
+        dt2 = PrettyTable(["TestCases Available", "TestCases Executed", "TestCases Passed", "Grade"])
+        dt2.title = "Simple Uniform Grading Report"
         # dt2.add_row(["","", "", ""], divider=True)
-        dt2.add_row([total_test_cases_available, total_test_cases_passed, normalized_grade])
+        dt2.add_row([total_test_cases_available, total_test_cases_executed, total_test_cases_passed, normalized_grade])
 
         print(dt)
         with open(self.test_result_file, 'a') as f:
@@ -1114,6 +1114,7 @@ class TestRunner:
         dt.title = "Domain-wise Test Report"
 
         domain_count = self.test_hierarchy.get_domains()
+        total_testCases_available = sum(domain_count.values())
 
         executionTimes = [0, 0, 0, 0]
         testCases = [0, 0, 0, 0]
@@ -1179,7 +1180,8 @@ class TestRunner:
         dt.add_row(["H", "Health Check", domain_count["HealthCheck"],testCases[2], passedTests[2], 
                     compWeight[2], compScore[2], "{}%".format(grade[2]), timedelta(seconds=executionTimes[2])])
         dt.add_row(["F", "FW Update", domain_count["FWUpdate"],testCases[3], passedTests[3], 
-                    compWeight[3], compScore[3], "{}%".format(grade[3]), timedelta(seconds=executionTimes[3])], divider=True)
+                    compWeight[3], compScore[3], "{}%".format(grade[3]), timedelta(seconds=executionTimes[3])])
+        dt.add_row(["","","","","","","","", ""], divider=True)
 
         executionTimetotal = sum(executionTimes)
         testCasesTotal = sum(testCases)
@@ -1194,7 +1196,7 @@ class TestRunner:
         
         gt = round(gradeTotal, 2)
 
-        dt.add_row(["Total", "", "",testCasesTotal, passedTestsTotal,
+        dt.add_row(["Total", "", total_testCases_available,testCasesTotal, passedTestsTotal,
                    compWeightTotal, compScoreTotal, "{}%".format(gt), timedelta(seconds=executionTimetotal)], divider=True)
         with open(self.test_result_file, 'a') as f:
             f.write("\n" + str(dt))
