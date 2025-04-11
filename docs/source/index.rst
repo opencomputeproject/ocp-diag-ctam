@@ -10,10 +10,10 @@ Welcome to Compliance Tool for Accelerator Management (CTAM)'s documentation!
    :maxdepth: 8
    :caption: Contents:
 
+   getting_started/index
    arch/index
    usage/index
-   autoapi/index
-
+   folders/index
 
 
 Indices and tables
