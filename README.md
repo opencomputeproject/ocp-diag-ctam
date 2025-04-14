@@ -176,8 +176,7 @@ To create documentation for CTAM using Sphinx, follow these steps:
     
     `make build_image`
 
-2. You can run the binary the same way running the python file. Just that now python file replaced by binary executalbe. Sample command to list all test cases. 
-
+2. You can run the binary the same way running the python file. Just that now python file replaced by binary executable. Sample command to list all test cases. 
     Note: Please move your workspace directory inside dist directory before running the binary.
 
     `cd dist  && ./ctam -l`
