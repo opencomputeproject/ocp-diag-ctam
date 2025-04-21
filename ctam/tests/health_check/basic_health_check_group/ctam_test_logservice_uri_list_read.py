@@ -21,6 +21,8 @@ LICENSE file in the root directory of this source tree.
 :Usage 1:		python ctam.py -w ..\workspace -t H99
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test LogServices URI List Read"
 
+:Dependencies: None
+                     
 """
 from typing import Optional, List
 from tests.test_case import TestCase
@@ -48,8 +50,8 @@ class CTAMTestLogServicesURIListRead(TestCase):
     test_name: str = "CTAM Test LogServices URI List Read"
     test_id: str = "H99"
     score_weight: int = 10
-    tags: List[str] = ["HCheck"]
-    compliance_level: str =""
+    tags: List[str] = ["HCheck", "L3"]
+    compliance_level: str = "L3"
 
     def __init__(self, group: BasicHealthCheckTestGroup):
         """

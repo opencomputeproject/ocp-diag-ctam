@@ -19,6 +19,8 @@ LICENSE file in the root directory of this source tree.
 :Usage 1:		python ctam.py -w ..\workspace -t H10
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Task Service"
 
+:Dependencies: None
+
 """
 from typing import Optional, List
 from tests.test_case import TestCase
@@ -45,8 +47,8 @@ class CTAMTestRedfishTaskService(TestCase):
     test_name: str = "CTAM Test Redfish Task Service"
     test_id: str = "H10"
     score_weight: int = 10
-    tags: List[str] = ["HCheck"]
-    compliance_level: str =""
+    tags: List[str] = ["HCheck", "L3"]
+    compliance_level: str = "L3"
 
     # exclude_tags: List[str] = ["NotCheck"]
 

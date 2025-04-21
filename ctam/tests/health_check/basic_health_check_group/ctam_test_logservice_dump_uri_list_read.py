@@ -26,6 +26,8 @@ FAIL Criteria:
 :Usage 1:		python ctam.py -w ..\workspace -t H97
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test LogService Dump URI List Read"
 
+:Dependencies: None
+                        
 """
 from typing import Optional, List
 from tests.test_case import TestCase
@@ -52,8 +54,8 @@ class CTAMTestLogServiceDumpURIListRead(TestCase):
     test_name: str = "CTAM Test LogService Dump URI List Read"
     test_id: str = "H97"
     score_weight: int = 10
-    tags: List[str] = []
-    compliance_level: str =""
+    tags: List[str] = ["L3"]
+    compliance_level: str = "L3"
 
     def __init__(self, group: BasicHealthCheckTestGroup):
         """

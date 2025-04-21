@@ -259,11 +259,13 @@ class CompToolDut(Dut):
             if response.status in range (200,204) and response.text: # FIXME: Add error handling in case the request fails
                 responseData = None
                 try:
-                    import ast
-                    data = ast.literal_eval(response.text) # Convert response text to a Python dictionary
-                    responseData = response.dict # Get the response data as a dictionary
-                except Exception as e:
-                    responseData = response.text # If conversion fails, use the raw response text
+                    responseData = json.loads(response.text)  # Convert response text to a Python dictionary
+                except:
+                    # If JSON conversion fails, log a warning and return raw text instead
+                    err_msg = "Service responded with invalid JSON at URI {}\n{},Returning text data".format(
+                        uri, response.text)
+                    self.logger.warning(err_msg)
+                    responseData = response.text    # If conversion fails, use the raw response text
                 msg.update({
                     "ResponseCode": response.status,
                     "Response":responseData, # FIXME: self-test report cannot be converted to dict # FIXED: Throws error in some cases when response.dict is used and the response body is empty

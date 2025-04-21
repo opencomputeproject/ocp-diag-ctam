@@ -21,6 +21,9 @@ MIT license found in the LICENSE file in the root directory of this source tree.
 :Usage 1:		python ctam.py -w ..\workspace -t T2
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry MR List Read"
 
+
+:Dependencies: None
+
 """
 from typing import Optional, List
 from tests.test_case import TestCase
@@ -40,8 +43,8 @@ class CTAMTestTelemetryMRListRead(TestCase):
     test_name: str = "CTAM Test Telemetry MR List Read"
     test_id: str = "T2"
     score_weight: int = 10
-    tags: List[str] = []
-    compliance_level: str =""
+    tags: List[str] = ["L3"]
+    compliance_level: str = "L3"
 
     def __init__(self, group: BasicTelemetryTestGroup):
         """

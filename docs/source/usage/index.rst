@@ -29,6 +29,8 @@ this repo, however, directory /example_workspace is provided as a template to co
 
 -g option may be used to run a single TestGroup
 
+-c, --consolidate option may be used to consolidate test reports from multiple test runs into a single summary report
+
 otherwise the TestRun is based on the suite listed in test_runner.json in the workspace directory
 
 Note: The framework auto discovers TestGroups and TestCases in the /test directory.  Newly created TestGroups and

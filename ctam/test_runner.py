@@ -343,7 +343,10 @@ class TestRunner:
     def __compliance_level_score(self, testcase):
         
         for tag in self.weighted_scores:
-            if tag in testcase.compliance_level:
+            if not testcase.compliance_level:
+                testcase.score_weight = self.weighted_scores["L3"]
+
+            elif tag in testcase.compliance_level:
                 testcase.score_weight = self.weighted_scores[tag]
             
     def run(self):
@@ -577,7 +580,6 @@ class TestRunner:
                             continue
                         
                         # Extract test scores and results
-                        score_weight = float(entry.get("TestCaseScoreWeight", 0) or 0)
                         test_score = float(entry.get("TestCaseScore", 0) or 0)
                         result = entry.get("TestCaseResult", "UNKNOWN")
                         
@@ -590,20 +592,23 @@ class TestRunner:
                             
                             # Determine if the test case passed (1 for "PASS", 0 otherwise)
                             t_pass = 1 if result == "PASS" else 0
-                            
+
+                            # Determine the compliance level weight of the testcase
+                            score_weight = test_instance.score_weight                      
+
                             # Update scores based on configurations
                             if self.weighted_scores:
                                 self.update_weighted_data(test_instance, exec_time, t_pass, test_score)
                             if self.normalized_scores:
                                 self.update_normalized_compliance_data(test_instance, t_pass, exec_time)
                             
-                        # Store processed data
-                        self.consolidate_data.append((test_id, test_name, exec_time, score_weight, test_score, result))
-                        
-                        # Accumulate total execution time, weight, and score
-                        total_execution_time += exec_time
-                        total_score_weight += score_weight
-                        total_score += test_score
+                            # Store processed data
+                            self.consolidate_data.append((test_id, test_name, exec_time, score_weight, test_score, result))
+                            
+                            # Accumulate total execution time, weight, and score
+                            total_execution_time += exec_time
+                            total_score_weight += score_weight
+                            total_score += test_score
             
                 # Calculate overall test grade percentage
                 if total_score_weight > 0:
@@ -982,8 +987,8 @@ class TestRunner:
             
             # Use t_pass if consolidate is True, else use the existing logic to run the testcase.
             data["TestCases Passed"] += t_pass if t_pass else (1 if test_instance and TestResult(test_instance.result).name == TestResult.PASS.name else 0)
-            data["Total Score"] = data["Normalized Score"] * data["TestCases Passed"]
-            data["Max Score"] = data["Normalized Score"] * data["TestCases Executed"]
+            data["Total Score"] = round(data["Normalized Score"] * data["TestCases Passed"], 2)
+            data["Max Score"] = round(data["Normalized Score"] * data["TestCases Executed"], 2)
             grade = round(data["TestCases Passed"] / data["TestCases Executed"] * 100, 2)
             
             # Use e_time if consolidate is True, else use the existing logic to run the testcase.
@@ -995,8 +1000,8 @@ class TestRunner:
             data["TestCases Executed"] += 1
             # Use t_pass if consolidate is True, else use the existing logic to run the testcase.
             data["TestCases Passed"] += t_pass if t_pass else (1 if test_instance and TestResult(test_instance.result).name == TestResult.PASS.name else 0)
-            data["Total Score"] = data["Normalized Score"] * data["TestCases Passed"]
-            data["Max Score"] = data["Normalized Score"] * data["TestCases Executed"]
+            data["Total Score"] = round(data["Normalized Score"] * data["TestCases Passed"], 2)
+            data["Max Score"] = round(data["Normalized Score"] * data["TestCases Executed"], 2)
             # grade = round(data["TestCases Passed"] / data["TestCases Executed"] * 100, 2)
             
             # Use e_time if consolidate is True, else use the existing logic to run the testcase.
@@ -1045,7 +1050,7 @@ class TestRunner:
 
             ct = PrettyTable(["Compliance Level", "Level Weight", "TestCases Available", "TestCases Executed", "TestCases Passed", "Total Weight", "Total Score", "Grade", "Total Execution Time"])
             ct.title = "Compliance Level Weighted Report"
-            ct.add_rows(c_data.values())
+            ct.add_rows(list(c_data.values()))
             
             ct.add_row(["","","","","","","","",""], divider=True)
             ct.add_row(["Total", "", total_available_testcases, total_test_cases, total_passed_test_cases, total_weight, total_score, f"{grade}%", timedelta(seconds=total_execution)])
@@ -1075,7 +1080,10 @@ class TestRunner:
             total_score += value['Total Score']
             sum_max_score += value['Max Score']
             total_execution_time += value['Execution Time']
-
+        
+        total_normalized_score = round(total_normalized_score, 2)
+        total_score = round(total_score, 2)
+        sum_max_score = round(sum_max_score, 2)
         grade = round((total_score / sum_max_score * 100), 2) if sum_max_score else 0
         normalized_grade = round((total_test_cases_passed / total_test_cases_available * 100), 2)
         dt = PrettyTable(list(self.comp_data[data].keys()))
@@ -1084,10 +1092,10 @@ class TestRunner:
         dt.add_rows(vals)
         dt.add_row(["","","","","","","","", "", ""], divider=True)
         dt.add_row(["Total", total_normalized_weight, total_test_cases_available, total_normalized_score, total_test_cases_executed, total_test_cases_passed, total_score, sum_max_score, f"{grade}%", total_execution_time])
-        dt2 = PrettyTable(["TestCases Available", "TestCases Passed", "Grade"])
-        dt2.title = "Compliance Level Normalized Weight Overall Report"
+        dt2 = PrettyTable(["TestCases Available", "TestCases Executed", "TestCases Passed", "Grade"])
+        dt2.title = "Simple Uniform Grading Report"
         # dt2.add_row(["","", "", ""], divider=True)
-        dt2.add_row([total_test_cases_available, total_test_cases_passed, normalized_grade])
+        dt2.add_row([total_test_cases_available, total_test_cases_executed, total_test_cases_passed, normalized_grade])
 
         print(dt)
         with open(self.test_result_file, 'a') as f:
@@ -1106,6 +1114,7 @@ class TestRunner:
         dt.title = "Domain-wise Test Report"
 
         domain_count = self.test_hierarchy.get_domains()
+        total_testCases_available = sum(domain_count.values())
 
         executionTimes = [0, 0, 0, 0]
         testCases = [0, 0, 0, 0]
@@ -1113,19 +1122,20 @@ class TestRunner:
         compScore = [0, 0, 0, 0]
         compWeight = [0, 0, 0, 0]
         # Use consolidate_data if provided, else use self.test_result_data
-        test_data = self.consolidate_data if self.consolidate_data else self.test_result_data   
+        test_data = self.consolidate_data if self.consolidate_data else self.test_result_data
         
         for i in range(len(test_data)-1):
             testID = test_data[i][0]
             testExecTime = test_data[i][2].total_seconds()
             testWeight = test_data[i][3]
             testScore = test_data[i][4]
+            testResult = test_data[i][5]
 
             # check for telemetry cases
             if testID.startswith("T"):
                 executionTimes[0] += testExecTime
                 testCases[0] += 1
-                if testScore == testWeight:
+                if testScore == testWeight and testResult == "PASS":
                     passedTests[0] += 1
                 compWeight[0] += testWeight
                 compScore[0] += testScore
@@ -1134,7 +1144,7 @@ class TestRunner:
             elif testID.startswith("R"):
                 executionTimes[1] += testExecTime
                 testCases[1] += 1
-                if testScore == testWeight:
+                if testScore == testWeight and testResult == "PASS":
                     passedTests[1] += 1
                 compWeight[1] += testWeight   
                 compScore[1] += testScore
@@ -1143,7 +1153,7 @@ class TestRunner:
             elif testID.startswith("H"):
                 executionTimes[2] += testExecTime
                 testCases[2] += 1
-                if testScore == testWeight:
+                if testScore == testWeight and testResult == "PASS":
                     passedTests[2] += 1
                 compWeight[2] += testWeight    
                 compScore[2] += testScore
@@ -1152,7 +1162,7 @@ class TestRunner:
             elif testID.startswith("F"):
                 executionTimes[3] += testExecTime
                 testCases[3] += 1
-                if testScore == testWeight:
+                if testScore == testWeight and testResult == "PASS":
                     passedTests[3] += 1
                 compWeight[3] += testWeight    
                 compScore[3] += testScore
@@ -1170,7 +1180,8 @@ class TestRunner:
         dt.add_row(["H", "Health Check", domain_count["HealthCheck"],testCases[2], passedTests[2], 
                     compWeight[2], compScore[2], "{}%".format(grade[2]), timedelta(seconds=executionTimes[2])])
         dt.add_row(["F", "FW Update", domain_count["FWUpdate"],testCases[3], passedTests[3], 
-                    compWeight[3], compScore[3], "{}%".format(grade[3]), timedelta(seconds=executionTimes[3])], divider=True)
+                    compWeight[3], compScore[3], "{}%".format(grade[3]), timedelta(seconds=executionTimes[3])])
+        dt.add_row(["","","","","","","","", ""], divider=True)
 
         executionTimetotal = sum(executionTimes)
         testCasesTotal = sum(testCases)
@@ -1185,7 +1196,7 @@ class TestRunner:
         
         gt = round(gradeTotal, 2)
 
-        dt.add_row(["Total", "", "",testCasesTotal, passedTestsTotal,
+        dt.add_row(["Total", "", total_testCases_available,testCasesTotal, passedTestsTotal,
                    compWeightTotal, compScoreTotal, "{}%".format(gt), timedelta(seconds=executionTimetotal)], divider=True)
         with open(self.test_result_file, 'a') as f:
             f.write("\n" + str(dt))

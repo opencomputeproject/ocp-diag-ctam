@@ -21,6 +21,9 @@ LICENSE file in the root directory of this source tree.
 :Usage 1:		python ctam.py -w ..\workspace -t T4
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry MR Read"
 
+
+:Dependencies: None
+
 """
 from typing import Optional, List
 from tests.test_case import TestCase
@@ -41,8 +44,8 @@ class CTAMTestTelemetryMRRead(TestCase):
     test_name: str = "CTAM Test Telemetry MR Read"
     test_id: str = "T4"
     score_weight: int = 10
-    tags: List[str] = []
-    compliance_level: str =""
+    tags: List[str] = ["L2"]
+    compliance_level: str = "L2"
 
     def __init__(self, group: BasicTelemetryTestGroup):
         """
