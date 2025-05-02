@@ -10,6 +10,7 @@
 		"MultiPartFormData":true,
 		"HttpPushUriTargets":"HttpPushUriTargets",
 		"specific_targets":"[]",
+        "full_update_targets": [],
         "exclude_targets_list": [],
 		"MultiPartPushUriSupport":false,
 		"IsMultiPart":false,
