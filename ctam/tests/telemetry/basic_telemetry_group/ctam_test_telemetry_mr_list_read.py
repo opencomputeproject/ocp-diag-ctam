@@ -1,17 +1,28 @@
 """
 Copyright (c) Microsoft Corporation
-This source code is licensed under the MIT license found in the 
-LICENSE file in the root directory of this source tree.
+This source code is licensed under the 
+MIT license found in the LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Telemetry MR List Read
 :Test ID:		T2
-:Group Name:	telemetry
+:Group Name:	Telemetry
 :Score Weight:	10
 
-:Description:	Basic telemetry test case to discover & print the list of all MRDs
+:Description:	This test case discovers and prints the list of all Metric Report Definitions (MRDs)
+                available on the Device Under Test (DUT). It ensures that the telemetry interface
+                can retrieve the list of MRDs correctly.
+
+:PASS Criteria: The test will pass if the telemetry interface successfully retrieves and prints
+                the list of all MRDs.
+
+:FAIL Criteria: The test will fail if the telemetry interface returns an empty list or encounters
+                any errors while retrieving the MRDs.
 
 :Usage 1:		python ctam.py -w ..\workspace -t T2
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry MR List Read"
+
+
+:Dependencies: None
 
 """
 from typing import Optional, List
@@ -32,8 +43,8 @@ class CTAMTestTelemetryMRListRead(TestCase):
     test_name: str = "CTAM Test Telemetry MR List Read"
     test_id: str = "T2"
     score_weight: int = 10
-    tags: List[str] = []
-    compliance_level: str =""
+    tags: List[str] = ["L3"]
+    compliance_level: str = "L3"
 
     def __init__(self, group: BasicTelemetryTestGroup):
         """
@@ -58,12 +69,13 @@ class CTAMTestTelemetryMRListRead(TestCase):
         """
         actual test verification
         """
-        
+        failure_reason = ""
         result = True
         step1 = self.test_run().add_step((f"{self.__class__.__name__} run(), step1"))  # type: ignore
         with step1.scope():
             if self.group.telemetry_ifc.ctam_get_all_metric_reports_uri() == []:
                 step1.add_log(LogSeverity.FATAL, f"{self.test_id} : All metric reports URI empty")
+                failure_reason += "All metric reports URI empty"
                 result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -73,7 +85,7 @@ class CTAMTestTelemetryMRListRead(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

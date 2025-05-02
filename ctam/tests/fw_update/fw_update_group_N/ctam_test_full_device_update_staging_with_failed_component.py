@@ -8,12 +8,34 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Firmware Update Stack Robustness Test. If one component copying (staging) fails, verify other component copying (staging) goes through.
-                Vendor needs to provide a fwpkg where a component image is corrupted, and all other component images are good (i.e. it will not fail the update).
-                
+:Description:	
+    Firmware Update Stack Robustness Test. If one component copying (staging) fails, verify other component copying (staging) goes through.
+    Vendor needs to provide a fwpkg where a component image is corrupted (If it not provided in package info testcase can generate), and all other component images are good (i.e. it will not fail the update).
+
+:PASS Criteria:	
+    - The corrupted component staging fails, while other component staging goes through.
+
+:FAIL Criteria:	
+    - The corrupted component staging fails, as well as other component staging also fails.
+
 :Usage 1:		python ctam.py -w ..\workspace -t F55
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Staging With Failed Component"
 
+:Dependencies:
+
+    .. code-block:: text
+
+        <redfish_uri_config.json>         : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
+                                           Optional - <exclude_targets_list>, <HttpPushUriTargets>, <IsMultiPart>, <MultiPartFormData>
+                            
+        <dut_info.json>                   : Required - <CompareFirmwareInventoryCount>, <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+
+        <package_info.json>               : Required - <Path>, <Package>, <JSON>, <CorruptComponentIdentifier>
+                                           Optional - <HasSignature>, <SignatureStructBytes>
+                                                       
+        <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
+                                           Optional -  <LargeFWImageUpdate>
 """
 
 from typing import Optional, List
@@ -69,7 +91,7 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
         actual test verification
         """
         result = True
-        
+        failure_reason = ""
         step0 = self.test_run().add_step(f"{self.__class__.__name__} run(), step0")  # type: ignore
         with step0.scope():
             self.corrupted_component_id = self.group.fw_update_ifc.ctam_get_component_to_be_corrupted(VendorProvidedBundle=False)
@@ -78,13 +100,16 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
                     LogSeverity.ERROR, f"{self.test_id} : Corrupt Component Id Retrieval Failed"
                 )
                 result = False
+                failure_reason += f"{self.test_id} : Corrupt Component Id Retrieval Failed"
             else:
                 step0.add_log(LogSeverity.INFO, f"{self.test_id} : Corrupt Component Id Retrieved")
 
         if result:
             step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
             with step1.scope():
-                if not self.group.fw_update_ifc.ctam_fw_update_precheck():
+                status, status_msg = self.group.fw_update_ifc.ctam_fw_update_precheck()
+                failure_reason += status_msg
+                if not status:
                     step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
                 else:
                     step1.add_log(
@@ -96,12 +121,14 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
                 status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(image_type="corrupt_component", 
                     corrupted_component_id=self.corrupted_component_id
                     )
+                failure_reason += " " + status_msg
                 if status:
                     step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
                 else:
                     step2.add_log(
                         LogSeverity.ERROR, f"{self.test_id} : FW Update Stage Failed"
                     )
+                    failure_reason += " " + "FW Update Stage Failed"
                     result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -111,7 +138,7 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """
@@ -123,12 +150,12 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
         with step1.scope():
             if self.group.fw_update_ifc.ctam_activate_ac():
                 step1.add_log(
-                    LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
+                    LogSeverity.INFO, f"{self.test_id} : Teardown : FW Update Activate"
                 )
             else:
                 step1.add_log(
                     LogSeverity.WARNING,
-                    f"{self.test_id} : FW Update Activation Failed",
+                    f"{self.test_id} : Teardown : FW Update Activation Failed",
                 )
 
         # call super teardown last

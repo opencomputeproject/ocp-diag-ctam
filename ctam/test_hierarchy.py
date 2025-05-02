@@ -10,9 +10,9 @@ import ast
 import os
 import importlib.util
 import inspect
-import re
 import sys
 import os
+import re
 import ast
 from typing import List, Any
 from prettytable import PrettyTable
@@ -227,7 +227,7 @@ class TestHierarchy:
 
                 # visitor.test_cases.clear()
         for group in visitor.test_groups:
-            new_test_list = sorted(visitor.test_groups[group]["test_cases"], key=lambda x: int(re.findall('\d+\.\d+|\d+', x["attributes"]["test_id"])[0]))
+            new_test_list = sorted(visitor.test_groups[group]["test_cases"], key=lambda x: int(re.findall(r'\d+\.\d+|\d+', x["attributes"]["test_id"])[0]))
             visitor.test_groups[group]["test_cases"] = new_test_list
         return visitor.test_groups
 
@@ -366,6 +366,10 @@ class TestHierarchy:
             for testcase in group_info["test_cases"]:
                 # Check if the param matches the testcase name or the test_id
                 c_data = testcase["attributes"].get("compliance_level")
+
+                if not c_data:  # If compliance_level is missing or empty,consider it as "L3"
+                    c_data = "L3"
+                
                 if c_data and c_data not in compliance_test_count:
                     compliance_test_count[c_data] = 1
                 elif c_data and c_data in compliance_test_count:

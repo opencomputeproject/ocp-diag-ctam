@@ -8,11 +8,21 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	health_check
 :Score Weight:	10
 
-:Description:	Basic test case of ensuring that there are LogServices available in the accelerator
+:Description:	This test case ensures that there are LogServices available in the accelerator by reading the LogServices URI list and verifying it is not empty. Additionally, it verifies the presence of specific LogServices.
+
+                PASS Criteria:
+                1. The LogServices URI list is not empty.
+                2. The presence of specific LogServices is verified successfully.
+
+                FAIL Criteria:
+                1. The LogServices URI list is empty.
+                2. The presence of specific LogServices cannot be verified.
 
 :Usage 1:		python ctam.py -w ..\workspace -t H99
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test LogServices URI List Read"
 
+:Dependencies: None
+                     
 """
 from typing import Optional, List
 from tests.test_case import TestCase
@@ -40,8 +50,8 @@ class CTAMTestLogServicesURIListRead(TestCase):
     test_name: str = "CTAM Test LogServices URI List Read"
     test_id: str = "H99"
     score_weight: int = 10
-    tags: List[str] = ["HCheck"]
-    compliance_level: str =""
+    tags: List[str] = ["HCheck", "L3"]
+    compliance_level: str = "L3"
 
     def __init__(self, group: BasicHealthCheckTestGroup):
         """
@@ -66,6 +76,7 @@ class CTAMTestLogServicesURIListRead(TestCase):
         """
         actual test verification
         """
+        failure_reason = ""
         result = True
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
@@ -74,6 +85,7 @@ class CTAMTestLogServicesURIListRead(TestCase):
                     LogSeverity.FATAL,
                     f"{self.test_id} : Redfish LogService URI list Read Failed - LogService list is empty",
                 )
+                failure_reason += "Redfish LogService URI list Read Failed - LogService list is empty"
                 result = False
             else:
                 #pprint(logservice)
@@ -89,6 +101,7 @@ class CTAMTestLogServicesURIListRead(TestCase):
                     step2.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish LogService URI list Verification - Passed")
                 else:
                     step2.add_log(LogSeverity.ERROR,f"{self.test_id} : Redfish LogService URI list Verification - Failed")
+                    failure_reason += "Redfish LogService URI list Verification - Failed"
                     result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -98,7 +111,7 @@ class CTAMTestLogServicesURIListRead(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

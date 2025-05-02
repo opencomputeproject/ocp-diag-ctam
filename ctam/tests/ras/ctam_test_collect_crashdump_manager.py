@@ -8,10 +8,34 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	ras
 :Score Weight:	10
 
-:Description:	Placeholder only. Post CollectDiagnisticData for '\redfish\v1\Managers\{Manager}\LogService\EventLog with DiagnosticDataType = Manager
+:Description:	
+This test verifies the functionality of collecting crashdump diagnostic data for a specific manager in the system. It performs the following steps:
+
+1. Discover the crashdump capabilities using the Redfish API.
+   Example URI: /redfish/v1/Managers/{ManagerID}/LogServices
+2. Trigger the collection of crashdump data for the manager.
+   Post CollectDiagnisticData for '\redfish\v1\Managers\{Manager}\LogService\EventLog with DiagnosticDataType = Manager
+   Example URI: /redfish/v1/Managers/{ManagerID}/LogServices/{LogServiceID}/Actions/LogService.CollectDiagnosticData
+3. Download the crashdump attachment.
+4. Check if the crashdump attachment is successfully downloaded.
+5. If the crashdump attachment is not successfully downloaded, log the failure and mark the test as failed.
+6. If the crashdump attachment is successfully downloaded, mark the test as passed.
+
+PASS Criteria:
+- The crashdump attachment is successfully downloaded.
+
+FAIL Criteria:
+- The crashdump attachment is not successfully downloaded
 
 :Usage 1:		python ctam.py -w ..\workspace -t R2
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Collect Crashdump Manager"
+
+
+:Dependencies:
+
+    .. code-block:: text 
+
+        <redfish_uri_config.json>         : Required - <TaskServiceURI>
 
 """
 from typing import Optional, List
@@ -39,8 +63,8 @@ class CTAMTestCollectCrashdumpManager(TestCase):
     test_name: str = "CTAM Test Collect Crashdump Manager"
     test_id: str = "R2"
     score_weight: int = 10
-    tags: List[str] = []
-    compliance_level: str =""
+    tags: List[str] = ["L3"]
+    compliance_level: str = "L3"
 
     # exclude_tags: List[str] = ["NotCheck"]
 
@@ -67,51 +91,17 @@ class CTAMTestCollectCrashdumpManager(TestCase):
         """
         actual test verification
         """
-        result = True
-        step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
+        failure_reason = ""
+        result = False
+        step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")
         with step1.scope():
-            if self.group.ras_ifc.ctam_discover_crashdump_cap() == []:
-                step1.add_log(
-                    LogSeverity.FATAL,
-                    f"{self.test_id} : Test case Failed.",
-                )
-                result = False
-            else:
-                step1.add_log(
-                    LogSeverity.INFO,
-                    f"{self.test_id} : Test case Passed.",
-                )
+            if self.group.ras_ifc.ctam_download_crashdump_attachment():
+                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Test case Passed.")
                 result = True
-
-        if result:
-            step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")
-            with step2.scope():
-                if self.group.ras_ifc.ctam_collect_crashdump_manager_list() == []:
-                    step2.add_log(LogSeverity.FATAL, f"{self.test_id} : Test case Failed.")
-                    result = False
-                else:
-                    step2.add_log(LogSeverity.INFO, f"{self.test_id} : Test case Passed.")
-                    result = True
-
-        if result:
-            step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")
-            with step3.scope():
-                if self.group.ras_ifc.ctam_collect_crashdump_manager_list():
-                    step2.add_log(LogSeverity.INFO, f"{self.test_id} : Test case Passed.")
-                    result = True
-                else:
-                    step2.add_log(LogSeverity.FATAL, f"{self.test_id} : Test case Failed.")
-                    result = False
-
-        if result:
-            step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")
-            with step4.scope():
-                if self.group.ras_ifc.ctam_download_crashdump_attachment():
-                    step2.add_log(LogSeverity.INFO, f"{self.test_id} : Test case Passed.")
-                    result = True
-                else:
-                    step2.add_log(LogSeverity.FATAL, f"{self.test_id} : Test case Failed.")
-                    result = False
+            else:
+                step1.add_log(LogSeverity.FATAL, f"{self.test_id} : Test case Failed.")
+                failure_reason += "Test case Failed."
+                result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
         self.result = TestResult.PASS if result else TestResult.FAIL
@@ -120,7 +110,7 @@ class CTAMTestCollectCrashdumpManager(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

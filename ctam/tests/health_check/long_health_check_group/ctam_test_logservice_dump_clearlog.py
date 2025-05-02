@@ -8,10 +8,16 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	health_check
 :Score Weight:	10
 
-:Description:	Basic test case to clear all entries of all instances of LogService Dumps
-				
+:Description:	Basic test case to clear all entries of all instances of LogService Dumps.
+                This test ensures that all log entries are cleared successfully.
+
+                PASS Criteria: The test passes if all log entries are cleared without errors.
+                FAIL Criteria: The test fails if any log entry cannot be cleared or an error occurs.
+
 :Usage 1:		python ctam.py -w ..\workspace -t H96
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test LogService Dump Clear"
+
+:Dependencies: None
 
 """
 from typing import List
@@ -37,8 +43,8 @@ class CTAMTestLogserviceDumpClearlog(TestCase):
     test_name: str = "CTAM Test LogService Dump Clear"
     test_id: str = 'H96'
     score_weight:int = 10
-    tags: List[str] = []
-    compliance_level: str =""
+    tags: List[str] = ["L3"]
+    compliance_level: str = "L3"
 
     def __init__(self, group: LongHealthCheckTestGroup):
         """
@@ -61,7 +67,7 @@ class CTAMTestLogserviceDumpClearlog(TestCase):
         actual test verification
         """
         result = True
-
+        failure_reason = ""
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  
         with step1.scope():
             if result:= self.group.health_check_ifc.ctam_clear_log_dump(): 
@@ -79,7 +85,7 @@ class CTAMTestLogserviceDumpClearlog(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

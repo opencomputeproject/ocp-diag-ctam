@@ -76,6 +76,41 @@ class FunctionalIfc:
         """
         pass
     
+    def ctam_get_component_to_be_corrupted(self, VendorProvidedBundle=True):
+        """
+        :Description:                   It will check the package_info.json for CorruptComponentIdentifier.
+                                        If both corrupt package and CorruptComponentIdentifier are not provided, 
+                                        it'll find the first updatable element from firmware inventory.
+
+        :param VendorProvidedBundle:    Boolean value indicating if the vendor is required to provide a corrupt bundle.
+                                        True by default.
+        
+        :returns:		                SoftwareID of the component to be corrupted (in hex format)
+        :rtype:                         str. None in case of failure
+        """
+        MyName = __name__ + "." + self.ctam_get_component_to_be_corrupted.__qualname__    
+        vendor_provided_corrupt_pkg = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Package", "")
+        if VendorProvidedBundle and vendor_provided_corrupt_pkg == "":
+            msg = "Missing corrupt bundle name in package info file."
+            self.test_run().add_log(LogSeverity.ERROR, msg)
+            corrupt_component_id = None
+            
+        else:
+            corrupt_component_id = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("CorruptComponentIdentifier", "")
+            if corrupt_component_id == "":
+                if VendorProvidedBundle:
+                    msg = "CorruptComponentIdentifier must be provided for bundle {package_name}."
+                    self.test_run().add_log(LogSeverity.ERROR, msg)
+                    corrupt_component_id = None
+                else:
+                    JSONData = self.ctam_getfi(expanded=1)
+                    for element in JSONData["Members"]:
+                        if str(element["Updateable"]) == "True":
+                            corrupt_component_id = element["SoftwareId"]
+            msg = f"{MyName} returned component ID to be corrupted: {corrupt_component_id}"
+            self.test_run().add_log(LogSeverity.DEBUG, msg)
+        return corrupt_component_id
+
 
     def get_JSONFWFilePayload_file(self, image_type="default", corrupted_component_id=None):
         """
@@ -278,7 +313,6 @@ class FunctionalIfc:
                 self.dut().package_config.get("GPU_FW_IMAGE_OLD", {}).get("Path", ""),
                 self.dut().package_config.get("GPU_FW_IMAGE_OLD", {}).get("JSON", ""),
             )
-            
         elif image_type == "corrupt_component":
             pldm_json_file = os.path.join(
                 self.dut().cwd,
@@ -468,29 +502,44 @@ class FunctionalIfc:
         :Description:        It will Reset the node.
 
         :returns:	         None
-        :rtype:              None
+        :rtype:              Bool
         """
         MyName = __name__ + "." + self.NodeACReset.__qualname__
-        power_off_command = self.dut().dut_config.get("PowerOffCommand", {}).get("value", "")
-        power_on_command = self.dut().dut_config.get("PowerOnCommand", {}).get("value", "")
-        if not power_off_command or not power_on_command:
-            self.test_run().add_log(LogSeverity.INFO, "Please provide both power on and power off command in dut config!")
-            return 
-        # execute power off
-        self.test_run().add_log(LogSeverity.INFO, json.dumps(power_off_command, indent=4))
-        arguments = shlex.split(power_off_command)
-        cwd_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        cwd_path = None if cwd_path == "/tmp" else cwd_path
-        subprocess.check_output(arguments, cwd=cwd_path)
-        time.sleep(self.dut().dut_config.get("PowerOffWaitTime", {}).get("value", 60))
-        self.test_run().add_log(LogSeverity.INFO, "Power Off wait time done")
-        # execute power on
-        self.test_run().add_log(LogSeverity.INFO, json.dumps(power_on_command, indent=4))
-        arguments = shlex.split(power_on_command)
-        subprocess.check_output(arguments, cwd=cwd_path)
-        time.sleep(self.dut().dut_config.get("PowerOnWaitTime", {}).get("value", 300))
-        self.test_run().add_log(LogSeverity.INFO, "Power ON wait time done")
-        return
+        single_shot_power_cycle = self.dut().dut_config.get("SingleShotPowerCycle", {}).get("value", "")
+        if single_shot_power_cycle:
+            single_shot_power_command = self.dut().dut_config.get("SingleShotPowerCycleCommand", {}).get("value", "")
+            if not single_shot_power_command:
+                self.test_run().add_log(LogSeverity.INFO, "Please provide single command for power off and power on in dut config!")
+                return False
+            # execute single shot power cycle
+            self.test_run().add_log(LogSeverity.INFO, json.dumps(single_shot_power_command, indent=4))
+            arguments = shlex.split(single_shot_power_command)
+            cwd_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            cwd_path = None if cwd_path == "/tmp" else cwd_path
+            subprocess.check_output(arguments, cwd=cwd_path)
+            time.sleep(self.dut().dut_config.get("PowerOnWaitTime", {}).get("value", 300))
+            self.test_run().add_log(LogSeverity.INFO, "Power ON wait time done")
+        else:
+            power_off_command = self.dut().dut_config.get("PowerOffCommand", {}).get("value", "")
+            power_on_command = self.dut().dut_config.get("PowerOnCommand", {}).get("value", "")
+            if not power_off_command or not power_on_command:
+                self.test_run().add_log(LogSeverity.INFO, "Please provide both power on and power off command in dut config!")
+                return False
+            # execute power off
+            self.test_run().add_log(LogSeverity.INFO, json.dumps(power_off_command, indent=4))
+            arguments = shlex.split(power_off_command)
+            cwd_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            cwd_path = None if cwd_path == "/tmp" else cwd_path
+            subprocess.check_output(arguments, cwd=cwd_path)
+            time.sleep(self.dut().dut_config.get("PowerOffWaitTime", {}).get("value", 60))
+            self.test_run().add_log(LogSeverity.INFO, "Power Off wait time done")
+            # execute power on
+            self.test_run().add_log(LogSeverity.INFO, json.dumps(power_on_command, indent=4))
+            arguments = shlex.split(power_on_command)
+            subprocess.check_output(arguments, cwd=cwd_path)
+            time.sleep(self.dut().dut_config.get("PowerOnWaitTime", {}).get("value", 300))
+            self.test_run().add_log(LogSeverity.INFO, "Power ON wait time done")
+        return True
 
     def IsGPUReachable(self):
         """
@@ -503,9 +552,12 @@ class FunctionalIfc:
         ctam_getus_uri = self.dut().uri_builder.format_uri(
             redfish_str="{BaseURI}{GPUCheckURI}", component_type="GPU"
         )
-
         response = self.dut().run_redfish_command(uri=ctam_getus_uri)
-        JSONData = response.dict
+        resp_header = response.getheader(name="Content-Type")
+        if resp_header:
+            JSONData = response.dict
+        else:
+            JSONData = response.text
         msg = "GPU Reachable info : {}".format(JSONData)
         self.test_run().add_log(LogSeverity.INFO, msg)
         return JSONData
@@ -517,40 +569,59 @@ class FunctionalIfc:
         :param check_time:              Check the activation time does not exceed maximum time per spec
 
         :returns:				    	ActivationStatus
-        :rtype: 						Bool
+        :rtype: 						Bool, string
         """
         MyName = __name__ + "." + self.ctam_activate_ac.__qualname__
         ActivationStatus = False
-        
+        failure_reason = ""
+        FwActivationTimeMax = self.dut().dut_config["FwActivationTimeMax"]["value"]
         if check_time:
-            FwActivationTimeMax = self.dut().dut_config["FwActivationTimeMax"]["value"]
             if self.dut().dut_config["PowerOnWaitTime"]["value"] > FwActivationTimeMax:
                 msg = f"PowerOnWaitTime is greater than FwActivationTimeMax as per the json config file. Setting FwActivationTimeMax = PowerOnWaitTime"
                 self.test_run().add_log(LogSeverity.WARNING, msg)
                 FwActivationTimeMax = self.dut().dut_config["PowerOnWaitTime"]["value"]
-        
-        self.NodeACReset()  # NodeACReset declaration pending
+
+        if not self.NodeACReset():  # NodeACReset declaration pending
+            failure_reason = "Error while running power cycle"
+            return ActivationStatus, failure_reason
         
         if gpu_check:
-            ActivationStartTime = time.time() - self.dut().dut_config["PowerOnWaitTime"]["value"] # When the system was reset
-            while "error" in self.IsGPUReachable():  # declaration pending
-                msg = "GPU showing error"
-                self.test_run().add_log(LogSeverity.DEBUG, msg)
-            while (self.IsGPUReachable())["Status"][
-                "State"
-            ] != "Enabled" \
-                    and (not check_time or (check_time and (time.time() - ActivationStartTime) <= FwActivationTimeMax)): # declaration pending
-                msg = "Waiting for GPU to be back up, {}".format(
-                    (self.IsGPUReachable())["Status"]["State"]
-                )
+            if (check_time):
+                ActivationStartTime = time.time() - self.dut().dut_config["PowerOnWaitTime"]["value"] # When the system was reset
+            else:
+                ActivationStartTime = time.time()
+
+            while "error" in self.IsGPUReachable() or "Not Implemented" in self.IsGPUReachable():  # declaration pending
+                if ((time.time() - ActivationStartTime) > FwActivationTimeMax):
+                    msg = "GPU showing error"
+                    self.test_run().add_log(LogSeverity.DEBUG, msg)
+                    failure_reason = msg
+                    return ActivationStatus, failure_reason
+                msg = "Waiting for GPU to be back up"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
                 time.sleep(30)
+
+            if not check_time:
+                ActivationStartTime = time.time()
+
+            while (self.IsGPUReachable()["Status"]["State"] != "Enabled"): # declaration pending
+                if (time.time() - ActivationStartTime) > FwActivationTimeMax:
+                    msg = "GPU still not up, {}".format(
+                            (self.IsGPUReachable())["Status"]["State"])
+                    failure_reason = msg + f" Activation is taking longer than the maximum time specified {FwActivationTimeMax} seconds."
+                    return ActivationStatus, failure_reason
+                msg = "Waiting for GPU to be back up, {}".format(
+                        (self.IsGPUReachable())["Status"]["State"])
+                self.test_run().add_log(LogSeverity.DEBUG, msg)
+                time.sleep(30)
+
             ActivationEndTime = time.time()
             
             if check_time and (ActivationEndTime - ActivationStartTime) > FwActivationTimeMax:
                 ActivationStatus = False
                 msg = f"Activation is taking longer than the maximum time specified {FwActivationTimeMax} seconds."
                 self.test_run().add_log(LogSeverity.WARNING, msg)
+                failure_reason = msg
             else:
                 ActivationStatus = True
         
@@ -562,7 +633,7 @@ class FunctionalIfc:
             msg = f"Execution is delayed successfully by {IdleWaitTime} seconds."
             self.test_run().add_log(LogSeverity.INFO, msg)
             
-        return True and ActivationStatus
+        return ActivationStatus, failure_reason
     
     def RedfishTriggerDumpCollection(self, DiagnosticDataType, URI, OEMDiagnosticDataType=None):
         """
@@ -599,35 +670,41 @@ class FunctionalIfc:
         :rtype:                    string
         """
         MyName = __name__ + "." + self.RedfishDownloadDump.__qualname__
-        URL = DumpURI + "/attachment"
-        msg = "Dump Entry URL = {}".format(URL)
-        self.test_run().add_log(LogSeverity.DEBUG, msg)
-        
-        dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-        dump_tarball_path = os.path.join( 
-                self.dut().workspace_dir,
-                "{}_dump.tar.xz".format(dt))
-        response =  self.dut().run_redfish_command(uri=URL, timeout=60)
-        try:
-            with open(dump_tarball_path, 'wb') as fd:
-                fd.write(response.read)
-            # Unzip the .tar file
-            import tarfile
-            dump = tarfile.open(dump_tarball_path)
-            DumpPath = os.path.join( 
-                self.dut().workspace_dir, 
-                "{}_dump".format(dt))
-            dump.extractall(DumpPath) # This will create a directory if it's not present already.
-            dump.close()
-            os.remove(dump_tarball_path) # Delete the tarball as it's not needed anymore
-            folder_size = sum(os.path.getsize(os.path.join(dirpath, filename)) for dirpath, dirnames, filenames in os.walk(DumpPath) for filename in filenames)
-            if folder_size > 0:
-                return DumpPath
-            else:
-                print("Downloaded folder size is 0 KB.")
+        check_response = self.dut().run_redfish_command(uri=DumpURI)
+        if check_response.status in range(200, 202):
+            URL = DumpURI + "/attachment"
+            msg = "Dump Entry URL = {}".format(URL)
+            self.test_run().add_log(LogSeverity.DEBUG, msg)
+            
+            dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+            dump_tarball_path = os.path.join( 
+                    self.dut().workspace_dir,self.dut().logger_path,
+                    "{}_dump.tar.xz".format(dt))
+            
+            response =  self.dut().run_redfish_command(uri=URL)
+            try:
+                with open(dump_tarball_path, 'wb') as fd:
+                    fd.write(response.read)
+                # Unzip the .tar file
+                import tarfile
+                dump = tarfile.open(dump_tarball_path)
+                DumpPath = os.path.join( 
+                    self.dut().workspace_dir,self.dut().logger_path,
+                    "{}_dump".format(dt))
+                dump.extractall(DumpPath) # This will create a directory if it's not present already.
+                dump.close()
+                os.remove(dump_tarball_path) # Delete the tarball as it's not needed anymore
+                folder_size = sum(os.path.getsize(os.path.join(dirpath, filename)) for dirpath, dirnames, filenames in os.walk(DumpPath) for filename in filenames)
+                if folder_size > 0:
+                    return DumpPath
+                else:
+                    print("Downloaded folder size is 0 KB.")
+                    return None
+            except Exception as e:
+                print(str(e))
                 return None
-        except Exception as e:
-            print(str(e))
+        else:
+            self.test_run().add_log(LogSeverity.FATAL, "No entries found: {}".format(check_response.dict))
             return None
     
     def ctam_monitor_task(self, TaskID=""):
@@ -886,3 +963,18 @@ class FunctionalIfc:
             self.test_run().add_log(LogSeverity.FATAL, "GET request Failed: {} : {}".format(uri, JSONData))
             result = False
         return result
+    
+    def ctam_verify_components_health(self):
+        """
+        :Description:       Get Firmware Inventory details and check health of all components.  
+        :returns:	        bool, List of health issue components
+        """
+        
+        fi_data = self.ctam_getfi(expanded=1)
+    
+        failed_devices = [member.get("Id") for member in fi_data.get("Members", [])
+                     if member.get("Status", {}).get("Health") != "OK" or
+                     member.get("Status", {}).get("State") != "Enabled"]
+        if failed_devices:
+            return False , failed_devices
+        return True, []

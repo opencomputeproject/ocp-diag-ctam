@@ -47,17 +47,17 @@ class HealthCheckIfc(FunctionalIfc, metaclass=Meta):
     #         cls._instance = super(HealthCheckIfc, cls).__new__(cls, *args, **kwargs)
     #     return cls._instance
 
-    # @classmethod
-    # def get_instance(cls, *args, **kwargs):
-    #     """
-    #     if there is an existing instance, return it, otherwise create the singleton instance and return it
+    @classmethod
+    def get_instance(cls, *args, **kwargs):
+        """
+        if there is an existing instance, return it, otherwise create the singleton instance and return it
 
-    #     :return: instance
-    #     :rtype: HealthCheckIfc
-    #     """
-    #     if not isinstance(cls._instance, cls):
-    #         cls._instance = cls(*args, **kwargs)
-    #     return cls._instance
+        :return: instance
+        :rtype: HealthCheckIfc
+        """
+        if not isinstance(cls._instance, cls):
+            cls._instance = cls(*args, **kwargs)
+        return cls._instance
     
     def ctam_get_all_logservice_uris(self, resource_collection_list=["Systems", "Managers", "Chassis"]):
         """

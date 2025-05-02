@@ -8,12 +8,33 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test case is a Negative test. It would search for GPU_FW_IMAGE_UNSIGNED referenced by package_info.json and attempt
-                firmware update using the unsigned image.
+:Description:	This test case is a negative test. It searches for GPU_FW_IMAGE_UNSIGNED referenced by package_info.json and attempts
+                a firmware update using the unsigned image.
+
+                PASS Criteria:
+                - The firmware update staging process fails as expected when using an unsigned image.
+                
+                FAIL Criteria:
+                - The firmware update staging process succeeds unexpectedly when using an unsigned image.
 
 :Usage 1:		python ctam.py -w ..\workspace -t F18
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Unsigned Image Update"
 
+:Dependencies: 
+
+    .. code-block:: text
+
+        <redfish_uri_config.json>         : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
+                                           Optional - <exclude_targets_list>, <HttpPushUriTargets>, <MultiPartFormData>, <IsMultiPart>
+                            
+        <dut_info.json>                   : Required - <FwStagingTimeMax>
+                                           Optional - None
+                            
+        <package_info.json>               : Required - <Path>, <Package>, <JSON>
+                                           Optional - <HasSignature>, <SignatureStructBytes>
+                                                      
+        <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
+                                           Optional -  <LargeFWImageUpdate>
 """
 
 from typing import Optional, List
@@ -67,20 +88,34 @@ class CTAMTestNegativeUnsignedImageUpdate(TestCase):
         """
         actual test verification
         """
+        failure_reason = ""
         result = True
+
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="unsigned_component_image")
-            if status:
+            status, failure_reason = self.group.fw_update_ifc.ctam_fw_update_precheck()
+            if not status:
+                step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
+            else:
                 step1.add_log(
+                    LogSeverity.INFO, f"{self.test_id} : FW Update Not Required"
+                )
+
+        step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
+        with step2.scope():
+            status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="unsigned_component_image")
+            failure_reason += " " + status_msg
+            if status:
+                step2.add_log(
                     LogSeverity.INFO,
                     f"{self.test_id} : FW Update Stage Initiation Failed as Expected",
                 )
             else:
-                step1.add_log(
+                step2.add_log(
                     LogSeverity.ERROR,
                     f"{self.test_id} : FW Update Staging Initiated - Unexpected",
                 )
+                failure_reason += " FW Update Staging Initiated - Unexpected"
                 result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -90,7 +125,7 @@ class CTAMTestNegativeUnsignedImageUpdate(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

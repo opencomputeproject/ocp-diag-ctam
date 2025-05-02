@@ -5,13 +5,23 @@ LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Redfish Firmware Inventory Expanded Collection
 :Test ID:		H6
-:Group Name:	fw_update
+:Group Name:	health_check
 :Score Weight:	10
 
-:Description:	This test attempts to get the expanded firmware inventory from update service
+:Description:	This test case attempts to get the expanded firmware inventory from the update service and verifies its presence and correctness.
+
+                PASS Criteria:
+                1. The expanded firmware inventory is retrieved successfully and is not empty.
+                2. The expanded firmware inventory is verified successfully.
+
+                FAIL Criteria:
+                1. The expanded firmware inventory retrieval fails or returns an empty result.
+                2. The expanded firmware inventory verification fails.
 
 :Usage 1:		python ctam.py -w ..\workspace -t H6
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Firmware Inventory Expanded Collection"
+
+:Dependencies: None
 
 """
 from typing import Optional, List
@@ -39,8 +49,8 @@ class CTAMTestRedfishFirmwareInventoryExpandedCollection(TestCase):
     test_name: str = "CTAM Test Redfish Firmware Inventory Expanded Collection"
     test_id: str = "H6"
     score_weight: int = 10
-    tags: List[str] = ["HCheck"]
-    compliance_level: str =""
+    tags: List[str] = ["HCheck", "L2"]
+    compliance_level: str = "L2"
 
     # exclude_tags: List[str] = ["NotCheck"]
 
@@ -68,12 +78,13 @@ class CTAMTestRedfishFirmwareInventoryExpandedCollection(TestCase):
         actual test verification
         """
         result = True
-        
+        failure_reason = ""
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
             JSONData = self.group.health_check_ifc.ctam_getfi(expanded=1)
             if JSONData is None or "error" in JSONData:
                 step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Redfish FW Inventory Expanded Collection Read - Failed")
+                failure_reason += "Redfish FW Inventory Expanded Collection Read - Failed"
                 result = False
             else:
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish FW Inventory Expanded Collection Read - Completed")
@@ -85,6 +96,7 @@ class CTAMTestRedfishFirmwareInventoryExpandedCollection(TestCase):
                     step2.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish FW Inventory Expanded Collection Verification - Passed")
                 else:
                     step2.add_log(LogSeverity.ERROR,f"{self.test_id} : Redfish FW Inventory Expanded Collection Verification - Failed")
+                    failure_reason += "Redfish FW Inventory Expanded Collection Verification - Failed"
                     result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -94,7 +106,7 @@ class CTAMTestRedfishFirmwareInventoryExpandedCollection(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

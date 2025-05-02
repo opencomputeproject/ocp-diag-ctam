@@ -5,13 +5,21 @@ LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Redfish Event Service
 :Test ID:		H8
-:Group Name:	fw_update
+:Group Name:	health_check
 :Score Weight:	10
 
-:Description:	This test attempts to get event service
+:Description:	This test case attempts to get the event service and verifies its presence.
+
+                PASS Criteria:
+                1. The event service is retrieved successfully and is not empty.
+
+                FAIL Criteria:
+                1. The event service retrieval fails or returns an empty result.
 
 :Usage 1:		python ctam.py -w ..\workspace -t H8
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Event Service"
+
+:Dependencies: None
 
 """
 from typing import Optional, List
@@ -39,8 +47,8 @@ class CTAMTestRedfishEventService(TestCase):
     test_name: str = "CTAM Test Redfish Event Service"
     test_id: str = "H8"
     score_weight: int = 10
-    tags: List[str] = ["HCheck"]
-    compliance_level: str =""
+    tags: List[str] = ["HCheck", "L2"]
+    compliance_level: str = "L2"
 
     # exclude_tags: List[str] = ["NotCheck"]
 
@@ -68,12 +76,13 @@ class CTAMTestRedfishEventService(TestCase):
         actual test verification
         """
         result = True
-        
+        failure_reason = ""
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
             JSONData = self.group.health_check_ifc.ctam_getes()
             if JSONData is None or len(JSONData) == 0:
                 step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Redfish Event Service Check - Failed")
+                failure_reason += "Redfish Event Service Check - Failed"
                 result = False
             else:
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish Event Service Check - Completed")
@@ -85,7 +94,7 @@ class CTAMTestRedfishEventService(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

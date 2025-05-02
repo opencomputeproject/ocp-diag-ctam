@@ -8,10 +8,33 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Basic test case of full firmware update.To verify the successful execution of a full firmware update process.
+:Description:	This test case verifies the successful execution of a full firmware update process, focusing on the backup image (N-1). 
+                It ensures that the firmware update is staged, activated, and verified without errors.
+
+                PASS Criteria: 
+                    - The test passes if the firmware update completes successfully and the backup image is activated and is verified.
+                
+                FAIL Criteria: 
+                    - The test fails if the firmware update or verification encounters an error.
+
 :Usage 1:		python ctam.py -w ..\workspace -t F0
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Rollback"
 
+:Dependencies:
+
+    .. code-block:: text
+
+        <redfish_uri_config.json>         : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
+                                           Optional - <exclude_targets_list>, <HttpPushUriTargets>, <IsMultiPart>, <MultiPartFormData>
+                            
+        <dut_info.json>                   : Required - <CompareFirmwareInventoryCount>, <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+
+        <package_info.json>               : Required - <Path>, <Package>, <JSON>
+                                           Optional - <CorruptComponentIdentifier>, <HasSignature>, <SignatureStructBytes>
+                                                       
+        <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
+                                           Optional -  <LargeFWImageUpdate>
 """
 
 from typing import Optional, List
@@ -66,12 +89,14 @@ class CTAMTestFullDeviceUpdateRollback(TestCase):
         actual test verification
         """
         result = True
-
+        failure_reason = ""
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if not self.group.fw_update_ifc.ctam_fw_update_precheck(
+            status, status_msg = self.group.fw_update_ifc.ctam_fw_update_precheck(
                 image_type="backup"
-            ):
+            )
+            failure_reason = status_msg
+            if not status:
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
             else:
                 step1.add_log(
@@ -81,18 +106,22 @@ class CTAMTestFullDeviceUpdateRollback(TestCase):
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
             status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup")
+            failure_reason += " " + status_msg
             if status:
                 step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
             else:
                 step2.add_log(
                     LogSeverity.ERROR, f"{self.test_id} : FW Update Stage Failed"
                 )
+                failure_reason += " " + "FW Update Stage Failed"
                 result = False
 
         if result:
             step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
             with step3.scope():
-                if self.group.fw_update_ifc.ctam_activate_ac():
+                status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
+                failure_reason += " " + status_msg
+                if status:
                     step3.add_log(
                         LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
                     )
@@ -101,12 +130,15 @@ class CTAMTestFullDeviceUpdateRollback(TestCase):
                         LogSeverity.ERROR,
                         f"{self.test_id} : FW Update Activation Failed",
                     )
+                    failure_reason += " " + "FW Update Activation Failed"
                     result = False
 
         if result:
             step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")
             with step4.scope():
-                if self.group.fw_update_ifc.ctam_fw_update_verify(image_type="backup"):
+                status, status_msg = self.group.fw_update_ifc.ctam_fw_update_verify(image_type="backup")
+                failure_reason += " " + status_msg
+                if status:
                     step4.add_log(
                         LogSeverity.INFO,
                         f"{self.test_id} : Update Verification Completed",
@@ -115,6 +147,8 @@ class CTAMTestFullDeviceUpdateRollback(TestCase):
                     step4.add_log(
                         LogSeverity.INFO, f"{self.test_id} : Update Verification Failed"
                     )
+                    failure_reason += " " + "Update Verification Failed"
+                    result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
         self.result = TestResult.PASS if result else TestResult.FAIL
@@ -123,7 +157,7 @@ class CTAMTestFullDeviceUpdateRollback(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

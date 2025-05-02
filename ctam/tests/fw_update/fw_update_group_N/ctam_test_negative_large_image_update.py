@@ -8,13 +8,34 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test case focuses on the scenario where we are trying from large image transfer is initiated for
-				a firmware update. The expectation is for staging to fail when this is attempted. The image is provided by the vendor
-				and it has a section in package_info.json
+:Description:	This test case focuses on the scenario where a large image transfer is initiated for
+				a firmware update. The expectation is for the staging process to fail when this is attempted.
+				The image is provided by the vendor and it has a section in package_info.json.
+
+				PASS Criteria:
+				- The firmware update staging process fails as expected when a large image is used.
+				
+				FAIL Criteria:
+				- The firmware update staging process succeeds unexpectedly when a large image is used.
 
 :Usage 1:		python ctam.py -w ..\workspace -t F25
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Large Image Update"
 
+:Dependencies: 
+
+    .. code-block:: text
+
+        <redfish_uri_config.json>         : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
+                                           Optional - <exclude_targets_list>, <HttpPushUriTargets>, <MultiPartFormData>, <IsMultiPart>
+                            
+        <dut_info.json>                   : Required - <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+                            
+        <package_info.json>               : Required - <Path>, <Package>, <JSON>
+                                           Optional - <HasSignature>, <SignatureStructBytes>
+                                                      
+        <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
+                                           Optional -  <LargeFWImageUpdate>
 """
 from typing import Optional, List
 from tests.test_case import TestCase
@@ -67,16 +88,27 @@ class CTAMTestNegativeLargeImageUpdate(TestCase):
         actual test verification
         """
         result = True
+
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
+            status, failure_reason = self.group.fw_update_ifc.ctam_fw_update_precheck()
+            if not status:
+                step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
+            else:
+                step1.add_log(
+                    LogSeverity.INFO, f"{self.test_id} : FW Update Not Required"
+                )
+
+        step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
+        with step2.scope():
             status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="large")
             if status:
-                step1.add_log(
+                step2.add_log(
                     LogSeverity.INFO,
                     f"{self.test_id} : FW Update Stage Initiation Failed as Expected",
                 )
             else:
-                step1.add_log(
+                step2.add_log(
                     LogSeverity.ERROR,
                     f"{self.test_id} : FW Update Staging Initiated - Unexpected",
                 )
@@ -89,7 +121,7 @@ class CTAMTestNegativeLargeImageUpdate(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, status_msg
 
     def teardown(self):
         """
@@ -99,10 +131,10 @@ class CTAMTestNegativeLargeImageUpdate(TestCase):
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():
             if self.group.fw_update_ifc.ctam_activate_ac(gpu_check=False, fwupd_hyst_wait=False):
-                msg = f"{self.test_id} : AC Cycle Passed"
+                msg = f"{self.test_id} : Teardown : AC Cycle Passed"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)  
             else:
-                msg = f"{self.test_id} : AC Cycle Failed"
+                msg = f"{self.test_id} : Teardown : AC Cycle Failed"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
 
         # call super teardown last

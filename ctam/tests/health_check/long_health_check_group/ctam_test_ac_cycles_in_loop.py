@@ -5,15 +5,28 @@ LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test AC Cycles In Loop
 :Test ID:		H100
-:Group Name:	Health_check
+:Group Name:	health_check
 :Score Weight:	10
 
-:Description:	AC Cycle is essential for activation flow of firmware update and many other flows. 
-                This test would run AC cycles in a loop and test platform stability.This is a prerequisite to many other test cases that need the activation flow.   
+:Description:	AC Cycle is essential for activation flow of firmware update and many other flows.
+                This test runs AC cycles in a loop to test platform stability. This is a prerequisite
+                to many other test cases that need the activation flow.
+
+                PASS Criteria: The test passes if all AC cycles complete successfully without errors.
+                FAIL Criteria: The test fails if any AC cycle encounters an error.
 
 :Usage 1:		python ctam.py -w ..\workspace -t H100
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test AC Cycles In Loop"
  
+:Dependencies: 
+
+    .. code-block:: text
+
+        <redfish_uri_config.json>         : Required - <GPUCheckURI>
+                                           Optional - None
+                            
+        <dut_info.json>                   : Required - <FwActivationTimeMax>, <PowerOnWaitTime>, <PowerOffCommand>, <PowerOnCommand>, <PowerOffWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
 """
 
 from typing import List
@@ -37,8 +50,8 @@ class CTAMTestAcCyclesInLoop(TestCase):
     test_name: str = "CTAM Test AC Cycles In Loop"
     test_id: str = 'H100'
     score_weight:int = 10
-    tags: List[str] = []
-    compliance_level: str = ""
+    tags: List[str] = ["L3"]
+    compliance_level: str = "L3"
 
     def __init__(self, group: LongHealthCheckTestGroup):
         """
@@ -61,6 +74,7 @@ class CTAMTestAcCyclesInLoop(TestCase):
         actual test verification
         """
         result = True
+        failure_reason = ""
         loops = 1
 
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  
@@ -72,7 +86,8 @@ class CTAMTestAcCyclesInLoop(TestCase):
                         self.test_run().add_log(LogSeverity.DEBUG, msg)  
                     else:
                         msg = f"{self.test_id} : AC Cycle Failed Loop {i}"
-                        self.test_run().add_log(LogSeverity.DEBUG, msg) 
+                        self.test_run().add_log(LogSeverity.DEBUG, msg)
+                        failure_reason += msg
                         result = False
         
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -82,7 +97,7 @@ class CTAMTestAcCyclesInLoop(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

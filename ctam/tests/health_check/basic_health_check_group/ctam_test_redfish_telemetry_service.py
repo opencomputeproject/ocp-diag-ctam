@@ -5,13 +5,19 @@ LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Redfish Telemetry Service
 :Test ID:		H7
-:Group Name:	fw_update
+:Group Name:	health_check
 :Score Weight:	10
 
-:Description:	This test attempts to get telemetry service
+:Description:	This test verifies the availability and correctness of the Redfish Telemetry Service.
+                The test attempts to retrieve telemetry data from the service and checks for errors.
+
+                PASS Criteria: The test passes if the telemetry data is successfully retrieved and contains no errors.
+                FAIL Criteria: The test fails if the telemetry data cannot be retrieved or contains errors.
 
 :Usage 1:		python ctam.py -w ..\workspace -t H7
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Telemetry Service"
+
+:Dependencies: None
 
 """
 from typing import Optional, List
@@ -39,8 +45,8 @@ class CTAMTestRedfishTelemetryService(TestCase):
     test_name: str = "CTAM Test Redfish Telemetry Service"
     test_id: str = "H7"
     score_weight: int = 10
-    tags: List[str] = ["HCheck"]
-    compliance_level: str =""
+    tags: List[str] = ["HCheck", "L3"]
+    compliance_level: str = "L3"
 
     # exclude_tags: List[str] = ["NotCheck"]
 
@@ -68,12 +74,13 @@ class CTAMTestRedfishTelemetryService(TestCase):
         actual test verification
         """
         result = True
-        
+        failure_reason = ""
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
             JSONData = self.group.health_check_ifc.ctam_getts()
             if JSONData is None or "error" in JSONData:
                 step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Redfish Task Service Check - Failed")
+                failure_reason += "Redfish Task Service Check - Failed"
                 result = False
             else:
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish Task Service Check - Completed")
@@ -85,7 +92,7 @@ class CTAMTestRedfishTelemetryService(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

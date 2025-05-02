@@ -8,13 +8,34 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test case is a Negative test. It would search for GPU_FW_IMAGE_UNSIGNED_BUNDLE referenced by package_info.json.
+:Description:	This test case is a negative test. It searches for GPU_FW_IMAGE_UNSIGNED_BUNDLE referenced by package_info.json.
                 If the bundle is not provided, it will modify GPU_FW_IMAGE (golden fwpkg) for this test. Then it will attempt
-                firmware update using the Unsigned Bundle.
+                a firmware update using the unsigned bundle.
+
+                PASS Criteria:
+                - The firmware update staging process fails as expected when using an unsigned bundle.
+                
+                FAIL Criteria:
+                - The firmware update staging process succeeds unexpectedly when using an unsigned bundle.
 
 :Usage 1:		python ctam.py -w ..\workspace -t F90
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Unsigned Bundle Update"
 
+:Dependencies:
+
+    .. code-block:: text
+
+        <redfish_uri_config.json>         : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
+                                           Optional - <exclude_targets_list>, <HttpPushUriTargets>, <MultiPartFormData>, <IsMultiPart>
+                            
+        <dut_info.json>                   : Required - <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+                            
+        <package_info.json>               : Required - <Path>, <Package>, <JSON>
+                                           Optional - <HasSignature>, <SignatureStructBytes>
+                                                      
+        <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
+                                           Optional -  <LargeFWImageUpdate>
 """
 
 from typing import Optional, List
@@ -68,21 +89,37 @@ class CTAMTestNegativeUnsignedBundleUpdate(TestCase):
         """
         actual test verification
         """
+        failure_reason = ""
         result = True
+
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="unsigned_bundle")
-            if status:
+            status, failure_reason = self.group.fw_update_ifc.ctam_fw_update_precheck()
+            if not status:
+                step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
+            else:
                 step1.add_log(
+                    LogSeverity.INFO, f"{self.test_id} : FW Update Not Required"
+                )
+
+        step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
+        with step2.scope():
+            status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="unsigned_bundle")
+            failure_reason += " " + status_msg
+            if status:
+                step2.add_log(
                     LogSeverity.INFO,
                     f"{self.test_id} : FW Update Stage Initiation Failed as Expected",
                 )
             else:
-                step1.add_log(
+                step2.add_log(
                     LogSeverity.ERROR,
                     f"{self.test_id} : FW Update Staging Initiated - Unexpected",
                 )
+                failure_reason += " " + "FW Update Staging Initiated - Unexpected"
                 result = False
+
+        
 
         # ensure setting of self.result and self.score prior to calling super().run()
         self.result = TestResult.PASS if result else TestResult.FAIL
@@ -91,7 +128,7 @@ class CTAMTestNegativeUnsignedBundleUpdate(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """
@@ -101,10 +138,10 @@ class CTAMTestNegativeUnsignedBundleUpdate(TestCase):
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():
             if self.group.fw_update_ifc.ctam_activate_ac(gpu_check=False, fwupd_hyst_wait=False):
-                msg = f"{self.test_id} : AC Cycle Passed"
+                msg = f"{self.test_id} : Teardown : AC Cycle Passed"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)  
             else:
-                msg = f"{self.test_id} : AC Cycle Failed"
+                msg = f"{self.test_id} : Teardown : AC Cycle Failed"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
 
         # call super teardown last

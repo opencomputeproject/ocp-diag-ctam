@@ -1,3 +1,10 @@
+March 24, 2025
+==============
+
+Version: 1.0.0
+  - Enhanced README and CTAM Features
+
+
 Feburary 16, 2024
 ==============
 

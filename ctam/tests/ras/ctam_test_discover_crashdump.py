@@ -8,14 +8,23 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	ras
 :Score Weight:	10
 
-:Description:	Ensure that we have at least one LogServiceids each under Systems and Managers. 
-                Next it checks to see if at least one of them have LogService.CollectDiagnosticData 
-                Return list of uris with LogService.CollectDiagnosticData. For eg. this is a pass. 
+:Description:	This test case ensures that there is at least one LogService ID under both Systems and Managers. It then checks
+                if at least one of them has the LogService.CollectDiagnosticData action available. The test returns a list of URIs
+                with LogService.CollectDiagnosticData.
                 /redfish/v1/Managers/{ManagerId}/LogServices/{LogServiceId}/Actions/CollectDiagnosticData 
                 /redfish/v1/Systems/{ComputerSystemId}/LogServices/{LogServiceId}/Actions/CollectDiagnosticData
 
+                PASS Criteria:
+                - At least one LogService ID under Systems or Managers has the LogService.CollectDiagnosticData action available.
+                
+                FAIL Criteria:
+                - No LogService ID under Systems or Managers has the LogService.CollectDiagnosticData action available.
+
 :Usage 1:		python ctam.py -w ..\workspace -t R1
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Discover Crashdump"
+
+
+:Dependencies: None
 
 """
 from typing import Optional, List
@@ -44,8 +53,8 @@ class CTAMTestDiscoverCrashdump(TestCase):
     test_name: str = "CTAM Test Discover Crashdump"
     test_id: str = "R1"
     score_weight: int = 10
-    tags: List[str] = []
-    compliance_level: str =""
+    tags: List[str] = ["L3"]
+    compliance_level: str = "L3"
 
     # exclude_tags: List[str] = ["NotCheck"]
 
@@ -72,6 +81,7 @@ class CTAMTestDiscoverCrashdump(TestCase):
         """
         actual test verification
         """
+        failure_reason = ""
         result = True
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
@@ -80,6 +90,7 @@ class CTAMTestDiscoverCrashdump(TestCase):
                     LogSeverity.FATAL,
                     f"{self.test_id} : Test case Failed - CollectDiagnostic list is empty",
                 )
+                failure_reason += "Test case Failed - CollectDiagnostic list is empty."
                 result = False
             else:
                 print(collectdata)
@@ -96,7 +107,7 @@ class CTAMTestDiscoverCrashdump(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

@@ -5,12 +5,24 @@ LICENSE file in the root directory of this source tree.
 
 :Test Name:		CTAM Test Telemetry MR Read
 :Test ID:		T4
-:Group Name:	telemetry
+:Group Name:	Telemetry
 :Score Weight:	10
 
-:Description:	Basic test case to discover list of all metric reports and  
+:Description:	This test case discovers the list of all metric reports available on the Device Under Test (DUT)
+                and prints their details. It ensures that the telemetry interface can retrieve and display the
+                metric reports correctly.
+
+:PASS Criteria: The test will pass if the telemetry interface successfully retrieves and prints the details
+                of all metric reports.
+
+:FAIL Criteria: The test will fail if the telemetry interface returns an empty list or encounters any errors
+                while retrieving the metric reports.
+
 :Usage 1:		python ctam.py -w ..\workspace -t T4
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Telemetry MR Read"
+
+
+:Dependencies: None
 
 """
 from typing import Optional, List
@@ -32,8 +44,8 @@ class CTAMTestTelemetryMRRead(TestCase):
     test_name: str = "CTAM Test Telemetry MR Read"
     test_id: str = "T4"
     score_weight: int = 10
-    tags: List[str] = []
-    compliance_level: str =""
+    tags: List[str] = ["L2"]
+    compliance_level: str = "L2"
 
     def __init__(self, group: BasicTelemetryTestGroup):
         """
@@ -58,6 +70,7 @@ class CTAMTestTelemetryMRRead(TestCase):
         """
         actual test verification
         """
+        failure_reason = ""
         result = True
         step1 = self.test_run().add_step((f"{self.__class__.__name__} run(), step1"))  # type: ignore
         with step1.scope():
@@ -71,6 +84,7 @@ class CTAMTestTelemetryMRRead(TestCase):
                 self.test_run().add_log(LogSeverity.INFO, msg)
             else:
                 self.test_run().add_log(LogSeverity.FATAL, "Could not extract the Metric Reports. Proceed with manual debug")
+                failure_reason += "Could not extract the Metric Reports. Proceed with manual debug"
                 result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -80,7 +94,7 @@ class CTAMTestTelemetryMRRead(TestCase):
 
         # call super last to log result and score
         super().run()
-        return self.result
+        return self.result, failure_reason
 
     def teardown(self):
         """

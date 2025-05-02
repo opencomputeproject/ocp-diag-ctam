@@ -104,7 +104,7 @@ def jsonmultihunt(jsondata, jsonkey1, jsonkey2, jsonextract):
         # print(jsondata.keys())
         if jsonkey1 in jsondata.keys():
             # print("found key")
-            jsonextract[jsondata[jsonkey1]] = jsondata[jsonkey2]
+            jsonextract[jsondata[jsonkey1]] = jsondata.get(jsonkey2, "")
             # print("found value")
             return
         elif len(jsondata.keys()) > 0:
@@ -114,6 +114,36 @@ def jsonmultihunt(jsondata, jsonkey1, jsonkey2, jsonextract):
         for node in jsondata:
             jsonmultihunt(node, jsonkey1, jsonkey2, jsonextract)
 
+def jsonmultivaluehunt(jsondata, jsonkey1, jsonkey2, jsonextract):
+    """
+    :Description:                       Returns a new json in jsonextract, by pairing the multiple values from the two-
+                                        json key arguments passed assuming there are multiple instances of the two keys.
+
+
+    :param JSON Dict jsondata:		    Dict object for JSON Data
+    :param str jsonkey1:		        Json key
+    :param str jsonkey2:		        Json Value
+    :param str jsonextract:		        Json Dict Object
+
+    :returns:                           None
+    :rtype:                             None
+    """
+    if type(jsondata) == type(dict()):
+        # print(jsondata.keys())
+        if jsonkey1 in jsondata.keys():
+            # print("found key")
+            if jsondata[jsonkey1] not in jsonextract:
+                jsonextract[jsondata[jsonkey1]] = [jsondata[jsonkey2]]
+            else:
+                jsonextract[jsondata[jsonkey1]].append(jsondata[jsonkey2])
+            # print("found value")
+            return
+        elif len(jsondata.keys()) > 0:
+            for key in jsondata.keys():
+                jsonmultivaluehunt(jsondata[key], jsonkey1, jsonkey2, jsonextract)
+    elif type(jsondata) == type([]):
+        for node in jsondata:
+            jsonmultivaluehunt(node, jsonkey1, jsonkey2, jsonextract)
 
 # Recursively parses a json data till it finds the jsonkey to return its value. jsonkey should be an exact match, by case too. The return could be a json too.
 def jsondeephunt(jsondata, jsonkey):
