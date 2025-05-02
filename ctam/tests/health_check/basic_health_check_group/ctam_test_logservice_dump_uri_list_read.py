@@ -8,11 +8,26 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	health_check
 :Score Weight:	10
 
-:Description:	Basic test case of ensuring that there are LogServices Dump available in the accelerator
+:Description:   This test verifies the ability to read the list of dump URIs from the LogService. It performs the following steps:
+
+1. Retrieve the list of dump URIs from the LogService.
+   Example URI: /redfish/v1/Systems/{BaseboardID}/LogServices/Dump
+2. Check if the list of dump URIs is successfully retrieved.
+3. If the list of dump URIs is not retrieved, log the failure and mark the test as failed.
+4. If the list of dump URIs is successfully retrieved, mark the test as passed.
+
+PASS Criteria:
+- The list of dump URIs is successfully retrieved.
+
+FAIL Criteria:
+- The list of dump URIs is not successfully retrieved.
+
 
 :Usage 1:		python ctam.py -w ..\workspace -t H97
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test LogService Dump URI List Read"
 
+:Dependencies: None
+                        
 """
 from typing import Optional, List
 from tests.test_case import TestCase
@@ -39,8 +54,8 @@ class CTAMTestLogServiceDumpURIListRead(TestCase):
     test_name: str = "CTAM Test LogService Dump URI List Read"
     test_id: str = "H97"
     score_weight: int = 10
-    tags: List[str] = []
-    compliance_level: str =""
+    tags: List[str] = ["L3"]
+    compliance_level: str = "L3"
 
     def __init__(self, group: BasicHealthCheckTestGroup):
         """

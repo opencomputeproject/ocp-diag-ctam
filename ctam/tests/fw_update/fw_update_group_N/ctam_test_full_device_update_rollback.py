@@ -8,10 +8,33 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Basic test case of full firmware update.To verify the successful execution of a full firmware update process.
+:Description:	This test case verifies the successful execution of a full firmware update process, focusing on the backup image (N-1). 
+                It ensures that the firmware update is staged, activated, and verified without errors.
+
+                PASS Criteria: 
+                    - The test passes if the firmware update completes successfully and the backup image is activated and is verified.
+                
+                FAIL Criteria: 
+                    - The test fails if the firmware update or verification encounters an error.
+
 :Usage 1:		python ctam.py -w ..\workspace -t F0
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Rollback"
 
+:Dependencies:
+
+    .. code-block:: text
+
+        <redfish_uri_config.json>         : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
+                                           Optional - <exclude_targets_list>, <HttpPushUriTargets>, <IsMultiPart>, <MultiPartFormData>
+                            
+        <dut_info.json>                   : Required - <CompareFirmwareInventoryCount>, <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+
+        <package_info.json>               : Required - <Path>, <Package>, <JSON>
+                                           Optional - <CorruptComponentIdentifier>, <HasSignature>, <SignatureStructBytes>
+                                                       
+        <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
+                                           Optional -  <LargeFWImageUpdate>
 """
 
 from typing import Optional, List

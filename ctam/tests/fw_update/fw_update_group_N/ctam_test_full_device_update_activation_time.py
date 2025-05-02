@@ -8,10 +8,35 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Verify that firmware activation operation does not exceed the max time specified in the requirements.
+:Description:	This test case verifies that the firmware activation operation does not exceed the maximum time specified 
+                in the requirements. The test stages the firmware update, activates it, and verifies the update within the 
+                specified time. The activation time is checked to ensure it does not exceed the maximum allowed time 
+                (FwActivationTimeMax) as defined in the device configuration.
+
+:PASS Criteria: The test passes if the firmware activation completes within the maximum allowed time (FwActivationTimeMax) 
+                and the GPU is reachable and enabled after activation.
+
+:FAIL Criteria: The test fails if the firmware activation exceeds the maximum allowed time (FwActivationTimeMax), the GPU 
+                is not reachable or not enabled after activation, or the verification fails.
+
 :Usage 1:		python ctam.py -w ..\workspace -t F64
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Activation Time"
 
+:Dependencies:
+
+    .. code-block:: text 
+
+        <redfish_uri_config.json>         : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
+                                           Optional - <exclude_targets_list>, <HttpPushUriTargets>, <IsMultiPart>, <MultiPartFormData>
+                            
+        <dut_info.json>                   : Required - <CompareFirmwareInventoryCount>, <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+
+        <package_info.json>               : Required - <Path>, <Package>, <JSON>
+                                           Optional - <HasSignature>, <SignatureStructBytes>
+                            
+        <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
+                                           Optional -  <LargeFWImageUpdate>
 """
 
 from typing import Optional, List

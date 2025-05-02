@@ -8,11 +8,21 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	health_check
 :Score Weight:	10
 
-:Description:	Basic test case of ensuring that there are LogServices available in the accelerator
+:Description:	This test case ensures that there are LogServices available in the accelerator by reading the LogServices URI list and verifying it is not empty. Additionally, it verifies the presence of specific LogServices.
+
+                PASS Criteria:
+                1. The LogServices URI list is not empty.
+                2. The presence of specific LogServices is verified successfully.
+
+                FAIL Criteria:
+                1. The LogServices URI list is empty.
+                2. The presence of specific LogServices cannot be verified.
 
 :Usage 1:		python ctam.py -w ..\workspace -t H99
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test LogServices URI List Read"
 
+:Dependencies: None
+                     
 """
 from typing import Optional, List
 from tests.test_case import TestCase
@@ -40,8 +50,8 @@ class CTAMTestLogServicesURIListRead(TestCase):
     test_name: str = "CTAM Test LogServices URI List Read"
     test_id: str = "H99"
     score_weight: int = 10
-    tags: List[str] = ["HCheck"]
-    compliance_level: str =""
+    tags: List[str] = ["HCheck", "L3"]
+    compliance_level: str = "L3"
 
     def __init__(self, group: BasicHealthCheckTestGroup):
         """

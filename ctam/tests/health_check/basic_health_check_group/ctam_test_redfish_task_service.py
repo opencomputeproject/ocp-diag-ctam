@@ -8,10 +8,18 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	health_check
 :Score Weight:	10
 
-:Description:	This test attempts to get task service
+:Description:	This test case attempts to get the task service and verifies its presence.
+
+                PASS Criteria:
+                1. The task service is retrieved successfully and is not empty.
+
+                FAIL Criteria:
+                1. The task service retrieval fails or returns an empty result.
 
 :Usage 1:		python ctam.py -w ..\workspace -t H10
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Redfish Task Service"
+
+:Dependencies: None
 
 """
 from typing import Optional, List
@@ -39,8 +47,8 @@ class CTAMTestRedfishTaskService(TestCase):
     test_name: str = "CTAM Test Redfish Task Service"
     test_id: str = "H10"
     score_weight: int = 10
-    tags: List[str] = ["HCheck"]
-    compliance_level: str =""
+    tags: List[str] = ["HCheck", "L3"]
+    compliance_level: str = "L3"
 
     # exclude_tags: List[str] = ["NotCheck"]
 

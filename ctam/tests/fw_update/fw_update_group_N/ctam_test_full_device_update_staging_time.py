@@ -8,10 +8,34 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Verify that firmware copy operation (staging) does not exceed the max time specified in the requirements.
+Description:	
+    This test verifies that the firmware copy operation (staging) does not exceed the maximum time specified in the requirements(FwStagingTimeMax). 
+    The test involves performing a pre-check to ensure the device is capable of firmware updates, followed by staging the firmware update and verifying the operation's success.
+
+:PASS Criteria:	
+    - The firmware updation process should not exceed the maximum time specified in the requirements(FwStagingTimeMax).
+
+:FAIL Criteria:	
+    - The firmware staging operation fails or does not complete within the specified time(FwStagingTimeMax).
+    
 :Usage 1:		python ctam.py -w ..\workspace -t F63
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Staging Time"
 
+:Dependencies: 
+
+    .. code-block:: text
+
+        <redfish_uri_config.json>         : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
+                                           Optional - <exclude_targets_list>, <HttpPushUriTargets>, <IsMultiPart>, <MultiPartFormData>
+                            
+        <dut_info.json>                   : Required - <CompareFirmwareInventoryCount>, <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+                            
+        <package_info.json>               : Required - <Path>, <Package>, <JSON>
+                                           Optional - <CorruptComponentIdentifier>, <HasSignature>, <SignatureStructBytes>
+                                                      
+        <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
+                                           Optional -  <LargeFWImageUpdate>
 """
 
 from typing import Optional, List

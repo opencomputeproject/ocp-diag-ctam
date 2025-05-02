@@ -10,10 +10,31 @@ LICENSE file in the root directory of this source tree.
 
 :Description:	This test case involves performing a full device update including verification
                 followed by repeating the update process again.
+                
+                :Pass Criteria: 
+                The test will pass if the firmware update is successfully staged, activated, and verified twice.
+
+                :Fail Criteria: 
+                The test will fail if any of the stages (staging, activation, verification) fail during either of the two updates.
 
 :Usage 1:		python ctam.py -w ..\workspace -t F16
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Install Same Image Two Times"
 
+:Dependencies: 
+
+    .. code-block:: text
+
+        <redfish_uri_config.json>         : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
+                                           Optional - <exclude_targets_list>, <HttpPushUriTargets>, <IsMultiPart>, <MultiPartFormData>
+                            
+        <dut_info.json>                   : Required - <CompareFirmwareInventoryCount>, <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+
+        <package_info.json>               : Required - <Path>, <Package>, <JSON>
+                                           Optional - <HasSignature>, <SignatureStructBytes>
+                                                        
+        <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
+                                           Optional -  <LargeFWImageUpdate>
 
 """
 

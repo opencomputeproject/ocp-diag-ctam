@@ -8,11 +8,30 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test case entails performing firmware updates in a loop between N and N-1 i.e default and backup respectively.
+:Description:	This test case entails performing firmware updates in a loop between N-1 and N i.e backup and default respectively.
+                The test ensures that the firmware updates can be performed repeatedly without issues.
+
+                PASS Criteria: The test passes if all firmware updates between backup and default complete successfully without errors.
+                FAIL Criteria: The test fails if any firmware update between backup and default encounters an error.
 
 :Usage 1:		python ctam.py -w ..\workspace -t F88
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Ping Pong"
 
+:Dependencies:
+
+    .. code-block:: text
+
+        <redfish_uri_config.json>         : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
+                                           Optional - <exclude_targets_list>, <HttpPushUriTargets>, <IsMultiPart>, <MultiPartFormData>
+                            
+        <dut_info.json>                   : Required - <CompareFirmwareInventoryCount>, <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+
+        <package_info.json>               : Required - <Path>, <Package>, <JSON>
+                                           Optional - <CorruptComponentIdentifier>, <HasSignature>, <SignatureStructBytes>
+                                                     
+        <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
+                                           Optional -  <LargeFWImageUpdate>
 """
 from typing import Optional, List
 from tests.test_case import TestCase

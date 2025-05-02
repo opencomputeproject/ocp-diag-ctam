@@ -8,13 +8,34 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test case focuses on the scenario where we are trying to initiate a firmware update flow with an invalid signed image. 
-				The expectation is for staging to fail when this is attempted. 
-				The image is provided by the vendor	and it has a section in package_info.json
+:Description:	
+    This test case focuses on the scenario where we are trying to initiate a firmware update flow with an invalid signed image. 
+    The expectation is for staging to fail when this is attempted. The image is provided by the vendor and it has a section in package_info.json.
+
+:PASS Criteria:	
+    - The firmware staging operation fails as expected due to the invalid signed image.
+
+:FAIL Criteria:	
+    - The firmware staging operation succeeds unexpectedly with the invalid signed image.
 
 :Usage 1:		python ctam.py -w ..\workspace -t F22
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Invalid Signed Image Update"
 
+:Dependencies: 
+
+    .. code-block:: text
+
+        <redfish_uri_config.json>         : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
+                                           Optional - <exclude_targets_list>, <HttpPushUriTargets>, <MultiPartFormData>, <IsMultiPart>
+                            
+        <dut_info.json>                   : Required - <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+                            
+        <package_info.json>               : Required - <Path>, <Package>, <JSON>
+                                           Optional - <HasSignature>, <SignatureStructBytes>
+                                                      
+        <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
+                                           Optional -  <LargeFWImageUpdate>
 """
 
 from typing import Optional, List

@@ -81,6 +81,12 @@ def parse_args():
         help="Display current version of ctam",
         action="store_true",
     )
+    parser.add_argument(
+        "-c",
+        "--consolidate", 
+        help="Path to the previous test report for consolidation",
+        nargs="+",
+    )
     return parser.parse_args()
 
 def get_exception_details(exec: Exception = ""):
@@ -173,7 +179,8 @@ def main():
             return 1, None, "Missing required files"
         print(f"Version : {__version__}")
         print(f"WorkSpace : {args.workspace}")
-        
+        if args.consolidate:
+            print(f"Test report paths : {args.consolidate}")
         
         # NOTE: Added to read default config file is its not present in workspace directory.
         # NOTE: Only .netrc and dut_info is required to run anything other than listing all the test cases.
@@ -241,6 +248,24 @@ def main():
             )
             status_code, exit_string = runner.get_system_details()
             return status_code, None, exit_string
+        
+        elif args.consolidate:
+            runner = TestRunner(
+                workspace_dir=args.workspace,
+                logs_output_dir=logs_output_dir,
+                test_hierarchy=test_hierarchy,
+                test_runner_json_file=test_runner_json,
+                dut_info_json_file=dut_info_json,
+                package_info_json_file=package_info_json,
+                redfish_uri_config_file=redfish_uri_config,
+                redfish_response_messages=redfish_response_messages,
+                default_config_path=default_config_path,
+                consolidate = args.consolidate,
+                net_rc=net_rc,
+            )
+            status_code, exit_string = runner.consolidate_run()
+            return status_code, None, exit_string
+        
 
         elif args.testcase:
             runner = TestRunner(
@@ -298,6 +323,8 @@ def main():
                 net_rc=net_rc,
                 sequence_group_override=args.group_sequence,
             )
+        
+        
         else:
             all_tests = test_hierarchy.get_all_tests()
             runner = TestRunner(

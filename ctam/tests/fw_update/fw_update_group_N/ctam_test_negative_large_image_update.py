@@ -8,13 +8,34 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test case focuses on the scenario where we are trying from large image transfer is initiated for
-				a firmware update. The expectation is for staging to fail when this is attempted. The image is provided by the vendor
-				and it has a section in package_info.json
+:Description:	This test case focuses on the scenario where a large image transfer is initiated for
+				a firmware update. The expectation is for the staging process to fail when this is attempted.
+				The image is provided by the vendor and it has a section in package_info.json.
+
+				PASS Criteria:
+				- The firmware update staging process fails as expected when a large image is used.
+				
+				FAIL Criteria:
+				- The firmware update staging process succeeds unexpectedly when a large image is used.
 
 :Usage 1:		python ctam.py -w ..\workspace -t F25
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Large Image Update"
 
+:Dependencies: 
+
+    .. code-block:: text
+
+        <redfish_uri_config.json>         : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
+                                           Optional - <exclude_targets_list>, <HttpPushUriTargets>, <MultiPartFormData>, <IsMultiPart>
+                            
+        <dut_info.json>                   : Required - <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+                            
+        <package_info.json>               : Required - <Path>, <Package>, <JSON>
+                                           Optional - <HasSignature>, <SignatureStructBytes>
+                                                      
+        <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
+                                           Optional -  <LargeFWImageUpdate>
 """
 from typing import Optional, List
 from tests.test_case import TestCase

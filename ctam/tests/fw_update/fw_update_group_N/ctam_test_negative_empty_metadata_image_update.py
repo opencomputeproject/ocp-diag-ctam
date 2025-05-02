@@ -8,12 +8,35 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This test case is a Negative Test. It'll make a copy of the default FW image provided in package_info.json 
-                and clear metadata of any component in the PLDM bundle. Then it'll attempt firmware update with the fwpkg containing corrupted UUID. 
+:Description:	
+    This test case is a negative test. It makes a copy of the default FW image provided in package_info.json
+    and clears the metadata of any component in the PLDM bundle. Then it attempts a firmware update with the fwpkg containing corrupted UUID. 
+    The objective is to ensure that the system correctly handles the corrupted metadata and does not proceed with the update.
+
+:PASS Criteria:	
+    - The firmware staging operation fails as expected due to the corrupted metadata.
+
+:FAIL Criteria:	
+    - The firmware staging operation succeeds unexpectedly with the corrupted metadata.
 
 :Usage 1:		python ctam.py -w ..\workspace -t F26
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Empty Metadata Image Update"
 
+:Dependencies:
+
+    .. code-block:: text 
+
+        <redfish_uri_config.json>         : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
+                                           Optional - <exclude_targets_list>, <HttpPushUriTargets>, <MultiPartFormData>, <IsMultiPart>
+                            
+        <dut_info.json>                   : Required - <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+                            
+        <package_info.json>               : Required - <Path>, <Package>, <JSON>, <CorruptComponentIdentifier>
+                                           Optional - <HasSignature>, <SignatureStructBytes>, <MetadataSizeBytes>
+                                                      
+        <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
+                                           Optional -  <LargeFWImageUpdate>
 """
 
 from typing import Optional, List

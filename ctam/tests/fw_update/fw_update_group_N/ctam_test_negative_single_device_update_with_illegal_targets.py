@@ -8,13 +8,35 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	This Test case focussed on the GPU baseboard would have multiple targets. Some of which are updatable,
-				others which are not. The goal of this test case is to identify the list of firmware inventory targets
-				that are **"not"** in the AllowableValues of the URI pointed by ``@Redfish.ActionInfo`` On attempting an
+:Description:	This test case focuses on the scenario where a GPU baseboard has multiple targets, some of which are updatable
+				and others which are not. The goal of this test case is to identify the list of firmware inventory targets
+				that are **"not"** in the AllowableValues of the URI pointed by ``@Redfish.ActionInfo``. On attempting an
 				update, we expect the firmware version to be retained.
+
+				PASS Criteria:
+				- The firmware version is retained when attempting to update targets that are not updatable.
+				
+				FAIL Criteria:
+				- The firmware version changes when attempting to update targets that are not updatable.
+
 :Usage 1:		python ctam.py -w ..\workspace -t F32
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Negative Single Device Update with illegal targets"
 
+:Dependencies:
+
+    .. code-block:: text 
+
+        <redfish_uri_config.json>         : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
+                                           Optional - <exclude_targets_list>, <HttpPushUriTargets>, <MultiPartFormData>, <IsMultiPart>
+                            
+        <dut_info.json>                   : Required - <CompareFirmwareInventoryCount>, <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+                            
+        <package_info.json>               : Required - <Path>, <Package>, <JSON>
+                                           Optional - <HasSignature>, <SignatureStructBytes>
+                                                      
+        <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
+                                           Optional -  <LargeFWImageUpdate>
 """
 from typing import Optional, List
 from tests.test_case import TestCase

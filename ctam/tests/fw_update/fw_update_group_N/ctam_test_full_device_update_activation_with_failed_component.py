@@ -8,12 +8,37 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Firmware Update Stack Robustness Test. If one component copying (staging) fails, verify activation is handled correctly.
-                Vendor needs to provide a fwpkg where a component image is corrupted, and all other component images are good (i.e. it will not fail the update).
-                
+:Description: This test verifies the robustness of the firmware update stack when one component fails to stage. 
+              The vendor must provide a firmware package where one component image is corrupted, while all other 
+              component images are valid(If it not provided in package info testcase can generate). 
+              The test performs the following steps:
+              1. Retrieves the component to be corrupted.
+              2. Performs a firmware update pre-check.
+              3. Stages the firmware update with the corrupted component.
+              4. Activates the firmware update.
+              5. Verifies the firmware update.
+
+              PASS Criteria: The test passes if the firmware activation is handled correctly despite one component failing to stage.
+              FAIL Criteria: The test fails if the firmware activation is not handled correctly when one component fails to stage.
+
 :Usage 1:		python ctam.py -w ..\workspace -t F56
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Activation With Failed Component"
 
+:Dependencies:
+
+    .. code-block:: text 
+
+        <redfish_uri_config.json>         : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
+                                           Optional - <exclude_targets_list>, <HttpPushUriTargets>, <IsMultiPart>, <MultiPartFormData>
+                            
+        <dut_info.json>                   : Required - <CompareFirmwareInventoryCount>, <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+
+        <package_info.json>               : Required - <Path>, <Package>, <JSON>, <CorruptComponentIdentifier>
+                                           Optional - <HasSignature>, <SignatureStructBytes>
+                            
+        <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
+                                           Optional -  <LargeFWImageUpdate>
 """
 
 from typing import Optional, List

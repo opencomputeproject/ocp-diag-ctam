@@ -26,7 +26,8 @@ extensions = [
 
 templates_path = ["_templates"]
 
-exclude_patterns = []
+# Exclude autoapi/index.rst but keep other auto-generated files
+exclude_patterns = ["autoapi/index.rst"]
 
 autodoc_typehints = "signature"
 autoapi_dirs = ["../../ctam"]
@@ -49,4 +50,5 @@ todo_include_todos = True
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
-html_static_path = ["_static"]
+html_static_path = ['_static']
+html_css_files = ['custom.css']

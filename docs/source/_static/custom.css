@@ -1,0 +1,61 @@
+/* Ensure wy-nav-content does not overflow */
+.wy-nav-content {
+    max-width: 100% !important; /* Ensures the main content doesn't exceed the screen width */
+    margin: auto; /* Centers the content */
+    overflow-wrap: break-word; /* Allows long words to break and wrap */
+    word-wrap: break-word; /* Alternative for older browsers */
+    white-space: normal; /* Ensures text behaves normally */
+}
+
+/* Ensure only source code blocks scroll horizontally */
+pre {
+    white-space: pre !important;  /* Prevents text wrapping */
+    overflow-x: auto !important;  /* Enables horizontal scrolling */
+    max-width: 100% !important;  /* Ensures it doesn't exceed container */
+    background: #e0e0e0; /* Light gray */
+    color: #000000; /* Black text for readability */
+    padding: 10px;  /* Adds some spacing */
+    border-radius: 5px;  /* Slightly rounded corners */
+}
+
+/* Ensure inline code does not scroll */
+code {
+    white-space: pre-wrap !important; /* Allows wrapping for inline code */
+    word-break: break-word !important;
+}
+
+/* Prevents horizontal scroll on the entire page */
+body {
+    overflow-x: hidden !important;
+}
+
+
+/* Fix long class names inside blue boxes */
+dl.class dt, dl.function dt {
+    overflow-wrap: break-word !important; /* Ensures class/function names break properly */
+    word-break: break-word !important;
+    display: block; /* Forces elements to behave as blocks */
+    max-width: 100% !important; /* Ensures it stays within its container */
+    white-space: normal !important; /* Allows wrapping */
+}
+
+/* Fix long links inside search results */
+a {
+    word-break: break-word !important;/* Ensures long URLs wrap properly */
+}
+
+/* Sidebar Links - Add Smooth Zoom Effect */
+.wy-menu-vertical a {
+    transition: transform 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Hover Effect - Zoom In */
+.wy-menu-vertical a:hover {
+    background-color: #555 !important;  /* Dark Gray Background */
+    color: #ffcc00 !important;  /* Gold Text */
+    transform: scale(1.05);  /* Slightly increase size (Zoom In) */
+    border-radius: 5px;  /* Rounded Corners */
+}
+
+
+

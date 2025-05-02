@@ -8,11 +8,37 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	10
 
-:Description:	Before running this test case we expect to be on N image. We will do staging with N-1 image which is getting interrupted by ac
-                power reset. At least one of the components should stay on N image after ac power reset.
+:Description:	
+    This test verifies the behavior of a full device firmware update staging process when interrupted by an AC power reset.
+    The test starts with the device on the current firmware version (N image) and attempts to stage the previous firmware version (N-1 image).
+    The staging process is intentionally interrupted by an AC power reset.
+    The objective is to ensure that at least one component remains on the current firmware version (N image) after the AC power reset.
+
+:PASS Criteria:	
+    - Post activation at least one component remains on the current firmware version (N image) after the AC reset.
+
+:FAIL Criteria:	
+    - System does not boot up healthily after the AC reset.
+    - If all updateable components move to N-1 after the AC reset.
+
 :Usage 1:		python ctam.py -w ..\workspace -t F24
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Full Device Update Staging Interruption With AC Reset"
 
+:Dependencies:
+
+    .. code-block:: text 
+
+        <redfish_uri_config.json>         : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
+                                           Optional - <exclude_targets_list>, <HttpPushUriTargets>, <MultiPartFormData>, <IsMultiPart>
+                            
+        <dut_info.json>                   : Required - <CompareFirmwareInventoryCount>, <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+                            
+        <package_info.json>               : Required - <Path>, <Package>, <JSON>
+                                           Optional - <HasSignature>, <SignatureStructBytes>,
+                                                      
+        <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
+                                           Optional -  <LargeFWImageUpdate>
 """
 from typing import Optional, List
 from tests.test_case import TestCase

@@ -8,10 +8,21 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	Telemetry
 :Score Weight:	10
 
-:Description:	It will validate all of the available URIs.
+:Description:	This testcase will clone the RedfishServiceValidator repository and It will validate all of the available URIs under redfish.
+
+                :PASS Criteria: 
+                The test will pass if the Redfish Service Validator command runs successfully and validates
+                the Redfish service without errors.
+
+                :FAIL Criteria: 
+                The test will fail if there is an error in cloning the repository, running the Redfish Service
+                Validator command, or if the validation finds issues with the Redfish service on the DUT.
 
 :Usage 1:		python ctam.py -w ..\workspace -t T0
 :Usage 2:		python ctam.py -w ..\workspace -t "CTAM Test Service Validator"
+
+
+:Dependencies: None
 
 """
 from typing import Optional, List
@@ -39,8 +50,8 @@ class CTAMTestServiceValidator(TestCase):
     test_name: str = "CTAM Test Service Validator"
     test_id: str = "T0"
     score_weight: int = 10
-    tags: List[str] = []
-    compliance_level: str = ""
+    tags: List[str] = ["L2"]
+    compliance_level: str = "L2"
 
     def __init__(self, group: BasicTelemetryTestGroup):
         """
