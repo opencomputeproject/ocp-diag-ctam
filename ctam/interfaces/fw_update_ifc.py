@@ -37,7 +37,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
     #     if not isinstance(cls._instance, cls):
     #         cls._instance = super(FWUpdateIfc, cls).__new__(cls, *args, **kwargs)
     #     return cls._instance
-    
+
     def __init__(self):
         super().__init__()
         self.included_targets = []
@@ -59,12 +59,12 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
     #     if not isinstance(cls._instance, cls):
     #         cls._instance = cls(*args, **kwargs)
     #     return cls._instance
-    
+
     def PLDMComponentVersions(self, image_type):
         """
         :Description:       if the FW versions from PLDM bundle file are already populated, just return the existing dictionary.
                             Other
-        
+
         :param image_type:  image_type
 
         :return:            _PLDMComponentVersions
@@ -82,7 +82,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
         :returns:                   None
         """
-        
+
         MyName = __name__ + "." + self.ctam_get_fw_version.__qualname__
         JSONData = self.ctam_getfi(expanded=1)
         if PostInstall:
@@ -127,14 +127,14 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                             continue
                     msg = f"Pre Install Details: {element['Id']} : {element.get('SoftwareId', None)} : {element.get('Version', 'NA')} : "
                     if str(element["Updateable"]) == "True":
-                        
+
                         SoftwareId = str(hex(int(element["SoftwareId"], 16)))
                         if SoftwareId in BundleComponentIdsAndVersions.keys():
 
                             Package_Version = self.PLDMComponentVersions(image_type=image_type).get(SoftwareId)
                             if not Package_Version:
                                 msg += "Not in the PLDM bundle"
-                            
+
                             elif element["Version"] not in Package_Version and (
                                 self.included_targets == []
                                 or element["@odata.id"] in self.included_targets
@@ -154,9 +154,9 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 failure_reason += " Exception occured: " + str(e)
                 self.test_run().add_log(LogSeverity.ERROR, "Exception occured: " + str(e))
                 VersionsDifferent = False
-                
+
         return VersionsDifferent, failure_reason
-            
+
     def ctam_stage_fw(
         self, partial=0, image_type="default", wait_for_stage_completion=True,
         corrupted_component_id=None, corrupted_component_list=[],
@@ -171,7 +171,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         :param corrupted_component_list:        List component names (Ids) which are corrupted
         :param check_time:                      Check the staging time does not exceed maximum time per spec
 
-        :returns:                               StageFWOOB_Status, StageFWOOB_Status_message, return_task_id 
+        :returns:                               StageFWOOB_Status, StageFWOOB_Status_message, return_task_id
         :rtype:                                 Bool, str, str
         """
         failure_reason = ""
@@ -230,7 +230,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     msg = f"FW copy operation exceeded the maximum time {FwStagingTimeMax} seconds."
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
                     StageFWOOB_Status = False
-                    stage_msg = msg   
+                    stage_msg = msg
 
                 msg = "{0}: GPU Deployment Time: {1} GPU Update Time: {2} \n Redfish Outcome: {3}".format(
                     MyName,
@@ -278,7 +278,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     if message.split(".")[-1].lower() == resp_msg.lower():
                         StageFWOOB_Status = False
                         stage_msg = "ExpectedMessage"
-            
+
             elif image_type == "large":
                 message = JSONData.get("error", {}).get("@Message.ExtendedInfo", {})[0].get("MessageId", "")
                 if not message:
@@ -290,7 +290,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                         stage_msg = "UnexpectedMessage"
                     else:
                         StageFWOOB_Status = True
-        
+
             elif not image_type in self.NegativeTestImages:
                 msg = "Staging failed with incorrect error message {}".format(
                     JSONData["error"]
@@ -313,7 +313,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         MyName = __name__ + "." + self.ctam_fw_update_verify.__qualname__
         Update_Verified = True
         update_successful = []
-        update_failed = []        
+        update_failed = []
         failure_reason = ""
         self.ctam_get_fw_version(PostInstall=1)
         msg = json.dumps(self.PostInstallDetails, indent=4)
@@ -330,7 +330,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
                     continue
                 negative_case = (
-                    image_type == "negate" 
+                    image_type == "negate"
                     or str(element["Updateable"]).lower() == "false" # Note, this may mean empty SoftwareId. So this condition needs to come before the next one
                     or (image_type == "corrupt_component" and int(element["SoftwareId"], 16) == int(corrupted_component_id, 16) )
                     or (self.included_targets != []
@@ -343,10 +343,10 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                         ExpectedVersion
                     )
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
-                
+
                 elif specific_targets and element["Id"] not in specific_targets:
                     ExpectedVersion = self.PreInstallVersionDetails[element["Id"]]
-                    
+
                 else:
                     SoftwareId = str(hex(int(element["SoftwareId"], 16)))
                     # FW version should be updated per PLDM bundle
@@ -355,7 +355,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 if not ExpectedVersion:
                     # Either not present in PLDM bundle or not present in PreInstallVersionDetails
                     msg += "Not in the PLDM bundle"
-                
+
                 elif element.get("Version", '') not in ExpectedVersion:
                     # Both positive and negative test case
                     update_failed.append(element['SoftwareId'])
@@ -366,11 +366,11 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 elif negative_case:
                     # Negative test case, but expected.
                     msg += "Update Interrupted as Expected"
-                
+
                 else:
                     msg += "Update Successful"
                     update_successful.append(element['SoftwareId'])
-                    
+
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
             except Exception as e:
                 failure_reason += " Exception occured: " + str(e)
@@ -385,7 +385,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         msg = f"Updated Components count - {len(update_successful)} and Failed Components count - {len(update_failed)}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return Update_Verified, failure_reason
-    
+
     def get_target_inventorys(self, targets):
         return [
             self.dut().uri_builder.format_uri(
@@ -402,17 +402,17 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         :returns:                       whether uri was found, update uri and if it supports multipart push
         :rtype:                         Bool, Str, Bool
         """
-        
+
         uri = self.dut().uri_builder.format_uri(
             redfish_str="{BaseURI}/UpdateService", component_type="GPU"
         )
         response = self.dut().run_redfish_command(uri=uri, mode="GET")
         if 'MultipartHttpPushUri' in response.dict and self.dut().multipart_push_uri_support:
             return True, response.dict['MultipartHttpPushUri'], True
-        
+
         elif 'HttpPushUri' in response.dict:
             return True, response.dict['HttpPushUri'], False
-            # return True, uri, False  #FIXME Once we have product compliance, we will uncomment the above line. 
+            # return True, uri, False  #FIXME Once we have product compliance, we will uncomment the above line.
         return False, "", False
 
     def ctam_pushtargets(self, targets=[], is_multipart_uri=False):
@@ -457,7 +457,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         """
         MyName = __name__ + "." + self.RedFishFWUpdate.__qualname__
         JSONData = {}
-        
+
         if is_multipart:
             headers = {"Content-Type": "multipart/form-data"}
             body = {
@@ -539,26 +539,26 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 self.test_run().add_log(LogSeverity.INFO, msg)
             JSONData = self.ctam_getus()
         return PartialDeviceSelected
-    
+
     def ctam_get_component_to_be_corrupted(self, VendorProvidedBundle=True):
         """
         :Description:                   It will check the package_info.json for CorruptComponentIdentifier.
-                                        If both corrupt package and CorruptComponentIdentifier are not provided, 
+                                        If both corrupt package and CorruptComponentIdentifier are not provided,
                                         it'll find the first updatable element from firmware inventory.
 
         :param VendorProvidedBundle:    Boolean value indicating if the vendor is required to provide a corrupt bundle.
                                         True by default.
-        
+
         :returns:                       SoftwareID of the component to be corrupted (in hex format)
         :rtype:                         str. None in case of failure
         """
-        MyName = __name__ + "." + self.ctam_get_component_to_be_corrupted.__qualname__    
+        MyName = __name__ + "." + self.ctam_get_component_to_be_corrupted.__qualname__
         vendor_provided_corrupt_pkg = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Package", "")
         if VendorProvidedBundle and vendor_provided_corrupt_pkg == "":
             msg = "Missing corrupt bundle name in package info file."
             self.test_run().add_log(LogSeverity.ERROR, msg)
             corrupt_component_id = None
-            
+
         else:
             corrupt_component_id = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("CorruptComponentIdentifier", "")
             if corrupt_component_id == "":
@@ -574,26 +574,26 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                             break
             msg = f"{MyName} returned component ID to be corrupted: {corrupt_component_id}"
             self.test_run().add_log(LogSeverity.DEBUG, msg)
-        
+
         return corrupt_component_id
-    
+
     def ctam_check_component_fwupd_failure(self, task_message_list, corrupted_component_id):
         """
         :Description:                       It will check if the task status message list is showing the
                                             corrupted component update failed and all other component
                                             copying (staging) went through.
-        
+
         :param task_message_list:           List of message from the task status response
         :param corrupted_component_id:      ComponentIdentifier (in hex format) of the corrupted component image
 
         :returns:                           NonCorruptCompStaging_Success
         :rtype:                             Bool
         """
-        MyName = __name__ + "." + self.ctam_check_component_fwupd_failure.__qualname__        
+        MyName = __name__ + "." + self.ctam_check_component_fwupd_failure.__qualname__
         NonCorruptCompStaging_Success = True
-        
+
         corrupted_component_list = self.ctam_get_component_list(corrupted_component_id)
-        
+
         for message in task_message_list:
             # Check if the component is not corrupted, but the severity is not OK
             if (not any(item in corrupted_component_list for item in message["MessageArgs"])) \
@@ -601,14 +601,14 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 and message["Severity"] != "OK":
                     NonCorruptCompStaging_Success = False
                     return
-            
+
         return NonCorruptCompStaging_Success
-    
+
     def ctam_get_component_list(self, component_id):
         """
         :Description:                       It will check FW Inventory and find all the components with
                                             the provided component ID.
-        
+
         :param component_id:                Component ID / SoftwareID
 
         :returns:                           List of components with the component ID
@@ -618,7 +618,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         component_list = []
         jsonhuntall(JSONData, "SoftwareId", component_id, "Id", component_list)
         return component_list
-    
+
     def ctam_compare_active_components_count(self):
         """
         :Description:                       It will compare FW Inventory from Pre and Post Fw update
@@ -629,12 +629,12 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         :returns:                           AllComponentsActive
         :rtype:                             Bool
         """
-        
+
         if not self.PreInstallDetails or not self.PostInstallDetails:
             raise RuntimeError(f"Pre and Post install details are missing.\
                 Post install version details are {self.PostInstallVersionDetails}\
                     and Pre install details are {self.PreInstallVersionDetails}")
-        
+
         elif len(self.PreInstallDetails) != len(self.PostInstallDetails): # FIXME: Chances are post-intall < pre-install. Any chances of post-install > pre-install?
             AllComponentsActive = False
             msg = "Mismatch in number of components. Update Failed : Pre-install count {} != Post-install count {} ".format(
@@ -642,25 +642,25 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 len(self.PostInstallDetails),
             )
             self.test_run().add_log(LogSeverity.DEBUG, msg)
-            
+
         else:
             AllComponentsActive = True
-            
+
         return AllComponentsActive
 
     def ctam_get_version_from_bundle(self, image_type):
         """
         :Description:           It will check the PLDM bundle json and find FW version
                                 of the component with the specified software id.
-        
+
         :param image_type:      image type
 
         :returns:               ComponentVersions
         :rtype:                 string
         """
-        
-        ComponentIdsAndVersions = {}
 
+        ComponentIdsAndVersions = {}
+        PLDMPkgJson = {}
         # Then get the PLDM bundle json
         PLDMPkgJson_file = self.get_PLDMPkgJson_file(image_type=image_type)
 
