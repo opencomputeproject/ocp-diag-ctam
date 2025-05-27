@@ -98,7 +98,8 @@ class TestRunner:
         self.group_sequence = []
         self.test_result_data = []
         self.consolidate_data = []
-        self.total_cases = 0        
+        self.total_cases = 0
+        self.overall_compliance_grade = 0
         self.output_dir = logs_output_dir
         self.workspace_dir = workspace_dir
         self.consolidate = consolidate
@@ -973,8 +974,8 @@ class TestRunner:
                 "Normalized Score":d_score,
                 "TestCases Executed":0,
                 "TestCases Passed":0,
+                "Total Weight":0,
                 "Total Score":0,
-                "Max Score":0,
                 "Grade":0,
                 "Execution Time":timedelta(seconds=0)}
         return comp_data
@@ -987,8 +988,8 @@ class TestRunner:
             
             # Use t_pass if consolidate is True, else use the existing logic to run the testcase.
             data["TestCases Passed"] += t_pass if t_pass else (1 if test_instance and TestResult(test_instance.result).name == TestResult.PASS.name else 0)
+            data["Total Weight"] = round(data["Normalized Score"] * data["TestCases Executed"], 2)
             data["Total Score"] = round(data["Normalized Score"] * data["TestCases Passed"], 2)
-            data["Max Score"] = round(data["Normalized Score"] * data["TestCases Executed"], 2)
             grade = round(data["TestCases Passed"] / data["TestCases Executed"] * 100, 2)
             
             # Use e_time if consolidate is True, else use the existing logic to run the testcase.
@@ -1000,8 +1001,8 @@ class TestRunner:
             data["TestCases Executed"] += 1
             # Use t_pass if consolidate is True, else use the existing logic to run the testcase.
             data["TestCases Passed"] += t_pass if t_pass else (1 if test_instance and TestResult(test_instance.result).name == TestResult.PASS.name else 0)
+            data["Total Weight"] = round(data["Normalized Score"] * data["TestCases Executed"], 2)
             data["Total Score"] = round(data["Normalized Score"] * data["TestCases Passed"], 2)
-            data["Max Score"] = round(data["Normalized Score"] * data["TestCases Executed"], 2)
             # grade = round(data["TestCases Passed"] / data["TestCases Executed"] * 100, 2)
             
             # Use e_time if consolidate is True, else use the existing logic to run the testcase.
@@ -1036,8 +1037,17 @@ class TestRunner:
         """
         # consolidate_compliance_data dictionary will be used if it is not empty, else use the existing logic to run the testcase.
         compliance_dict = self.consolidate_compliance_data if self.consolidate_compliance_data else self.compliance_data
-
+        available_testcases = self.test_hierarchy.get_compliance_test_cases()
+        total_weighted_testcases = 0
         if self.weighted_scores:
+            # Add missing compliance levels to the dictionary with default values if not already present
+            for comp_level, weight in self.weighted_scores.items():
+                if comp_level not in compliance_dict: 
+                    num_available = available_testcases[comp_level]
+                    compliance_dict[comp_level] = [comp_level, weight, num_available, 0, 0, 0, 0, 0, timedelta(seconds=0)]
+                
+                total_weighted_testcases += available_testcases[comp_level] * weight
+                
             c_data = dict(sorted(compliance_dict.items()))
             compliance_values = c_data.values()
             total_test_cases = sum([x[3] for x in compliance_values])
@@ -1047,6 +1057,7 @@ class TestRunner:
             total_execution = sum([x[8].total_seconds() for x in compliance_values])
             total_available_testcases = sum([x[2] for x in compliance_values])
             grade = round((total_score / total_weight * 100), 2) if total_weight else 0
+            self.overall_compliance_grade = round((total_score / total_weighted_testcases * 100), 2) if total_weighted_testcases else 0
 
             ct = PrettyTable(["Compliance Level", "Level Weight", "TestCases Available", "TestCases Executed", "TestCases Passed", "Total Weight", "Total Score", "Grade", "Total Execution Time"])
             ct.title = "Compliance Level Weighted Report"
@@ -1077,25 +1088,25 @@ class TestRunner:
             total_normalized_score += value['Normalized Score']
             total_test_cases_executed += value['TestCases Executed']
             total_test_cases_passed += value['TestCases Passed']
+            sum_max_score += value['Total Weight']
             total_score += value['Total Score']
-            sum_max_score += value['Max Score']
             total_execution_time += value['Execution Time']
         
         total_normalized_score = round(total_normalized_score, 2)
         total_score = round(total_score, 2)
         sum_max_score = round(sum_max_score, 2)
         grade = round((total_score / sum_max_score * 100), 2) if sum_max_score else 0
-        normalized_grade = round((total_test_cases_passed / total_test_cases_available * 100), 2)
+        # normalized_grade = round((total_test_cases_passed / total_test_cases_available * 100), 2)
         dt = PrettyTable(list(self.comp_data[data].keys()))
         dt.title = "Compliance Level Normalized Weighted Report"
         vals = [d.values() for _,d in sorted_data.items()]
         dt.add_rows(vals)
         dt.add_row(["","","","","","","","", "", ""], divider=True)
-        dt.add_row(["Total", total_normalized_weight, total_test_cases_available, total_normalized_score, total_test_cases_executed, total_test_cases_passed, total_score, sum_max_score, f"{grade}%", total_execution_time])
-        dt2 = PrettyTable(["TestCases Available", "TestCases Executed", "TestCases Passed", "Grade"])
-        dt2.title = "Simple Uniform Grading Report"
+        dt.add_row(["Total", total_normalized_weight, total_test_cases_available, total_normalized_score, total_test_cases_executed, total_test_cases_passed, sum_max_score, total_score, f"{grade}%", total_execution_time])
+        dt2 = PrettyTable(["TestCases Available", "TestCases Executed", "TestCases Passed", "Overall Compliance Level Weighted Grade"])
+        dt2.title = "Overall Compliance Report"
         # dt2.add_row(["","", "", ""], divider=True)
-        dt2.add_row([total_test_cases_available, total_test_cases_executed, total_test_cases_passed, normalized_grade])
+        dt2.add_row([total_test_cases_available, total_test_cases_executed, total_test_cases_passed, self.overall_compliance_grade])
 
         print(dt)
         with open(self.test_result_file, 'a') as f:
