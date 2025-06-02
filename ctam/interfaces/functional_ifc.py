@@ -19,7 +19,7 @@ import ocptv.output as tv
 from ocptv.output import LogSeverity
 
 from interfaces.comptool_dut import CompToolDut
-from utils.fwpkg_utils import FwpkgSignature, PLDMFwpkg
+from utils.fwpkg_utils import FwpkgSignature, PLDMFwpkg, PLDMUnpack
 
 class FunctionalIfc:
     """
@@ -75,26 +75,26 @@ class FunctionalIfc:
         Default init for now
         """
         pass
-    
+
     def ctam_get_component_to_be_corrupted(self, VendorProvidedBundle=True):
         """
         :Description:                   It will check the package_info.json for CorruptComponentIdentifier.
-                                        If both corrupt package and CorruptComponentIdentifier are not provided, 
+                                        If both corrupt package and CorruptComponentIdentifier are not provided,
                                         it'll find the first updatable element from firmware inventory.
 
         :param VendorProvidedBundle:    Boolean value indicating if the vendor is required to provide a corrupt bundle.
                                         True by default.
-        
+
         :returns:		                SoftwareID of the component to be corrupted (in hex format)
         :rtype:                         str. None in case of failure
         """
-        MyName = __name__ + "." + self.ctam_get_component_to_be_corrupted.__qualname__    
+        MyName = __name__ + "." + self.ctam_get_component_to_be_corrupted.__qualname__
         vendor_provided_corrupt_pkg = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Package", "")
         if VendorProvidedBundle and vendor_provided_corrupt_pkg == "":
             msg = "Missing corrupt bundle name in package info file."
             self.test_run().add_log(LogSeverity.ERROR, msg)
             corrupt_component_id = None
-            
+
         else:
             corrupt_component_id = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("CorruptComponentIdentifier", "")
             if corrupt_component_id == "":
@@ -151,7 +151,7 @@ class FunctionalIfc:
                 JSONData = self.ctam_getus()
                 max_bundle_size = JSONData.get("MaxImageSizeBytes") # FIXME: Do we need a default?
                 return PLDMFwpkg.make_large_package(golden_fwpkg_path, max_bundle_size)
-                
+
         elif image_type == "invalid_sign":
             if package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {}).get("Package", "") != "":
                 return os.path.join(
@@ -166,7 +166,7 @@ class FunctionalIfc:
                     package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
                 )
                 return FwpkgSignature.invalidate_signature_in_pkg(golden_fwpkg_path)
-            
+
         elif image_type == "invalid_pkg_uuid":
             golden_fwpkg_path = os.path.join(
                 cwd,
@@ -174,7 +174,7 @@ class FunctionalIfc:
                 package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
             )
             return PLDMFwpkg.corrupt_package_UUID(golden_fwpkg_path)
-            
+
         elif image_type == "invalid_device_uuid":
             golden_fwpkg_path = os.path.join(
                 cwd,
@@ -183,7 +183,7 @@ class FunctionalIfc:
             )
             return PLDMFwpkg.corrupt_device_record_uuid_in_pkg(golden_fwpkg_path,
                                                                                has_signature, singature_struct_bytes)
-        
+
         elif image_type == "empty_metadata":
             if corrupted_component_id is None:
                 corrupted_component_id = self.ctam_get_component_to_be_corrupted()
@@ -196,7 +196,7 @@ class FunctionalIfc:
             )
             metadata_size = package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("MetadataSizeBytes", 4096)
             return PLDMFwpkg.clear_component_metadata_in_pkg(golden_fwpkg_path, corrupted_component_id, metadata_size)
-        
+
         elif image_type == "corrupt_component":
             if package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Package", "") != "":
                 return os.path.join(
@@ -214,8 +214,23 @@ class FunctionalIfc:
                     package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
                     package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
                 )
-                return PLDMFwpkg.clear_component_image_in_pkg(golden_fwpkg_path, corrupted_component_id)
-        
+                if "GPU_FW_IMAGE_CORRUPT_COMPONENT" not in package_config:
+                    package_config["GPU_FW_IMAGE_CORRUPT_COMPONENT"] = {}
+                package_config["GPU_FW_IMAGE_CORRUPT_COMPONENT"]["Path"] = package_config.get("GPU_FW_IMAGE", {}).get("Path", "")
+                package_config["GPU_FW_IMAGE_CORRUPT_COMPONENT"]["Package"] = "corrupted-pkg.fwpkg"
+                corrupt_component_path = PLDMFwpkg.clear_component_image_in_pkg(golden_fwpkg_path, corrupted_component_id)
+                pldm_parser = PLDMUnpack(corrupt_component_path)
+                if result := pldm_parser.parse_pldm_package():
+                    pldm_parser.get_full_metadata_json()
+                corrupted_package_json = json.dumps(pldm_parser.full_header,
+                                         sort_keys=False,
+                                         indent=4)
+                # Write the corrupted package json to the file
+                with open(os.path.join(cwd, package_config["GPU_FW_IMAGE_CORRUPT_COMPONENT"]["Path"], "corrupted-pkg.fwpkg.json"), "w") as f:
+                    f.write(corrupted_package_json)
+
+                return corrupt_component_path
+
         elif image_type == "backup":
             return os.path.join(
                 cwd,
@@ -237,7 +252,7 @@ class FunctionalIfc:
                 package_config.get("GPU_FW_IMAGE_UNSIGNED_COMPONENT", {}).get("Path", ""),
                 package_config.get("GPU_FW_IMAGE_UNSIGNED_COMPONENT", {}).get("Package", ""),
             )
-                
+
         elif image_type == "unsigned_bundle":
             if package_config.get("GPU_FW_IMAGE_UNSIGNED_BUNDLE", {}).get("Package", "") != "":
                 return os.path.join(
@@ -252,7 +267,7 @@ class FunctionalIfc:
                     package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
                 )
                 return FwpkgSignature.clear_signature_in_pkg(golden_fwpkg_path)
-        
+
         elif image_type == "corrupt":
             if package_config.get("GPU_FW_IMAGE_CORRUPT", {}).get("Package", "") != "":
                 return os.path.join(
@@ -272,7 +287,7 @@ class FunctionalIfc:
                 metadata_size = package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("MetadataSizeBytes", 4096)
                 return PLDMFwpkg.corrupt_component_image_in_pkg(golden_fwpkg_path, corrupted_component_id, metadata_size,
                                                                 has_signature, singature_struct_bytes)
-                
+
         elif image_type == "negate":
             self.test_run().add_log(LogSeverity.INFO, "Negative Test Case")
             return ""
@@ -314,12 +329,18 @@ class FunctionalIfc:
                 self.dut().package_config.get("GPU_FW_IMAGE_OLD", {}).get("JSON", ""),
             )
         elif image_type == "corrupt_component":
-            pldm_json_file = os.path.join(
-                self.dut().cwd,
-                self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Path", ""),
-                self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("JSON", ""),
-            )
-            
+            if self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("JSON", "") != "":
+                pldm_json_file = os.path.join(
+                    self.dut().cwd,
+                    self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Path", ""),
+                    self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("JSON", ""),
+                )
+            else:
+                pldm_json_file = os.path.join(
+                    self.dut().cwd,
+                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
+                    'corrupted-pkg.fwpkg.json',
+                )
         return pldm_json_file
 
     def ctam_getfi(self, expanded=0):
@@ -417,7 +438,7 @@ class FunctionalIfc:
         msg = f"The Redfish Command URI is : {ctam_getus_uri} \nThe Response for this command is : {data}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return data
-    
+
     def get_events(self):
         ctam_getes_uri = self.dut().uri_builder.format_uri(redfish_str="{BaseURI}/EventService/Subscriptions", component_type="GPU")
         response = self.dut().run_redfish_command(uri=ctam_getes_uri)
@@ -561,11 +582,11 @@ class FunctionalIfc:
         msg = "GPU Reachable info : {}".format(JSONData)
         self.test_run().add_log(LogSeverity.INFO, msg)
         return JSONData
-    
+
     def ctam_activate_ac(self, check_time=False, gpu_check=True, fwupd_hyst_wait=True):
         """
         :Description:					Activate AC
-        
+
         :param check_time:              Check the activation time does not exceed maximum time per spec
 
         :returns:				    	ActivationStatus
@@ -584,7 +605,7 @@ class FunctionalIfc:
         if not self.NodeACReset():  # NodeACReset declaration pending
             failure_reason = "Error while running power cycle"
             return ActivationStatus, failure_reason
-        
+
         if gpu_check:
             if (check_time):
                 ActivationStartTime = time.time() - self.dut().dut_config["PowerOnWaitTime"]["value"] # When the system was reset
@@ -616,7 +637,7 @@ class FunctionalIfc:
                 time.sleep(30)
 
             ActivationEndTime = time.time()
-            
+
             if check_time and (ActivationEndTime - ActivationStartTime) > FwActivationTimeMax:
                 ActivationStatus = False
                 msg = f"Activation is taking longer than the maximum time specified {FwActivationTimeMax} seconds."
@@ -624,7 +645,7 @@ class FunctionalIfc:
                 failure_reason = msg
             else:
                 ActivationStatus = True
-        
+
         if fwupd_hyst_wait == True:
             IdleWaitTime = self.dut().dut_config["IdleWaitTimeAfterFirmwareUpdate"]["value"]
             msg = f"Execution will be delayed by {IdleWaitTime} seconds."
@@ -632,9 +653,9 @@ class FunctionalIfc:
             time.sleep(IdleWaitTime)
             msg = f"Execution is delayed successfully by {IdleWaitTime} seconds."
             self.test_run().add_log(LogSeverity.INFO, msg)
-            
+
         return ActivationStatus, failure_reason
-    
+
     def RedfishTriggerDumpCollection(self, DiagnosticDataType, URI, OEMDiagnosticDataType=None):
         """
         :Description:                     It will trigger the collection of diagnostic data.
@@ -649,7 +670,7 @@ class FunctionalIfc:
         URL = URI + "/LogServices/Dump/Actions/LogService.CollectDiagnosticData"
         msg = "Dump Collection URL = {}".format(URL)
         self.test_run().add_log(LogSeverity.DEBUG, msg)
-        
+
         payload = { "DiagnosticDataType": DiagnosticDataType }
         if OEMDiagnosticDataType:
             payload["OEMDiagnosticDataType"] = "DiagnosticType=" + OEMDiagnosticDataType
@@ -658,13 +679,13 @@ class FunctionalIfc:
 
         msg = "{0}: RedFish Input: {1} Result: {2}".format(MyName, payload, JSONData)
         self.test_run().add_log(LogSeverity.INFO, msg)
-        
+
         return JSONData
-    
+
     def RedfishDownloadDump(self, DumpURI):
         """
         :Description:              It will download the specified dump using redfish command and untar the downloaded dump.
-        :param DumpLocation:	   Dump location URI 
+        :param DumpLocation:	   Dump location URI
 
         :returns:				   DumpPath (Path to downloaded dump)
         :rtype:                    string
@@ -675,12 +696,12 @@ class FunctionalIfc:
             URL = DumpURI + "/attachment"
             msg = "Dump Entry URL = {}".format(URL)
             self.test_run().add_log(LogSeverity.DEBUG, msg)
-            
+
             dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-            dump_tarball_path = os.path.join( 
+            dump_tarball_path = os.path.join(
                     self.dut().workspace_dir,self.dut().logger_path,
                     "{}_dump.tar.xz".format(dt))
-            
+
             response =  self.dut().run_redfish_command(uri=URL)
             try:
                 with open(dump_tarball_path, 'wb') as fd:
@@ -688,7 +709,7 @@ class FunctionalIfc:
                 # Unzip the .tar file
                 import tarfile
                 dump = tarfile.open(dump_tarball_path)
-                DumpPath = os.path.join( 
+                DumpPath = os.path.join(
                     self.dut().workspace_dir,self.dut().logger_path,
                     "{}_dump".format(dt))
                 dump.extractall(DumpPath) # This will create a directory if it's not present already.
@@ -706,7 +727,7 @@ class FunctionalIfc:
         else:
             self.test_run().add_log(LogSeverity.FATAL, "No entries found: {}".format(check_response.dict))
             return None
-    
+
     def ctam_monitor_task(self, TaskID=""):
         """
         :Description:       CTAM Monitor a Task
@@ -727,7 +748,7 @@ class FunctionalIfc:
         )
         if self.dut().is_debug_mode():
             self.test_run().add_log(LogSeverity.DEBUG, f"Task URI: {TaskURI}")
-            
+
         response = self.dut().run_redfish_command(TaskURI)
         JSONData = response.dict
         while JSONData["TaskState"] == "Running":
@@ -742,7 +763,7 @@ class FunctionalIfc:
             Task_Completed = True
         else:
             Task_Completed = False
-        
+
         return Task_Completed, JSONData
 
 
@@ -755,18 +776,18 @@ class FunctionalIfc:
         task_list = [i["@odata.id"] for i in json_data["Members"]]
         for task in task_list:
             self.ctam_monitor_task(TaskID=task)
-    
-    
-    
+
+
+
     def ctam_redfish_uri_deep_hunt(self, URI, uri_hunt="", uri_listing=[], uri_analyzed=[],action=0):
         """
         :Description:			CTAM Redfish URI Deep Hunt - a recursive function to look deep till we find all instances URI
         :param URI:             The top uri under which we are searching for the uri instances (type string)
         :param uri_hunt:        URI we are hunting for (type string).
         :param uri_listing:     An array that will eventually contain a list of all URIs that house the member to hunt.
-        :param uri_analyzed:    An array that will eventually contain a list of all URIs that have been searched for. 
-                                IMPORTANT - This filed must be passed else it will pick the list from previous test cases. 
-        :param action           Should be set if we are searching for action uris. 
+        :param uri_analyzed:    An array that will eventually contain a list of all URIs that have been searched for.
+                                IMPORTANT - This filed must be passed else it will pick the list from previous test cases.
+        :param action           Should be set if we are searching for action uris.
 
         :returns:				None
         """
@@ -786,14 +807,14 @@ class FunctionalIfc:
                 if URI not in uri_analyzed:
                     uri_analyzed.append(URI)
                     self.ctam_redfish_uri_deep_hunt(URI, uri_hunt, uri_listing, uri_analyzed,action)
-            # Consider the case of list of dictionaries                
+            # Consider the case of list of dictionaries
             elif type(JSONData[element]) == type([]):
                 for dictionary in JSONData[element]:
                     # Verify that it is indeed an array of dictionaries
-                    URI = None 
+                    URI = None
                     if type(dictionary) == type(dict()) and ("@odata.id" in dictionary):
                         URI = dictionary["@odata.id"]
-    
+
                     if URI and URI not in uri_analyzed:
                         uri_analyzed.append(URI)
                         self.ctam_redfish_uri_deep_hunt(URI, uri_hunt, uri_listing, uri_analyzed,action)
@@ -829,10 +850,10 @@ class FunctionalIfc:
         :param ActionJson:              Actions JSON Dict object to work on
         :param target_action_hunt:      URI we are hunting for (type string).
         :param uri_listing:             An array that will eventually contain a list of all URIs that house the member to hunt.
-        :param uri_analyzed:            An array that contains the list of uris which are already analyzed. 
+        :param uri_analyzed:            An array that contains the list of uris which are already analyzed.
         :returns:				        None
         """
-        
+
         if "target" in ActionJson and target_action_hunt in ActionJson["target"] and ActionJson["target"] not in uri_analyzed:
             uri_listing.append(ActionJson["target"])
             uri_analyzed.append(ActionJson["target"])
@@ -860,14 +881,14 @@ class FunctionalIfc:
                 "Message": message,
             }
         self.dut().test_info_logger.write(json.dumps(msg))
-        
+
     def ctam_verify_expanded(self, JSONData):
         """
         :Description:					Check if the Redfish API response is expanded correctly (level 1)
-        
+
         :param JSONData:                Redfish response in json/dictionary format
         :type JSONData:                 dictionary
-        
+
         :returns:				    	result (Pass/Fail)
         :rtype: 						Bool
         """
@@ -911,7 +932,7 @@ class FunctionalIfc:
         msg = f"Command is : {ctam_getepc_uri} \nThe Response is : {data}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return data
-    
+
 
     def ctam_deles(self):
         """
@@ -946,10 +967,10 @@ class FunctionalIfc:
     def ctam_redfish_GET_status_ok(self, uri):
         """
         :Description:   Check if the Redfish API response status is OK
-        
+
         :param uri:     Redfish uri
         :type uri:      str
-        
+
         :returns:       result (Pass/Fail)
         :rtype:         bool
         """
@@ -963,15 +984,15 @@ class FunctionalIfc:
             self.test_run().add_log(LogSeverity.FATAL, "GET request Failed: {} : {}".format(uri, JSONData))
             result = False
         return result
-    
+
     def ctam_verify_components_health(self):
         """
-        :Description:       Get Firmware Inventory details and check health of all components.  
+        :Description:       Get Firmware Inventory details and check health of all components.
         :returns:	        bool, List of health issue components
         """
-        
+
         fi_data = self.ctam_getfi(expanded=1)
-    
+
         failed_devices = [member.get("Id") for member in fi_data.get("Members", [])
                      if member.get("Status", {}).get("Health") != "OK" or
                      member.get("Status", {}).get("State") != "Enabled"]
