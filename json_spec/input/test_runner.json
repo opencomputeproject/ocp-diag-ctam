@@ -13,7 +13,7 @@
     "group_sequence" : [],
     "internal_testing": false,
     "weighted_score": {
-        "L0": 100, "L1": 50, "L2": 20, "L3": 0, "Others": 10
+        "L0": 100, "L1": 50, "L2": 20, "L3": 0
     },
     "normalized_score": {
         "L0": 50, "L1": 35, "L2": 15, "L3": 0
