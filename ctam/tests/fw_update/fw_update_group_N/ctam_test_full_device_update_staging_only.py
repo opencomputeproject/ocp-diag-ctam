@@ -7,7 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F2
 :Group Name:	fw_update
 :Score Weight:	20
-:Description:	This test case verifies that the firware stagging is successful. The test can fail with stage failure.
+:Description:	This test case verifies that the firmware staging is successful. The test can fail with stage failure.
                 No precheck and postcheck is performed in this test case.
 
 :PASS Criteria: The test passes if the staging is successful.
