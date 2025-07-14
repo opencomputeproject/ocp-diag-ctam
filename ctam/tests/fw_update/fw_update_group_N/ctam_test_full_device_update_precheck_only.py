@@ -8,9 +8,9 @@ LICENSE file in the root directory of this source tree.
 :Group Name:	fw_update
 :Score Weight:	0
 :Description:	This test case verifies the precheck flow and expects SoftwareInventory to match against
-                the new firware
+                the new firmware
 
-:PASS Criteria: The test passes if the SoftwareInventory matches against new firware
+:PASS Criteria: The test passes if the SoftwareInventory matches against new firmware
 
 :FAIL Criteria: The test fails if the SoftwareInventory does not match against the new firmware
 
