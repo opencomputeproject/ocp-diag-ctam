@@ -90,10 +90,10 @@ class CTAMTestFullDeviceUpdatePrecheckOnly(TestCase):
             status, status_msg = self.group.fw_update_ifc.ctam_fw_update_precheck()
             failure_reason = status_msg
             if status:
-                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Software Inventory matches against new firware")
+                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Software Inventory matches against new firmware")
             else:
                 step1.add_log(
-                    LogSeverity.ERROR, f"{self.test_id} : Software Inventory does not macthes against the new firware"
+                    LogSeverity.ERROR, f"{self.test_id} : Software Inventory does not match against the new firmware"
                     )
                 failure_reason += " " + "Precheck verification failed"
                 result = False
