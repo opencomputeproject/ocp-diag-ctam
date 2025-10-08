@@ -33,7 +33,7 @@ LICENSE file in the root directory of this source tree.
         <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
                                            Optional -  <LargeFWImageUpdate>
 """
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -60,6 +60,7 @@ class CTAMTestFullDeviceUpdatePingPong(TestCase):
     score_weight: int = 10
     tags: List[str] = ["Compliance", "L1"]
     compliance_level: str = "L1"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """

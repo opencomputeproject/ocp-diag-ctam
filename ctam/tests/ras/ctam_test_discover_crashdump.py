@@ -27,7 +27,7 @@ LICENSE file in the root directory of this source tree.
 :Dependencies: None
 
 """
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from pprint import pprint
 from ocptv.output import (
@@ -55,6 +55,7 @@ class CTAMTestDiscoverCrashdump(TestCase):
     score_weight: int = 10
     tags: List[str] = ["L3"]
     compliance_level: str = "L3"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     # exclude_tags: List[str] = ["NotCheck"]
 

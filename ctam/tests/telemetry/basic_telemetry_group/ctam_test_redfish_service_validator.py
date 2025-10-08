@@ -25,7 +25,7 @@ LICENSE file in the root directory of this source tree.
 :Dependencies: None
 
 """
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 import os
 from ocptv.output import (
@@ -47,11 +47,12 @@ class CTAMTestServiceValidator(TestCase):
     :type TestCase:
     """
 
-    test_name: str = "CTAM Test Service Validator"
+    test_name: str = "CTAM Test Redfish Service Validator"
     test_id: str = "T0"
     score_weight: int = 10
     tags: List[str] = ["L2"]
     compliance_level: str = "L2"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: BasicTelemetryTestGroup):
         """

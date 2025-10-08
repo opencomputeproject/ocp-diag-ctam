@@ -38,7 +38,7 @@ Description:
                                            Optional -  <LargeFWImageUpdate>
 """
 
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -65,6 +65,7 @@ class CTAMTestFullDeviceUpdateStagingTime(TestCase):
     score_weight: int = 10
     tags: List[str] = ["L1"]
     compliance_level: str = "L1"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """

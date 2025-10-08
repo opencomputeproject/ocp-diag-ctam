@@ -20,7 +20,7 @@ LICENSE file in the root directory of this source tree.
 :Dependencies: None
 
 """
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from test_hierarchy import TestHierarchy
 import os
@@ -50,6 +50,7 @@ class CTAMTestRedfishUpdateService(TestCase):
     score_weight: int = 10
     tags: List[str] = ["HCheck", "L2"]
     compliance_level: str ="L2"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     # exclude_tags: List[str] = ["NotCheck"]
 
