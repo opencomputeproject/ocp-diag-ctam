@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		H8
 :Group Name:	health_check
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	This test case attempts to get the event service and verifies its presence.
 

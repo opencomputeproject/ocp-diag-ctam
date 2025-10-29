@@ -86,7 +86,7 @@ class CTAMTestLogServicesURIListRead(TestCase):
                     LogSeverity.FATAL,
                     f"{self.test_id} : Redfish LogService URI list Read Failed - LogService list is empty",
                 )
-                failure_reason += "Redfish LogService URI list Read Failed - LogService list is empty"
+                failure_reason += "LogService URI list read failed"
                 result = False
             else:
                 #pprint(logservice)
@@ -102,7 +102,7 @@ class CTAMTestLogServicesURIListRead(TestCase):
                     step2.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish LogService URI list Verification - Passed")
                 else:
                     step2.add_log(LogSeverity.ERROR,f"{self.test_id} : Redfish LogService URI list Verification - Failed")
-                    failure_reason += "Redfish LogService URI list Verification - Failed"
+                    failure_reason += "LogService URI list Verification - Failed"
                     result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()

@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F24
 :Group Name:	fw_update
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	
     This test verifies the behavior of a full device firmware update staging process when interrupted by an AC power reset.
@@ -110,21 +111,21 @@ class CTAMTestFullDeviceUpdateStagingInterruptionWithAcReset(TestCase):
         with step2.scope():
             fwupd_status, status_msg, fwupd_task_id = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup", 
                                                                                  wait_for_stage_completion=False)
-            failure_reason += " " + status_msg
+            failure_reason = status_msg
             if fwupd_status:
                 step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
             else:
                 step2.add_log(
                     LogSeverity.ERROR, f"{self.test_id} : FW Update Stage Failed"
                 )
-                failure_reason += " " + "FW Update Stage Failed"
+                failure_reason = "FW Update Stage Failed"
                 result = False
                     
         if result:
             step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
             with step3.scope():
                 status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
-                failure_reason += status_msg
+                failure_reason = status_msg
                 if status:
                     step3.add_log(
                         LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
@@ -134,14 +135,14 @@ class CTAMTestFullDeviceUpdateStagingInterruptionWithAcReset(TestCase):
                         LogSeverity.ERROR,
                         f"{self.test_id} : FW Update Activation Failed",
                     )
-                    failure_reason += " " + "FW Update Activation Failed"
+                    failure_reason = "FW Update Activation Failed"
                     result = False
 
         if result:
             step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")
             with step4.scope():
                 status, status_msg = self.group.fw_update_ifc.ctam_fw_update_verify(version_check=False)
-                failure_reason += " " + status_msg
+                failure_reason = status_msg
                 if status:
                     step4.add_log(
                         LogSeverity.INFO,
@@ -152,7 +153,7 @@ class CTAMTestFullDeviceUpdateStagingInterruptionWithAcReset(TestCase):
                         LogSeverity.ERROR,
                         f"{self.test_id} : Update Verification Failed",
                     )
-                    failure_reason += " " + "Update Verification Failed"
+                    failure_reason = "Update Verification Failed"
                     result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()

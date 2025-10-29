@@ -13,6 +13,8 @@ import subprocess
 import time
 import ast
 import shlex
+import shutil
+import glob
 from datetime import datetime
 from typing import Optional, List
 import ocptv.output as tv
@@ -999,3 +1001,24 @@ class FunctionalIfc:
         if failed_devices:
             return False , failed_devices
         return True, []
+    
+    def flatten_validator_output(self, testId, testName, logger_path):
+        """
+        Moves RedfishInteropValidator_<timestamp> output files to parent folder
+        and removes the extra directory to prevent long path issues.
+        """
+        subdirs = glob.glob(os.path.join(logger_path, "RedfishInteropValidator_*"))
+        dest_path = os.path.join(logger_path, f"{testId}_{testName}")
+        os.makedirs(dest_path, exist_ok=True)
+
+        for subdir in subdirs:
+            for item in os.listdir(subdir):
+                src = os.path.join(subdir, item)
+                dst = os.path.join(dest_path, item)
+                try:
+                    shutil.move(src, dst)
+                except Exception as e:
+                    print(f"Warning: Could not move src to dst: Reason: {e}")
+
+            # Only remove after all files moved
+            shutil.rmtree(subdir, ignore_errors=True)

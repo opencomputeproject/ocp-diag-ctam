@@ -62,9 +62,11 @@ Before you begin, ensure you have met the following requirements:
 
 1. Sample workspace files are present inside `json_spec` directory. Modify these file as per your infra details.
 
-2. `input` dir inside `json_spec` contains sample input file that ctam require to run
+2. `input` dir inside `json_spec` is organized by `spec_version` folders (e.g., spec_1.0, spec_1.1).
+Test case specific JSON files (e.g., FirmwareInventory.json, UpdateService.json) required for executing CTAM test cases are also contained in this folder.
+Within each `spec_version` folder, a `workspace` folder is provided containing sample input files.  
 
-3. Create a workspace directory and copy the configuration files from `json_spec/input` directory into `workspace` dir.
+3. Create a workspace directory and copy the configuration files from `json_spec/input/spec_<version>/workspace` directory into `workspace` dir.
 
    -  `.netrc` - contains bmc ipaddress, username and password
    -  `dut_config.json` - contains various params for running the test cases
@@ -86,6 +88,8 @@ Before you begin, ensure you have met the following requirements:
 |  `-d` or `--Discovery`                |   |     Path to workspace directory that contains test run files
 |  `-l` or `--list`                | string  |    List all test cases. If combined with -G then list all cases of the chosen group
 |  `-v` or `--version`                |   |    Lists the current version
+|`--spec`|                            |   |    Specify the version to run the test case with
+|`--test_help`|                       |boolean|   Shows detailed help for a specific test case and exit
 
 
 ### 💻 Running the tool locally
@@ -111,37 +115,57 @@ Before you begin, ensure you have met the following requirements:
     python ctam.py -w ..\example_workspace
     ```
     Logs will be created under `example_workspace\TestRuns`
-5. To list all test cases 
+5. To run suite with a specific version,
+    ```
+    cd ctam
+    python ctam.py -w ..\example_workspace --spec <version>
+    ```
+    Logs will be created under `example_workspace\TestRuns`     
+6. To list all test cases 
     ```
     cd ctam
     python ctam.py -l
     ```
-6. To run a specific test case 
+7. To run a specific test case 
     ```
     cd ctam
     python ctam.py -w ..\example_workspace -t <test case id>
     ```
     Logs will be created under `example_workspace\TestRuns`
-7. To run test cases of a specifc test group
+7. To run a specific test case with a spec version
+    ```
+    cd ctam
+    python ctam.py -w ..\example_workspace -t <test case id> --spec <version>
+    ```
+    Logs will be created under `example_workspace\TestRuns`    
+8. To run test cases of a specifc test group
     ```
     cd ctam
     python ctam.py -w ..\example_workspace -g <test group name>
     ```
     Logs will be created under `example_workspace\TestRuns`
-8. To run test cases with sequence
+9. To run test cases with sequence
     ```
     cd ctam
     python ctam.py -w ..\example_workspace -test_seq <test case name or id> <test case name or id>
     ```
     Logs will be created under `example_workspace\TestRuns`
-9. To run groups with sequence
+10. To run test cases with sequence and spec version
+    ```
+    cd ctam
+    python ctam.py -w ..\example_workspace -test_seq <test case name or id> <test case name or id> --spec <version>
+    ```
+    Logs will be created under `example_workspace\TestRuns`    
+11. To run groups with sequence
     ```
     cd ctam
     python ctam.py -w ..\example_workspace -group_seq <group name or id> <group name or id>
     ```
     Logs will be created under `example_workspace\TestRuns`
-10. Choose test cases to run by using tags and specifying the tags to include/exclude in test_runner.json 
-11. Choose test sequence in test_runner.json if you want to run it from test runner config.
+12. To get the full detailed help for a specific test case
+13. Choose test cases to run by using tags and specifying the tags to include/exclude in test_runner.json 
+14. Choose test sequence in test_runner.json if you want to run it from test runner config.
+15. Choose test cases to run with a specific version without passing the version through the command line by specifying the version in the spec_version attribute in test_runner.json 
 
 
 ### Sphinx-Documentation
@@ -176,7 +200,8 @@ To create documentation for CTAM using Sphinx, follow these steps:
     
     `make build_image`
 
-2. You can run the binary the same way running the python file. Just that now python file replaced by binary executable. Sample command to list all test cases. 
+2. You can run the binary the same way running the python file. Just that now python file replaced by binary executalbe. Sample command to list all test cases. 
+
     Note: Please move your workspace directory inside dist directory before running the binary.
 
     `cd dist  && ./ctam -l`
@@ -215,8 +240,8 @@ Test runner knobs can be modified in `test_runner.json` to enable different logg
     - We can assign different tags to different test cases.
     - If we run according to test case tag, then all the test cases which assigned with that tag would run irrespective of group tags.
 
-**Note: - Tags = Group Tags Union Test Case Tags 
-group tags = ["G1"] and test case tags = ["L1"], so the final tags will be ["G1", "L1"]**
+    **Note: - Tags = Group Tags Union Test Case Tags
+              group tags = ["G1"] and test case tags = ["L1"], so the final tags will be ["G1", "L1"]**
 
 ## 🔀 Local Port Forwarding
 

@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F28
 :Group Name:	fw_update
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	
     This test case is a negative test. It makes a copy of the default FW image provided in package_info.json 
@@ -108,7 +109,7 @@ class CTAMTestNegativeInvalidDeviceUUIDImageUpdate(TestCase):
         with step2.scope():
             status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, 
                                                                                  image_type="invalid_device_uuid")
-            failure_reason += " " + status_msg
+            failure_reason = status_msg
             if status:
                 step2.add_log(
                     LogSeverity.INFO,
@@ -119,7 +120,7 @@ class CTAMTestNegativeInvalidDeviceUUIDImageUpdate(TestCase):
                     LogSeverity.ERROR,
                     f"{self.test_id} : FW Update Staging Initiated - Unexpected",
                 )
-                failure_reason += " " + "FW Update Staging Initiated - Unexpected"
+                failure_reason = "FW Update Staging Initiated - Unexpected"
                 result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()

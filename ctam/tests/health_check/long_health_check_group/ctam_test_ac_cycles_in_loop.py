@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		H100
 :Group Name:	health_check
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	AC Cycle is essential for activation flow of firmware update and many other flows.
                 This test runs AC cycles in a loop to test platform stability. This is a prerequisite
@@ -88,7 +89,7 @@ class CTAMTestAcCyclesInLoop(TestCase):
                     else:
                         msg = f"{self.test_id} : AC Cycle Failed Loop {i}"
                         self.test_run().add_log(LogSeverity.DEBUG, msg)
-                        failure_reason += msg
+                        failure_reason += f"AC Cycle Failed Loop {i}"
                         result = False
         
         # ensure setting of self.result and self.score prior to calling super().run()

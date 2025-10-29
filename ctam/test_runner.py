@@ -22,6 +22,7 @@ from tests.test_case import TestCase
 from tests.test_group import TestGroup
 from interfaces.functional_ifc import FunctionalIfc
 from test_hierarchy import TestHierarchy
+from packaging.version import Version, InvalidVersion
 
 from prettytable import PrettyTable
 import threading, time
@@ -65,6 +66,8 @@ class TestRunner:
         single_group_override=None,
         sequence_group_override=None,
         run_all_tests=None,
+        spec_version=None,
+        test_runner_spec_version=None,
     ):
         """
         Init function that handles test execution variations
@@ -125,8 +128,19 @@ class TestRunner:
         self.package_config = package_info_json_file
         self.redfish_response_messages = {}
         self.default_config_path = default_config_path
+        self.show_spec_bindings = False
+    
+        if self.default_config_path:
+            self._show_spec_bindings()
+            self.show_spec_bindings = True
+
+        self.test_runner_spec_version = test_runner_spec_version
+        
         self.single_test_override = single_test_override
-        runner_config = self._get_test_runner_config(test_runner_json_file)
+        runner_config = self._get_test_runner_config(test_runner_json_file) 
+        runner_config_file = test_runner_json_file
+        self.spec_version = spec_version 
+        self.latest_spec_version = self.get_latest_spec_version()
 
         with open(dut_info_json_file) as dut_info_json:
             self.dut_config = json.load(dut_info_json)
@@ -139,9 +153,10 @@ class TestRunner:
         self.sanitize_logs = self.dut_config.get("properties", {}).get("SanitizeLog", {}).get("value", False)
         self.words_to_skip = self.get_words_to_skip()
 
-        if redfish_response_messages:
+        if redfish_response_messages: 
             with open(redfish_response_messages) as resp_file:
                 self.redfish_response_messages = json.load(resp_file)
+
         # use override output directory if specified in test_runner.json, otherwise
         # use TestRuns directory below workspace directory
 
@@ -157,6 +172,7 @@ class TestRunner:
             self.group_sequence = sequence_group_override
         elif runner_config.get("test_sequence", None):
             self.test_sequence = runner_config.get("test_sequence", None)
+        
         elif runner_config.get("group_sequence", None):
             self.group_sequence = runner_config.get("group_sequence", None)
         elif runner_config.get("active_test_suite", None):
@@ -371,10 +387,9 @@ class TestRunner:
             if self.progress_bar:
                 progress_thread = threading.Thread(target=self.display_progress_bar)
                 progress_thread.daemon = True
-            
             group_status_set = set()
             group_result_set = set()
-            if self.test_cases:
+            if self.test_cases: 
                 if self.progress_bar and self.console_log is False:
                         self.total_cases = len(self.test_cases)
                         progress_thread.start()
@@ -410,7 +425,7 @@ class TestRunner:
 
                 """
                 previous_test_result = True       
-                for index, test in enumerate(self.test_sequence):          
+                for index, test in enumerate(self.test_sequence):
                     if test == "PROF":
                         prev_test = self.test_sequence[index - 1]
 
@@ -428,10 +443,9 @@ class TestRunner:
                     
                     group_inc_tags = group_instance.tags
                     # group_exc_tags = group_instance.exclude_tags
-
                     group_status, group_result = self._run_group_test_cases(group_instance, test_case_instances)
                     previous_test_result = group_result.value
-
+    
                     group_status_set.add(group_status)
                     group_result_set.add(group_result)
 
@@ -688,8 +702,7 @@ class TestRunner:
             print(f"Error decoding JSON in {file_path}: {e}")
             return []
 
-    
-        
+       
     def _run_group_test_cases(self, group_instance, test_case_instances):
         """
         for now, create a separate test run for each group. In the event of failures
@@ -708,19 +721,26 @@ class TestRunner:
 
         try:
             if not self.comp_tool_dut:
+                if not self.spec_version:
+                    if self.test_runner_spec_version: 
+                        spec_version = Version(self.test_runner_spec_version)
+                    else:
+                        spec_version, _ = self.get_latest_spec_version()
+                    self.initialize_spec_path(spec_version)
                 self._start(group_instance.__class__.__name__)
             self.active_run.start(dut=tv.Dut(id=group_instance.__class__.__name__))
             
             group_instance.setup()
 
             for test_instance in test_case_instances:
+                status, error_msg = self.resolve_and_load_spec_version(test_instance) 
                 test_inc_tags = test_instance.tags
                 tags = list(set(test_inc_tags) | set(group_instance.tags))
                 valid = self._is_enabled(
                     self.include_tags_set,
                     tags,
                     self.exclude_tags_set,
-                )
+                ) 
                 if not valid and not self.single_test_override:
                     msg = f"Test {test_instance.__class__.__name__} skipped due to tags. tags = {test_inc_tags}"
                     skipped_test = self.active_run.add_step(name=f"<{test_instance.test_id} - {test_instance.test_name}>")
@@ -748,14 +768,19 @@ class TestRunner:
                     self.comp_tool_dut.logger = logger
                     execution_starttime = time.perf_counter()
                     failure_reason = ""
-                    test_result, failure_reason = test_instance.run()
-                    if (
-                        test_result == TestResult.FAIL
-                    ):  # if any test fails, the group fails
-                        group_result = TestResult.FAIL
+                    if not status:
+                        msg = f"{test_instance.__class__.__name__} skipped due to :{error_msg}"
+                        self.active_run.add_log(severity=LogSeverity.ERROR, message=msg)
+                        failure_reason = "spec version not supported"
+                    else:    
+                        test_result, failure_reason = test_instance.run()
+                        if (
+                            test_result == TestResult.FAIL
+                        ):  # if any test fails, the group fails
+                            group_result = TestResult.FAIL
                 except:  
                     exception_details = traceback.format_exc()
-                    failure_reason += " " + exception_details
+                    failure_reason = exception_details
                     self.active_run.add_log(
                         severity=LogSeverity.FATAL, message=exception_details
                     )
@@ -789,7 +814,7 @@ class TestRunner:
                     self.test_result_data.append(test_tuple)
                                            
                     # Removing duplicates and storing the latest result
-                    self.filter_and_update_test_results(test_instance, execution_time)
+                    self.filter_and_update_test_results(test_instance, execution_time, failure_reason)
                     
                     self.score_logger.write(json.dumps(msg))      
             grade = (
@@ -839,7 +864,7 @@ class TestRunner:
             return group_status, group_result
     
     
-    def filter_and_update_test_results(self, test_instance, execution_time):
+    def filter_and_update_test_results(self, test_instance, execution_time, failure_reason=None):
         """
         Filter and update the test result cache with the current test instance based on result and execution time.
         """
@@ -854,7 +879,8 @@ class TestRunner:
             "ExecutionTime": execution_time,
             "TestCaseScoreWeight": test_instance.score_weight,
             "TestCaseScore": test_instance.score,
-            "TestCaseResult": test_result
+            "TestCaseResult": test_result,
+            "FailureReason": failure_reason
         }
         # Append all test data for detailed logging
         self.test_all_cache.append(result_entry)
@@ -1176,7 +1202,6 @@ class TestRunner:
             with open(self.test_summary_path, "r") as f:
                 test_report = json.load(f)
                 
-
             # --- Domain Table ---
             domain_headers = [
                 "Domain ID", "Domain", "TestCases Available", "TestCases Executed",
@@ -1298,7 +1323,7 @@ class TestRunner:
             
             # --- Test Results Table ---
             test_headers = [
-                "Test ID", "Test Name", "Execution Time", "TestCase Weight", "Test Score", "Test Result"
+                "Test ID", "Test Name", "Execution Time", "TestCase Weight", "Test Score", "Test Result", "Failure Reason"
             ]
             test_title = f"Test Result -  V {__version__}"
             
@@ -1317,10 +1342,17 @@ class TestRunner:
                         exec_t = 0.0
                 else:
                     exec_t = test["ExecutionTime"]
-                    
+                failure_reason = test.get("FailureReason", "")  
+                # Clean up escaped newlines/tabs
+                failure_reason = failure_reason.replace("\\n", " ").replace("\\t", " ")
+                words = failure_reason.split()
+                failure_reason = " ".join(words[:8])  # keep only first 8 words
+                if len(words) > 8:
+                    failure_reason += " ..."  # optional: indicate truncation 
                 test_rows.append([
                     test["TestID"], test["TestName"], self.seconds_to_time(exec_t),
-                    test["TestCaseScoreWeight"], test["TestCaseScore"], test["TestCaseResult"]
+                    test["TestCaseScoreWeight"], test["TestCaseScore"], test["TestCaseResult"],
+                    failure_reason
                 ])
                 
                 # Accumulate total weight, and score
@@ -1338,7 +1370,7 @@ class TestRunner:
             c_weight = t_total_weight if self.consolidate and self.inside else TestCase.max_compliance_score    
             score_t = t_total_score if self.consolidate and self.inside else TestCase.total_compliance_score
             
-            test_total_row = ["Total", "", self.seconds_to_time(self.t_execution_time), c_weight, score_t, f"{t_grade_total}%"]
+            test_total_row = ["Total", "", self.seconds_to_time(self.t_execution_time), c_weight, score_t, f"{t_grade_total}%", ""]
             
             self.print_pretty_table(test_title, test_headers, test_rows, total_row=test_total_row) # Print the test results table
 
@@ -1372,6 +1404,9 @@ class TestRunner:
                 table.add_row(["" for _ in headers], divider=True)
                 table.add_row(total_row)
 
+            if "Failure Reason" in headers:
+                table.align["Failure Reason"] = "l"
+    
             print(table)
             
             # Write the table to the test result file
@@ -1508,3 +1543,153 @@ class TestRunner:
                 severity=LogSeverity.FATAL, message=exception_details
             )
             # status_code, exit_string = 1,  f"Test failed due to execption: {repr(e)}"
+
+    def get_latest_spec_version(self):
+        base_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "json_spec", "input")
+
+        if not os.path.exists(base_path):
+            raise FileNotFoundError(f"Base path not found: {base_path}")
+
+        spec_folders = [
+            d for d in os.listdir(base_path)
+            if d.startswith("spec_") and os.path.isdir(os.path.join(base_path, d))
+        ]
+
+        if not spec_folders:
+            raise FileNotFoundError("No spec_* folders found under json_spec/input")
+
+        versions = []
+        for folder in spec_folders:
+            version_str = folder.replace("spec_", "")
+            try:
+                versions.append(Version(version_str))
+            except InvalidVersion:
+                print(f"Skipping invalid spec folder: {folder}")
+
+        if not versions:
+            raise FileNotFoundError("No valid spec_* folders found under json_spec/input")
+
+        versions_sorted = sorted(versions)
+        latest_version = versions_sorted[-1]
+        all_versions = [str(v) for v in versions_sorted]
+
+        return latest_version, all_versions
+    
+    def is_supported_version(self, test_instance, version):
+        spec_support = getattr(test_instance, "spec_versions", None)
+        if isinstance(spec_support, list):
+            support_versions = [Version(v) for v in spec_support]
+            if version in support_versions:
+                return True
+        elif isinstance(spec_support, str):
+            sign, support = spec_support.split()
+            spec_support = Version(support)
+            expr = f"({version} {sign} {spec_support})"
+            return eval(expr)
+
+    def resolve_and_load_spec_version(self, test_instance): 
+        """
+        Determines and loads the appropriate specification version for the test case
+        based on inputs from the command line, the test_runner.json file, and the
+        versions supported by the test case itself.
+
+        Decision logic:
+        1. If no spec version is provided via command line or test_runner.json:
+            → Use and load the latest available spec version.
+        2. If a spec version is provided via the command line:
+            → Give it first priority.
+            → Validate it against all known versions and the test case’s supported versions.
+            → Run if valid and supported; otherwise, fail with an appropriate message.
+        3. If no command-line spec is passed but a version exists in test_runner.json:
+            → Validate it against the available and supported versions.
+            → Load and run if valid; otherwise, fail.
+
+        Args:
+            test_instance (object): The test case instance whose spec compatibility 
+                                    and version need to be resolved.
+
+        Returns:
+            tuple:
+                (bool, str or None)
+                - bool: Indicates whether the spec version was successfully resolved and loaded.
+                - str or None: Error message if resolution fails, None otherwise.
+        """
+        spec_support = getattr(test_instance, "spec_versions", None)
+        spec_version = self.spec_version  
+        spec_version = Version(spec_version) if spec_version else None
+        result = False
+        if spec_version:
+            result = self.is_supported_version(test_instance, spec_version)
+            
+        test_runner_spec_version = Version(self.test_runner_spec_version) if self.test_runner_spec_version else None
+        latest_version, all_versions_str = self.get_latest_spec_version()
+        all_versions = [Version(v) for v in all_versions_str]
+
+        # Case 1: If spec is missing from both test runner json and cmd line, then go with the latest version
+        if (not test_runner_spec_version and not spec_version):
+            self.initialize_spec_path(latest_version)
+            print(f"\033[31mPicking the latest version since not specified in test_runner.json and not passed through the command line: {latest_version}\033[0m")
+            return  True, None
+        
+        # Case 2: Giving first preference to spec version passed through the command line
+        if spec_version:
+            # Validate version 
+            is_valid_version = spec_version in all_versions and spec_version <= latest_version
+            if not is_valid_version:
+                return False, "The spec version passed through the command line is not a valid version"
+
+            if spec_support:
+                if result:
+                    print("################### running with spec_version :", spec_version)
+                    return  True, None
+                else:
+                    return False, "The spec version passed through the cmd is not supported by the test case"
+            else: 
+                print("################### running with spec_version :", spec_version)
+                return  True, None
+                
+        # take the test_runner_spec_version  if the spec version is not passed through cmd line
+        is_valid_version = test_runner_spec_version in all_versions and test_runner_spec_version <= latest_version 
+        if not is_valid_version:
+            return False, "The spec version in test_runner.json is not a valid version"
+
+        if self.is_supported_version(test_instance, test_runner_spec_version):
+            self.initialize_spec_path(test_runner_spec_version)
+            print("########## Running the test with the spec version specified in the test runner :", test_runner_spec_version)
+            return  True, None  
+        else:
+            return  False, "The version provided in the test_runner.json is not supported by the test case"
+
+
+    def initialize_spec_path(self, spec_version=None):
+        """
+        Initializes and sets the default path for the given specification version.
+
+        Args:
+            spec_version (str, optional): The specification version to initialize.
+        
+        Notes:
+            - Ensures the spec bindings are displayed only once.
+            - Only prepares the path reference; it does not create or modify any files.
+        """
+        self.default_config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "json_spec", "input", f"spec_{spec_version}")
+        self.default_config_path = self.default_config_path.replace('/tmp/', '') if self.default_config_path.startswith('/tmp/') else self.default_config_path
+        if not self.show_spec_bindings:
+            self._show_spec_bindings()
+            self.show_spec_bindings = True
+        
+    def _show_spec_bindings(self):
+        json_file_path = os.path.join(
+            self.default_config_path,
+            "spec_bindings.json"   
+        )
+
+        if os.path.exists(json_file_path):
+            with open(json_file_path, "r") as f:
+                content = json.load(f)
+            print("\n========== OCP SPEC BINDINGS ==========")
+            print(json.dumps(content, indent=4))
+            print("=================================\n")
+        else:
+            print(f"File not found: {json_file_path}")
+        

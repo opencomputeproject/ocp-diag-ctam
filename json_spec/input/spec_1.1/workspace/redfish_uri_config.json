@@ -1,0 +1,30 @@
+{
+	"GPU":{
+		"GPUMC": "/{GPUMC}",
+		"BaseURI":"/{GPUMC}/redfish/v1/",
+		"GPUCheckURI":"/Managers/{ManagerID}",
+		"BaseboardIDs":"['BaseboardIDs']",
+		"TaskServiceURI": "/TaskService/Tasks/"
+	},
+	"GPU_FWUpdate":{
+		"MultiPartFormData":true,
+		"HttpPushUriTargets":"HttpPushUriTargets",
+		"specific_targets":"[]",
+        "exclude_targets_list": [],
+		"MultiPartPushUriSupport":false,
+		"IsMultiPart":false,
+		"UpdateURI":"/UpdateService"
+	},
+	"GPU_Telemetry":{
+	},
+	"GPU_RAS":{
+	},
+	"BMC":{
+		"BaseURI":"/redfish/v1",
+		"SystemURI":"",
+		"BMCFWInventory":""
+	}
+}
+
+
+

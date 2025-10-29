@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F25
 :Group Name:	fw_update
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	This test case focuses on the scenario where a large image transfer is initiated for
 				a firmware update. The expectation is for the staging process to fail when this is attempted.

@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		H7
 :Group Name:	health_check
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	This test verifies the availability and correctness of the Redfish Telemetry Service.
                 The test attempts to retrieve telemetry data from the service and checks for errors.

@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		R1
 :Group Name:	ras
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	This test case ensures that there is at least one LogService ID under both Systems and Managers. It then checks
                 if at least one of them has the LogService.CollectDiagnosticData action available. The test returns a list of URIs
@@ -91,7 +92,7 @@ class CTAMTestDiscoverCrashdump(TestCase):
                     LogSeverity.FATAL,
                     f"{self.test_id} : Test case Failed - CollectDiagnostic list is empty",
                 )
-                failure_reason += "Test case Failed - CollectDiagnostic list is empty."
+                failure_reason += "CollectDiagnostic list is empty."
                 result = False
             else:
                 print(collectdata)

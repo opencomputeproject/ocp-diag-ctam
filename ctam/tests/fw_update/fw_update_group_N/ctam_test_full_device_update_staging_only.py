@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F2
 :Group Name:	fw_update
 :Score Weight:	20
+:Spec Versions: ">= 1.0"
 :Description:	This test case verifies that the firmware staging is successful. The test can fail with stage failure.
                 No precheck and postcheck is performed in this test case.
 
@@ -89,14 +90,14 @@ class CTAMTestFullDeviceUpdateStagingOnly(TestCase):
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
             status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw()
-            failure_reason += " " + status_msg
+            failure_reason = status_msg
             if status:
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
             else:
                 step1.add_log(
                     LogSeverity.ERROR, f"{self.test_id} : FW Update Staging failed"
                 )
-                failure_reason += " " + "FW Update Staging failed"
+                failure_reason = "FW Update Staging failed"
                 result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()

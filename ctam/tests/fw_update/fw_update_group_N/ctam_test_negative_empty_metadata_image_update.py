@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F26
 :Group Name:	fw_update
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	
     This test case is a negative test. It makes a copy of the default FW image provided in package_info.json
@@ -116,7 +117,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
                 step3.add_log(LogSeverity.INFO, f"{self.test_id} : Single Device Selected")
             else:
                 step3.add_log(LogSeverity.ERROR, f"{self.test_id} : Single Device Selection Failed")
-                failure_reason += f"{self.test_id} : Single Device Selection Failed"
+                failure_reason = "Single Device Selection Failed"
                 result = False
 
         step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4_{corrupted_component_list[0]}")  # type: ignore
@@ -124,7 +125,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
             status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="empty_metadata", 
                                                                                  corrupted_component_id=corrupted_component_id,
                                                                                  specific_targets=[corrupted_component_list[0]])
-            failure_reason += " " + status_msg
+            failure_reason = status_msg
             if status:
                 step4.add_log(
                     LogSeverity.INFO,
@@ -135,7 +136,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
                     LogSeverity.ERROR,
                     f"{self.test_id} : FW Update Staging Initiated - Unexpected",
                 )
-                failure_reason += " " + "FW Update Staging Initiated - Unexpected"
+                failure_reason = "FW Update Staging Initiated - Unexpected"
                 result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()

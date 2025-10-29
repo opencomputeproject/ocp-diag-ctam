@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		H81
 :Group Name:	health_check
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	This test case attempts to delete event subscriptions and verifies its success.
 
@@ -83,7 +84,7 @@ class CTAMTestRedfishEventServiceDeleteSubscription(TestCase):
             result = self.group.health_check_ifc.ctam_deles()
             if result is False:
                 step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Redfish Event Service Delete Subscriptions Check - Failed")
-                failure_reason += "Redfish Event Service Delete Subscriptions Check - Failed"
+                failure_reason += "Event Service subscription deletion failed"
             else:
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish Event Service Delete Subscriptions Check - Completed")
 

@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		H97
 :Group Name:	health_check
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:   This test verifies the ability to read the list of dump URIs from the LogService. It performs the following steps:
 
@@ -90,7 +91,7 @@ class CTAMTestLogServiceDumpURIListRead(TestCase):
                     LogSeverity.FATAL,
                     f"{self.test_id} : Redfish LogService Dump URI list Read Failed - Dump list is empty",
                 )
-                failure_reason += "Redfish LogService Dump URI list Read Failed - Dump list is empty"
+                failure_reason += "Dump URI list read failed"
                 result = False
             else:
                 #pprint(dump_uri)
@@ -107,7 +108,7 @@ class CTAMTestLogServiceDumpURIListRead(TestCase):
                     step2.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish LogService Dump URI list Verification - Passed")
                 else:
                     step2.add_log(LogSeverity.ERROR,f"{self.test_id} : Redfish LogService Dump URI list Verification - Failed")
-                    failure_reason += "Redfish LogService Dump URI list Verification - Failed"
+                    failure_reason = "Dump URI list verification failed"
                     result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()

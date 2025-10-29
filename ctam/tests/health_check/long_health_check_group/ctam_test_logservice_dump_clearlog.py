@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		H96
 :Group Name:	health_check
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	Basic test case to clear all entries of all instances of LogService Dumps.
                 This test ensures that all log entries are cleared successfully.

@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F3
 :Group Name:	fw_update
 :Score Weight:	0
+:Spec Versions: ">= 1.0"
 :Description:	This test case verifies the precheck flow and expects SoftwareInventory to match against
                 the new firmware
 
@@ -96,7 +97,7 @@ class CTAMTestFullDeviceUpdatePrecheckOnly(TestCase):
                 step1.add_log(
                     LogSeverity.ERROR, f"{self.test_id} : Software Inventory does not match against the new firmware"
                     )
-                failure_reason += " " + "Precheck verification failed"
+                failure_reason = "Precheck verification failed"
                 result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()

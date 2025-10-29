@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F56
 :Group Name:	fw_update
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description: This test verifies the robustness of the firmware update stack when one component fails to stage. 
               The vendor must provide a firmware package where one component image is corrupted, while all other 
@@ -32,7 +33,7 @@ LICENSE file in the root directory of this source tree.
                                            Optional - <exclude_targets_list>, <HttpPushUriTargets>, <IsMultiPart>, <MultiPartFormData>
                             
         <dut_info.json>                   : Required - <CompareFirmwareInventoryCount>, <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
-                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+                                           Optional - <SingleShotPowerCycle>, <Single>ShotPowerCycle>, <SingleShotPowerCycleCommand>
 
         <package_info.json>               : Required - <Path>, <Package>, <JSON>, <CorruptComponentIdentifier>
                                            Optional - <HasSignature>, <SignatureStructBytes>
@@ -105,7 +106,7 @@ class CTAMTestFullDeviceUpdateActivationWithFailedComponent(TestCase):
                     LogSeverity.ERROR, f"{self.test_id} : Corrupt Component Id Retrieval Failed"
                 )
                 result = False
-                failure_reason += f"{self.test_id} : Corrupt Component Id Retrieval Failed"
+                failure_reason = "Corrupt Component Id Retrieval Failed"
             else:
                 step0.add_log(LogSeverity.INFO, f"{self.test_id} : Corrupt Component Id Retrieved")
 
@@ -113,7 +114,7 @@ class CTAMTestFullDeviceUpdateActivationWithFailedComponent(TestCase):
             step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
             with step1.scope():
                 status, status_msg = self.group.fw_update_ifc.ctam_fw_update_precheck()
-                failure_reason += status_msg
+                failure_reason = status_msg
                 if not status:
                     step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
                 else:
@@ -126,21 +127,21 @@ class CTAMTestFullDeviceUpdateActivationWithFailedComponent(TestCase):
                 status, msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(image_type="corrupt_component", 
                     corrupted_component_id=self.corrupted_component_id
                     )
-                failure_reason += " " + msg
+                failure_reason = msg
                 if status:
                     step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
                 else:
                     step2.add_log(
                         LogSeverity.ERROR, f"{self.test_id} : FW Update Stage Failed"
                     )
-                    failure_reason += " " + "FW Update Stage Failed"
+                    failure_reason = "FW Update Stage Failed"
                     result = False
 
         if result:
             step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
             with step3.scope():
                 status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
-                failure_reason += " " + status_msg
+                failure_reason = status_msg
                 if status:
                     step3.add_log(
                         LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
@@ -150,7 +151,7 @@ class CTAMTestFullDeviceUpdateActivationWithFailedComponent(TestCase):
                         LogSeverity.ERROR,
                         f"{self.test_id} : FW Update Activation Failed",
                     )
-                    failure_reason += " " + "FW Update Activation Failed"
+                    failure_reason = "FW Update Activation Failed"
                     result = False
 
         if result:
@@ -159,7 +160,7 @@ class CTAMTestFullDeviceUpdateActivationWithFailedComponent(TestCase):
                 status, status_msg = self.group.fw_update_ifc.ctam_fw_update_verify(image_type="corrupt_component", 
                                                                   corrupted_component_id=self.corrupted_component_id
                                                                   )
-                failure_reason += " " + status_msg
+                failure_reason = status_msg
                 if status:
                     step4.add_log(
                         LogSeverity.INFO,
@@ -169,7 +170,7 @@ class CTAMTestFullDeviceUpdateActivationWithFailedComponent(TestCase):
                     step4.add_log(
                         LogSeverity.INFO, f"{self.test_id} : Update Verification Failed"
                     )
-                    failure_reason += " " + "Update Verification Failed"
+                    failure_reason = "Update Verification Failed"
                     result = False
         
         # ensure setting of self.result and self.score prior to calling super().run()

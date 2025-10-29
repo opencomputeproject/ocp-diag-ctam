@@ -146,7 +146,7 @@ class GitUtils():
         data = result.replace("\r", "").split("\n")[-1]
         s_idx = result.index("Elapsed time:")
         data = result[s_idx:]
-        res = re.findall(r"pass:\s+(\d+)", data)
+        res = re.findall(r"(?:Pass|pass):\s+(\d+)", data)
         if res and res[0].isdigit() and int(res[0]) > 0:
             return True, "PASS"
         return False, "FAIL"
@@ -213,7 +213,7 @@ class GitUtils():
         """
         try:
             command = repr(command)[1:-1]
-            with subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) as process:
+            with subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8') as process:
             # Set up a progress bar; assume you know the number of iterations (like 4 for 4 pings)
             
                 def read_stream(stream, buffer):
@@ -250,6 +250,12 @@ class GitUtils():
             pbar.finish()
             stdout_thread.join()
             stderr_thread.join()
+
+        # Filter out warning lines from stderr
+        stderr_lines = [
+            line for line in stderr_lines
+            if "Warning" not in line and "warnings.warn" not in line
+        ]
 
         if stderr_lines:
             print(stderr_lines)

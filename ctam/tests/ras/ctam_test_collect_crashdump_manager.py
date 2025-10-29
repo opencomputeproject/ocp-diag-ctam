@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		R2
 :Group Name:	ras
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	
 This test verifies the functionality of collecting crashdump diagnostic data for a specific manager in the system. It performs the following steps:
