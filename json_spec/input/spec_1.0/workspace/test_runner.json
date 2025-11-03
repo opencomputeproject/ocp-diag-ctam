@@ -21,7 +21,7 @@
     },
     "active_test_suite": [],
     "dev_test_suite": [],
-    "full_compliance_test_suite": ["F0", "PROF", "F1", "T97", "H5", "F8", "F16", "F88", "F63", "F5", "F64", "F18", "PROF", "F22", "F23", "F24", "F25", "F26",  "F27", "F28", "F2", "H83", "H81", "H8", "H6", "H4", "T0", "T4"],
+    "full_compliance_test_suite": ["F0", "PROF", "F1", "PROF", "T97", "H5", "F8", "PROF", "F16", "PROF", "F88", "PROF", "F63", "F5", "F64", "F2", "F18", "F22", "F23", "F24", "F25", "F26",  "F27", "F28", "H83", "H81", "H8", "H6", "H4", "T0", "T4"],
     "regression_test_suite_0": ["F0","F1", "F63", "F64", "F8", "F88", "T0"],
     "regression_test_suite_1": ["F0", "F1", "F23", "F26", "F28", "F27", "F22", "F25", "F18", "F32"],
     "regression_test_suite_2": ["F0", "F1", "F16", "F19", "F55", "F62", "F89"],
