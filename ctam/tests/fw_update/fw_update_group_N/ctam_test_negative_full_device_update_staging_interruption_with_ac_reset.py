@@ -160,6 +160,7 @@ class CTAMTestFullDeviceUpdateStagingInterruptionWithAcReset(TestCase):
         self.result = TestResult.PASS if result else TestResult.FAIL
         if self.result == TestResult.PASS:
             self.score = self.score_weight
+            failure_reason = ""
 
         # call super last to log result and score
         super().run()

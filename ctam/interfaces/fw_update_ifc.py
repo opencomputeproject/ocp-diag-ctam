@@ -186,7 +186,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             if corrupted_component_id != None:
                 failure_reason = "Error in creating corrupted component!"
             else:
-                failure_reason = f"Package file not found in the workspace !!!"
+                failure_reason = "Package file missing in workspace!"
             return False, failure_reason, ""
         if self.dut().is_debug_mode():
             print(JSONFWFilePayload)
@@ -203,7 +203,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             uri = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}" + uri, component_type="GPU")
         if not status:
             self.test_run().add_log(LogSeverity.DEBUG, f"Unable to find update uri from UpdateService resource!!!")
-            failure_reason = "Unable to find update uri from UpdateService resource!!!"
+            failure_reason = "Update URI missing from UpdateService!"
             return False, failure_reason, ""
         targets = self.get_target_inventorys(targets=specific_targets) if specific_targets else []
         if self.dut().is_debug_mode():
@@ -312,6 +312,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         """
         MyName = __name__ + "." + self.ctam_fw_update_verify.__qualname__
         Update_Verified = True
+        exception = False
         update_successful = []
         update_failed = []
         failure_reason = ""
@@ -361,7 +362,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     update_failed.append(element['SoftwareId'])
                     Update_Verified = False
                     msg += f"Update Failed : Expected {ExpectedVersion}"
-                    failure_reason += " " + msg
+                    failure_reason = f"Update Failed : Expected {ExpectedVersion}"
 
                 elif negative_case:
                     # Negative test case, but expected.
@@ -373,12 +374,13 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
             except Exception as e:
-                failure_reason += " Exception occured: " + str(e)
+                failure_reason = " Exception occured: " + str(e)
+                exception = True
                 self.test_run().add_log(LogSeverity.ERROR, "Exception occured: " + str(e))
                 Update_Verified = False
 
         if not version_check:
-            if len(update_successful) > 0:
+            if not exception and len(update_successful) > 0:
                 Update_Verified = True
             else:
                 Update_Verified = False
