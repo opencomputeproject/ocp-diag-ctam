@@ -45,7 +45,7 @@ To help users quickly understand and navigate through the CTAM repository, the f
 ```
 Before you begin, ensure you have met the following requirements:
 
-    - Python 3.9 or higher is installed
+    - Python 3.10 or higher is installed
     - Python virtualenv and pip is installed
     - Install some key libraries:
          sudo apt-get install python3-tk sshpass jq
@@ -90,10 +90,9 @@ Within each `spec_version` folder, a `workspace` folder is provided containing s
 |  `-v` or `--version`                |   |    Lists the current version
 |`--spec`|                            |   |    Specify the version to run the test case with
 |`--test_help`|                       |boolean|   Shows detailed help for a specific test case and exit
+|`-c` or `--consolidate`|             |   |       Shows consolidated test results from multiple test runs into a single final report.
 
-
-### 💻 Running the tool locally
-
+### Setup
 1. Optional: create python [virtual environment](https://docs.python.org/3/library/venv.html) and activate.
     ```
     python -m venv venv
@@ -109,63 +108,62 @@ Within each `spec_version` folder, a `workspace` folder is provided containing s
     ``````
     Open `docs/build/html/index.html` for full documentation including architecture and test case details
 
-4. To run suite,
+### 💻 Running the tool locally
+1. To run suite,
     ```
     cd ctam
     python ctam.py -w ..\example_workspace
     ```
-    Logs will be created under `example_workspace\TestRuns`
-5. To run suite with a specific version,
-    ```
-    cd ctam
-    python ctam.py -w ..\example_workspace --spec <version>
-    ```
-    Logs will be created under `example_workspace\TestRuns`     
-6. To list all test cases 
+    
+2. To list all test cases 
     ```
     cd ctam
     python ctam.py -l
     ```
-7. To run a specific test case 
+3. To run a specific test case 
     ```
     cd ctam
     python ctam.py -w ..\example_workspace -t <test case id>
     ```
-    Logs will be created under `example_workspace\TestRuns`
-7. To run a specific test case with a spec version
-    ```
-    cd ctam
-    python ctam.py -w ..\example_workspace -t <test case id> --spec <version>
-    ```
-    Logs will be created under `example_workspace\TestRuns`    
-8. To run test cases of a specifc test group
+  
+4. To run test cases of a specifc test group
     ```
     cd ctam
     python ctam.py -w ..\example_workspace -g <test group name>
     ```
-    Logs will be created under `example_workspace\TestRuns`
-9. To run test cases with sequence
+5. To run test cases with sequence
     ```
     cd ctam
     python ctam.py -w ..\example_workspace -test_seq <test case name or id> <test case name or id>
     ```
-    Logs will be created under `example_workspace\TestRuns`
-10. To run test cases with sequence and spec version
-    ```
-    cd ctam
-    python ctam.py -w ..\example_workspace -test_seq <test case name or id> <test case name or id> --spec <version>
-    ```
-    Logs will be created under `example_workspace\TestRuns`    
-11. To run groups with sequence
+
+6. To run groups with sequence
     ```
     cd ctam
     python ctam.py -w ..\example_workspace -group_seq <group name or id> <group name or id>
     ```
-    Logs will be created under `example_workspace\TestRuns`
-12. To get the full detailed help for a specific test case
-13. Choose test cases to run by using tags and specifying the tags to include/exclude in test_runner.json 
-14. Choose test sequence in test_runner.json if you want to run it from test runner config.
-15. Choose test cases to run with a specific version without passing the version through the command line by specifying the version in the spec_version attribute in test_runner.json 
+
+7. To get the full detailed help for a specific test case 
+    ```
+    cd ctam
+    python ctam.py -w ..\example_workspace -t <test case id> --test_help
+    ``` 
+
+8. To get consolidated test results from multiple test runs into a single final report
+(See: [Why Consolidation is Needed](#why-consolidation-is-needed)) 
+    ```   
+    cd ctam
+    python ctam.py -w ..\example_workspace -c <path_to_report_dir1> <path_to_report_dir2> ...
+    ```
+9. Choose test cases to run by using tags and specifying the tags to include/exclude in test_runner.json 
+
+10. Choose test sequence in test_runner.json if you want to run it from test runner config.
+
+11. All test executions can be run with or without specifying a spec version.  
+See: [Behaviour Based on Input Source](#behaviour-based-on-input-source)
+
+> **Spec Version Selection:**  
+> Refer to **[Spec Version Handling](#spec-version-handling)** for details on how versions are resolved during test execution.
 
 
 ### Sphinx-Documentation
@@ -212,12 +210,20 @@ To create documentation for CTAM using Sphinx, follow these steps:
 
 
 ## 📑 Log Files created
+Logs will be created under `example_workspace\TestRuns`
 
 1. OCPTV Log file - All logs in OCPTV defined logging format. 
 2. Test_Score_<>.json - All test cases result + Final score. 
 3. Test_Report_<>.log - Tabulated report of test run
 4. Test_Info_<>.json - Optional log file used by test interfaces (for debug)
 5. RedfishCommandDetails/RedfishCommandDetails_<Test_ID>_ <Test_Name>_<>.json - Redfish Commands used & return values (for debug)
+6. RedfishInteropValidator/<Test_ID>_ <Test_Name>/ConfigFile_<>.ini - Configuration file auto-generated for Redfish Interop Validator run.
+7. RedfishInteropValidator/<Test_ID>_ <Test_Name>/InteropHtmlLog_<>.html - HTML formatted output log from Redfish Interop Validator for detailed review.
+8. RedfishInteropValidator/<Test_ID>_ <Test_Name>/InteropLog_<>.txt - Text log output from Redfish Interop Validator containing command traces and results.
+9. TestReport_consolidated_<>.log - Tabulated consolidated report combining results from multiple test runs. 
+10. TestScore_consolidated_<>.json - merged list of test results from multiple independent test runs, presented in a unified JSON structure.
+11. TestScore_Summary_<>.json - High-level summary of results, grouped by domain and compliance level,showing final outcome and scoring overview.
+
 
 ## 🕹️ Test Runner Knobs
 Test runner knobs can be modified in `test_runner.json` to enable different logging mode.
@@ -258,7 +264,86 @@ Test runner knobs can be modified in `test_runner.json` to enable different logg
     * SSHTunnelRemotePort (Use 443 as remote port address for redfish tunneling)
     
   * The `sshtunnel` library in Python is a handy tool for creating SSH tunnels, allowing you to programmatically set up and manage SSH    port forwarding. It can be used to establish both local and remote port forwarding
-  
+
+## Why Consolidation is Needed
+
+In many testing environments, it may not be possible or practical to execute all test cases in a single continuous run. This can happen due to:
+
+- System resource limitations
+- Hardware availability and scheduling constraints
+- Incremental feature enablement across firmware versions
+- The need to validate different functional components independently
+
+As a result, test cases may be executed in multiple independent runs, each generating its own output report.
+
+The **consolidation feature** enables merging the results of these separate test runs into one unified final report. This provides:
+
+1. A combined and comprehensive view of overall system behavior  
+2. A single summary score and pass/fail result  
+3. Consistent reporting even when execution is distributed across multiple sessions
+
+This ensures that analysis, scoring, and final compliance evaluation remain **complete, consistent, and streamlined**, regardless of how the tests were executed.  
+
+## Spec Version Handling
+
+This framework supports execution of test cases against multiple specification versions. A specification version may be provided explicitly by the user or resolved automatically based on configuration. If no version is specified, the framework defaults to the latest available supported version.
+
+### Version Resolution Priority
+
+The version used for test execution is determined in the following order of precedence:
+
+| Priority (Highest to Lowest) | Source                          | Description                                                                            |
+|-----------------------------|----------------------------------|----------------------------------------------------------------------------------------|
+| 1 (Highest)                 | Command-Line Argument (`--spec`) | Explicit version supplied during test invocation overrides all other sources.          |
+| 2                           | `test_runner.json` Configuration | Applied only when no command-line version is provided.                                 |
+| 3 (Default)                 | Latest Available Version         | Used when neither CLI nor configuration specifies a version.                           |
+
+### Version Compatibility Validation
+
+Each test case may optionally define a `spec_versions` attribute to indicate supported specification versions. This attribute may take one of the following forms:
+
+1. **Relational Expression**  
+   Examples: `>= 1.0`, `< 1.1`, `== 1.0`, `> 1.0`, `<= 1.1`
+2. **Explicit List of Versions**  
+   Example: `["1.1", "1.0"]`
+3. **None**  
+   Indicates the test case is compatible with all specification versions.
+
+### Validation Logic
+
+When a version is selected (via CLI or configuration):
+
+- The selected version is validated against the `spec_versions` attribute of each test case.
+- If the version satisfies the constraint defined by `spec_versions`, the test case is executed.
+- If the version does not satisfy the constraint, the test case is **skipped**.
+
+### Behavior Based on Input Source
+
+1. **No Version Specified**  
+   The framework automatically selects the latest available supported version.
+
+2. **Version Specified via Command-Line Argument (`--spec`)**  
+   The version supplied via CLI takes highest precedence. It is validated against `spec_versions`.  
+   - If valid → test runs  
+   - If invalid → test is skipped
+
+3. **Version Specified in `test_runner.json`**  
+   Used only when no CLI version is provided, validated the same way.
+
+#### Command-Line Example
+```
+cd ctam
+python ctam.py -w ..\example_workspace -t <test_case_id> --spec <version>
+```
+
+### Summary
+
+This implementation provides:
+
+- Controlled and deterministic version selection
+- Flexible compatibility via relational or list-based version constraints
+- Clear and predictable execution behavior  
+    
 ## 📖 Developer notes
 ### VS Code
 
