@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		H83
 :Group Name:	health_check
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	This test case attempts to create an event service subscription and verifies its success.
 
@@ -22,7 +23,7 @@ LICENSE file in the root directory of this source tree.
 :Dependencies: None
 
 """
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -49,6 +50,7 @@ class CTAMTestRedfishEventServiceCreateSubscription(TestCase):
     score_weight: int = 10
     tags: List[str] = ["HCheck", "L2"]
     compliance_level: str = "L2"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     # exclude_tags: List[str] = ["NotCheck"]
 
@@ -86,7 +88,7 @@ class CTAMTestRedfishEventServiceCreateSubscription(TestCase):
                 Protocol="Redfish")
             if JSONData is None or "error" in JSONData:
                 step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Redfish Event Service Check - Failed")
-                failure_reason += "Redfish Event Service Check - Failed"
+                failure_reason += "Event Service subscription creation failed"
                 result = False
             else:
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish Event Service Check - Completed")

@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F88
 :Group Name:	fw_update
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	This test case entails performing firmware updates in a loop between N-1 and N i.e backup and default respectively.
                 The test ensures that the firmware updates can be performed repeatedly without issues.
@@ -33,7 +34,7 @@ LICENSE file in the root directory of this source tree.
         <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
                                            Optional -  <LargeFWImageUpdate>
 """
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -60,6 +61,7 @@ class CTAMTestFullDeviceUpdatePingPong(TestCase):
     score_weight: int = 10
     tags: List[str] = ["Compliance", "L1"]
     compliance_level: str = "L1"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """
@@ -96,7 +98,7 @@ class CTAMTestFullDeviceUpdatePingPong(TestCase):
                     status, status_msg = self.group.fw_update_ifc.ctam_fw_update_precheck(
                         image_type=image_t
                     )
-                    failure_reason += status_msg
+                    failure_reason = status_msg
                     if not status:
                         step1.add_log(
                             LogSeverity.INFO, f"{self.test_id} : FW Update Capable"
@@ -110,7 +112,7 @@ class CTAMTestFullDeviceUpdatePingPong(TestCase):
                 step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
                 with step2.scope():
                     status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(image_type=image_t)
-                    failure_reason += " " + status_msg
+                    failure_reason = status_msg
                     if status:
                         step2.add_log(
                             LogSeverity.INFO, f"{self.test_id} : FW Update Staged"
@@ -120,14 +122,14 @@ class CTAMTestFullDeviceUpdatePingPong(TestCase):
                             LogSeverity.ERROR,
                             f"{self.test_id} : FW Update Stage Failed",
                         )
-                        failure_reason += " " + "FW Update Stage Failed"
+                        failure_reason = "FW Update Stage Failed"
                         result = False
 
             if result:
                 step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
                 with step3.scope():
                     status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
-                    failure_reason += " " + status_msg
+                    failure_reason = status_msg
                     if status:
                         step3.add_log(
                             LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
@@ -137,7 +139,7 @@ class CTAMTestFullDeviceUpdatePingPong(TestCase):
                             LogSeverity.ERROR,
                             f"{self.test_id} : FW Update Activation Failed",
                         )
-                        failure_reason += " " + "FW Update Activation Failed"
+                        failure_reason = "FW Update Activation Failed"
                         result = False
 
             if result:
@@ -148,7 +150,7 @@ class CTAMTestFullDeviceUpdatePingPong(TestCase):
                     status, status_msg = self.group.fw_update_ifc.ctam_fw_update_verify(
                         image_type=image_t
                     )
-                    failure_reason += " " + status_msg
+                    failure_reason = status_msg
                     if status:
                         step4.add_log(
                             LogSeverity.INFO,
@@ -159,7 +161,7 @@ class CTAMTestFullDeviceUpdatePingPong(TestCase):
                             LogSeverity.ERROR,
                             f"{self.test_id} : Update Verification Failed",
                         )
-                        failure_reason += " " + "Update Verification Failed"
+                        failure_reason = "Update Verification Failed"
                         result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()

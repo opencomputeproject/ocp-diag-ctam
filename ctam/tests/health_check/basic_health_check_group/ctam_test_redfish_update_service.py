@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		H4
 :Group Name:	health_check
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	This test verifies the availability and correctness of the Redfish Update Service.
                 The test attempts to retrieve update service data from the service and checks for errors.
@@ -20,7 +21,7 @@ LICENSE file in the root directory of this source tree.
 :Dependencies: None
 
 """
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from test_hierarchy import TestHierarchy
 import os
@@ -35,6 +36,7 @@ from tests.health_check.basic_health_check_group.basic_health_check_test_group i
     BasicHealthCheckTestGroup,
 )
 from utils.ctam_utils import GitUtils
+from interfaces.health_check_ifc import HealthCheckIfc
 
 
 class CTAMTestRedfishUpdateService(TestCase):
@@ -50,6 +52,7 @@ class CTAMTestRedfishUpdateService(TestCase):
     score_weight: int = 10
     tags: List[str] = ["HCheck", "L2"]
     compliance_level: str ="L2"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     # exclude_tags: List[str] = ["NotCheck"]
 
@@ -79,7 +82,8 @@ class CTAMTestRedfishUpdateService(TestCase):
         """
         failure_reason = ""
         result = True
-        logger_path = os.path.join(self.dut().logger_path, "RedfishInteropValidator", f"{self.__class__.test_id}_{self.__class__.__name__}")
+        logger_path = os.path.join(self.dut().logger_path, "RedfishInteropValidator")
+        # logger_path = os.path.join(self.dut().logger_path, "RedfishInteropValidator", f"{self.__class__.test_id}_{self.__class__.__name__}")
 
         #cloning Redfish Interop Validator under temp folder which will be deleted after completion of test case.
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
@@ -105,6 +109,7 @@ class CTAMTestRedfishUpdateService(TestCase):
                                                 payload="NodeTree /redfish/v1/UpdateService",
                                                 profile=json_file_path,
                                                 )
+                self.group.health_check_ifc.flatten_validator_output(self.__class__.test_id, self.__class__.__name__, logger_path)
                 if not result:
                     step2.add_log(LogSeverity.ERROR, f"Validation has failed: {error_count} problems found")
                     failure_reason += f"Validation has failed: {error_count} problems found"

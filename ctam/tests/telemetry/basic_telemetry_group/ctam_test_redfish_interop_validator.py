@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		T97
 :Group Name:	Telemetry
 :Score Weight:	10
+:Spec Versions:  ">= 1.0"
 
 :Description:	This test case will clone the Redfish Interop Validator (RIV) in a temporary folder and take JSON profiles as input.
 				It will then run the RIV using these profiles to validate the Redfish service.
@@ -24,9 +25,10 @@ LICENSE file in the root directory of this source tree.
 :Dependencies: None
                     
 """
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from test_hierarchy import TestHierarchy
+from interfaces.telemetry_ifc import TelemetryIfc
 import os
 from ocptv.output import (
     DiagnosisType,
@@ -52,6 +54,7 @@ class CTAMTestRedfishInteropValidator(TestCase):
     score_weight: int = 10
     tags: List[str] = ["L0"]
     compliance_level: str = "L0"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: BasicTelemetryTestGroup):
         """
@@ -79,7 +82,8 @@ class CTAMTestRedfishInteropValidator(TestCase):
         """
         result = True
         failure_reason = ""
-        logger_path = os.path.join(self.dut().logger_path, "RedfishInteropValidator", f"{self.__class__.test_id}_{self.__class__.__name__}")
+        logger_path = os.path.join(self.dut().logger_path, "RedfishInteropValidator")
+        # logger_path = os.path.join(self.dut().logger_path, "RedfishInteropValidator", f"{self.__class__.test_id}_{self.__class__.__name__}")
 
         #cloning Redfish Interop Validator under temp folder which will be deleted after completion of test case.
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
@@ -104,6 +108,7 @@ class CTAMTestRedfishInteropValidator(TestCase):
                                                 log_path=logger_path, passthrough=base_uri,
                                                 profile=json_file_path
                                                 )
+                self.group.telemetry_ifc.flatten_validator_output(self.__class__.test_id, self.__class__.__name__, logger_path)
                 if not result:
                     step2.add_log(LogSeverity.ERROR, f"Validation has failed: {error_count} problems found")
                     failure_reason += f"Validation has failed: {error_count} problems found"

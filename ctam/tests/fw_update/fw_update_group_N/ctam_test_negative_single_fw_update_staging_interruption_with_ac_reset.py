@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F62
 :Group Name:	fw_update
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	This test case focuses on the scenario where an image transfer is initiated for a firmware update.
 				The objective is to ensure that after the image transfer is initiated, the system proceeds without waiting
@@ -39,7 +40,7 @@ LICENSE file in the root directory of this source tree.
                                            Optional -  <LargeFWImageUpdate>
 """
 import ast
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -65,6 +66,7 @@ class CTAMTestSingleFWUpdateStagingInterruptionWithACReset(TestCase):
     score_weight: int = 10
     tags: List[str] = ["Negative", "L3", "Single_Device"]
     compliance_level: str = "L3"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """
@@ -101,14 +103,14 @@ class CTAMTestSingleFWUpdateStagingInterruptionWithACReset(TestCase):
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Single Device Selected")
             else:
                 step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Single Device Selection Failed")
-                failure_reason += f"{self.test_id} : Single Device Selection Failed"
+                failure_reason += "Single Device Selection Failed"
                 result = False
 
         if result:
             step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
             with step2.scope():
                 status, status_msg = self.group.fw_update_ifc.ctam_fw_update_precheck(image_type="backup")
-                failure_reason += status_msg
+                failure_reason = status_msg
                 if not status:
                     step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
                 else:
@@ -121,36 +123,36 @@ class CTAMTestSingleFWUpdateStagingInterruptionWithACReset(TestCase):
                     partial=1, wait_for_stage_completion=False, image_type="backup",
                     specific_targets=ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{specific_targets}", component_type="GPU_FWUpdate"))
                     )
-                failure_reason += " " + status_msg
+                failure_reason = status_msg
                 if status:
                     step3.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staging Initiated")
                 else:
                     step3.add_log(LogSeverity.ERROR, f"{self.test_id} : FW Update Stage Initiation Failed")
-                    failure_reason += " " + "FW Update Stage Initiation Failed"
+                    failure_reason = "FW Update Stage Initiation Failed"
                     result = False
 
         if result:
             step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")  # type: ignore
             with step4.scope():
                 status, status_msg = self.group.fw_update_ifc.ctam_activate_ac(fwupd_hyst_wait=False)
-                failure_reason += " " + status_msg
+                failure_reason = status_msg
                 if status:
                     step4.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Activate, interrupting staging flow with reset")
                 else:
                     step4.add_log(LogSeverity.ERROR, f"{self.test_id} : FW Update Activation Failed")
-                    failure_reason += " " + "FW Update Activation Failed"
+                    failure_reason = "FW Update Activation Failed"
                     result = False
 
         if result:
             step5 = self.test_run().add_step(f"{self.__class__.__name__} run(), step5")
             with step5.scope():
                 status, status_msg = self.group.fw_update_ifc.ctam_fw_update_verify(image_type="negate")
-                failure_reason += " " + status_msg
+                failure_reason = status_msg
                 if status:
                     step5.add_log(LogSeverity.INFO, f"{self.test_id} : Update Verification Completed")
                 else:
                     step5.add_log(LogSeverity.INFO, f"{self.test_id} : Update Verification Failed")
-                    failure_reason += " " + "Update Verification Failed"
+                    failure_reason = "Update Verification Failed"
                     result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()

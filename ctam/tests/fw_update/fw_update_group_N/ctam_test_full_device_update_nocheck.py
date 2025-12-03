@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F5
 :Group Name:	fw_update
 :Score Weight:	50
+:Spec Versions: ">= 1.0"
 :Description:	This test case verifies that the firmware staging is successful followed by activate.
                 The test can fail with stage failure. No precheck and postcheck is performed in this test case.
 
@@ -33,7 +34,7 @@ LICENSE file in the root directory of this source tree.
                                            Optional -  <LargeFWImageUpdate>
 """
 
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -60,6 +61,7 @@ class CTAMTestFullDeviceUpdateNoCheck(TestCase):
     score_weight: int = 50
     tags: List[str] = ["L1"]
     compliance_level: str = "L1"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """
@@ -90,21 +92,21 @@ class CTAMTestFullDeviceUpdateNoCheck(TestCase):
         step1= self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
             status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw()
-            failure_reason += " " + status_msg
+            failure_reason = status_msg
             if status:
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
             else:
                 step1.add_log(
                     LogSeverity.ERROR, f"{self.test_id} : FW Update Staging failed"
                 )
-                failure_reason += " " + "FW Update Staging failed"
+                failure_reason = "FW Update Staging failed"
                 result = False
 
         if result:
             step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
             with step2.scope():
                 status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
-                failure_reason += " " + status_msg
+                failure_reason = status_msg
                 if status:
                     step2.add_log(
                         LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
@@ -114,7 +116,7 @@ class CTAMTestFullDeviceUpdateNoCheck(TestCase):
                         LogSeverity.ERROR,
                         f"{self.test_id} : FW Update Activation Failed",
                     )
-                    failure_reason += " " + "FW Update Activation Failed"
+                    failure_reason = "FW Update Activation Failed"
                     result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()

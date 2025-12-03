@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F63
 :Group Name:	fw_update
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 Description:	
     This test verifies that the firmware copy operation (staging) does not exceed the maximum time specified in the requirements(FwStagingTimeMax). 
@@ -38,7 +39,7 @@ Description:
                                            Optional -  <LargeFWImageUpdate>
 """
 
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -65,6 +66,7 @@ class CTAMTestFullDeviceUpdateStagingTime(TestCase):
     score_weight: int = 10
     tags: List[str] = ["L1"]
     compliance_level: str = "L1"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """
@@ -105,14 +107,14 @@ class CTAMTestFullDeviceUpdateStagingTime(TestCase):
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
             status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(check_time=True)
-            failure_reason += " " + status_msg
+            failure_reason = status_msg
             if status:
                 step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
             else:
                 step2.add_log(
                     LogSeverity.ERROR, f"{self.test_id} : FW Update Stage Failed"
                 )
-                failure_reason += " " + "FW Update Stage Failed"
+                failure_reason = "FW Update Stage Failed"
                 result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()

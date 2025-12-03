@@ -7,7 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F22
 :Group Name:	fw_update
 :Score Weight:	10
-
+:Spec Versions: ">= 1.0"
 :Description:	
     This test case focuses on the scenario where we are trying to initiate a firmware update flow with an invalid signed image. 
     The expectation is for staging to fail when this is attempted. The image is provided by the vendor and it has a section in package_info.json.
@@ -38,7 +38,7 @@ LICENSE file in the root directory of this source tree.
                                            Optional -  <LargeFWImageUpdate>
 """
 
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -65,6 +65,7 @@ class CTAMTestNegativeInvalidSignedImageUpdate(TestCase):
     score_weight: int = 10
     tags: List[str] = ["Negative", "L2"]
     compliance_level: str = "L2"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """
@@ -106,7 +107,7 @@ class CTAMTestNegativeInvalidSignedImageUpdate(TestCase):
         with step2.scope():
             status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, 
                                                                                  image_type="invalid_sign")
-            failure_reason += " " + status_msg
+            failure_reason = status_msg
             if status:
                 step2.add_log(
                     LogSeverity.INFO,
@@ -117,7 +118,7 @@ class CTAMTestNegativeInvalidSignedImageUpdate(TestCase):
                     LogSeverity.ERROR,
                     f"{self.test_id} : FW Update Staging Initiated - Unexpected",
                 )
-                failure_reason += " " + "FW Update Staging Initiated - Unexpected"
+                failure_reason = "FW Update Staging Initiated - Unexpected"
                 result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
