@@ -107,7 +107,10 @@ class CTAMTestFullDeviceUpdateRollback(TestCase):
 
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
-            status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup")
+            status, status_msg, task_id, staging_time = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup")
+            self.staging_time = round(staging_time,2)
+            self.staging_status = status
+            self.staging_failure_reason = status_msg
             failure_reason = status_msg
             if status:
                 step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
@@ -121,7 +124,7 @@ class CTAMTestFullDeviceUpdateRollback(TestCase):
         if result:
             step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
             with step3.scope():
-                status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
+                status, status_msg, _ = self.group.fw_update_ifc.ctam_activate_ac(fwupd_hyst_wait=False, image_type="backup")
                 failure_reason = status_msg
                 if status:
                     step3.add_log(

@@ -109,7 +109,7 @@ class CTAMTestFullDeviceUpdateStagingInterruptionWithAcReset(TestCase):
 
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
-            fwupd_status, status_msg, fwupd_task_id = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup", 
+            fwupd_status, status_msg, fwupd_task_id, _ = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup", 
                                                                                  wait_for_stage_completion=False)
             failure_reason = status_msg
             if fwupd_status:
@@ -124,7 +124,7 @@ class CTAMTestFullDeviceUpdateStagingInterruptionWithAcReset(TestCase):
         if result:
             step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
             with step3.scope():
-                status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
+                status, status_msg, _ = self.group.fw_update_ifc.ctam_activate_ac()
                 failure_reason = status_msg
                 if status:
                     step3.add_log(
@@ -153,7 +153,7 @@ class CTAMTestFullDeviceUpdateStagingInterruptionWithAcReset(TestCase):
                         LogSeverity.ERROR,
                         f"{self.test_id} : Update Verification Failed",
                     )
-                    failure_reason = "Update Verification Failed"
+                    failure_reason = f"Update Verification Failed : {status_msg}"
                     result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()

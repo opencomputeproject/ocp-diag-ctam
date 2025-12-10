@@ -122,7 +122,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
 
         step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4_{corrupted_component_list[0]}")  # type: ignore
         with step4.scope():
-            status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="empty_metadata", 
+            status, status_msg, task_id, _ = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="empty_metadata", 
                                                                                  corrupted_component_id=corrupted_component_id,
                                                                                  specific_targets=[corrupted_component_list[0]])
             failure_reason = status_msg
@@ -162,7 +162,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
             
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")
         with step2.scope():
-            if self.group.fw_update_ifc.ctam_activate_ac(gpu_check=False, fwupd_hyst_wait=False):
+            if self.group.fw_update_ifc.ctam_activate_ac():
                 msg = f"{self.test_id} : Teardown : AC Cycle Passed"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)  
             else:
