@@ -125,7 +125,7 @@ class CTAMTestSingleDeviceUpdatePingPong(TestCase):
             if result:
                 step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3_{i}")  # type: ignore
                 with step3.scope():
-                    status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(
+                    status, status_msg, task_id, _ = self.group.fw_update_ifc.ctam_stage_fw(
                         partial=1, image_type=image_t, specific_targets=self.specific_targets)
                     failure_reason = status_msg
                     if status:
@@ -138,7 +138,7 @@ class CTAMTestSingleDeviceUpdatePingPong(TestCase):
             if result:
                 step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4_{i}")  # type: ignore
                 with step4.scope():
-                    status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
+                    status, status_msg, _ = self.group.fw_update_ifc.ctam_activate_ac()
                     failure_reason = status_msg
                     if status:
                         step4.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Activate")

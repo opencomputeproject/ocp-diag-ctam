@@ -119,7 +119,7 @@ class CTAMTestSingleDeviceUpdate(TestCase):
 
                 step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3_{device}")  # type: ignore
                 with step3.scope():
-                    status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, specific_targets=[device])
+                    status, status_msg, task_id, _ = self.group.fw_update_ifc.ctam_stage_fw(partial=1, specific_targets=[device])
                     failure_reason = status_msg
                     if status:
                         step3.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
@@ -133,7 +133,7 @@ class CTAMTestSingleDeviceUpdate(TestCase):
                 if result:
                     step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4_{device}")  # type: ignore
                     with step4.scope():
-                        status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
+                        status, status_msg, _ = self.group.fw_update_ifc.ctam_activate_ac()
                         failure_reason = status_msg
                         if status:
                             step4.add_log(

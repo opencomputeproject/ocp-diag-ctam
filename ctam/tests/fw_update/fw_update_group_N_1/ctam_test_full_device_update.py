@@ -36,7 +36,8 @@ LICENSE file in the root directory of this source tree.
         <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
                                            Optional -  <LargeFWImageUpdate>
 """
-
+import os
+import json
 from typing import Optional, List, Union
 from tests.test_case import TestCase
 from ocptv.output import (
@@ -104,7 +105,7 @@ class CTAMTestFullDeviceUpdate(TestCase):
 
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
-            status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(is_force_update=False)
+            status, status_msg, task_id, _ = self.group.fw_update_ifc.ctam_stage_fw(is_force_update=False)
             failure_reason = status_msg
             if status:
                 step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
@@ -114,11 +115,13 @@ class CTAMTestFullDeviceUpdate(TestCase):
                 )
                 failure_reason = "FW Update Stage Failed"
                 result = False
-
         if result:
             step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
             with step3.scope():
-                status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
+                status, status_msg, activation_time = self.group.fw_update_ifc.ctam_activate_ac(fwupd_hyst_wait=False)
+                self.activation_time = round(activation_time, 2)
+                self.activation_status = status
+                self.activation_failure_reason = status_msg
                 failure_reason = status_msg
                 if status:
                     step3.add_log(

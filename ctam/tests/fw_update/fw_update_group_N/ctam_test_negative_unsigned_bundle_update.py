@@ -106,7 +106,7 @@ class CTAMTestNegativeUnsignedBundleUpdate(TestCase):
 
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
-            status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="unsigned_bundle")
+            status, status_msg, task_id, _ = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="unsigned_bundle")
             failure_reason = status_msg
             if status:
                 step2.add_log(
