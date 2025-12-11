@@ -124,7 +124,7 @@ class CTAMTestFullDeviceUpdateRollback(TestCase):
         if result:
             step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
             with step3.scope():
-                status, status_msg, _ = self.group.fw_update_ifc.ctam_activate_ac(fwupd_hyst_wait=False, image_type="backup")
+                status, status_msg, _ = self.group.fw_update_ifc.ctam_activate_ac()
                 failure_reason = status_msg
                 if status:
                     step3.add_log(

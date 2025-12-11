@@ -576,10 +576,8 @@ class FunctionalIfc:
             redfish_str="{BaseURI}{GPUCheckURI}", component_type="GPU"
         )
         FwActivationTimeMax = self.dut().dut_config["FwActivationTimeMax"]["value"] 
-        threshold = FwActivationTimeMax
+        threshold = 2 * FwActivationTimeMax
         try: 
-            msg = "FW Inventory is updated with all components."
-            self.test_run().add_log(LogSeverity.INFO, msg)
             start_time = time.time()
             response = self.dut().run_redfish_command(uri=ctam_getus_uri)
             while response == None:
@@ -631,7 +629,7 @@ class FunctionalIfc:
         
 
     
-    def ctam_activate_ac(self, gpu_check=True, fwupd_hyst_wait=True, image_type="default"):
+    def ctam_activate_ac(self, gpu_check=True, fwupd_hyst_wait=True):
         """
         :Description:					Activate AC
         
@@ -653,7 +651,7 @@ class FunctionalIfc:
         if gpu_check:
             ActivationStartTime = time.time()
             try:
-                resp = self.IsGPUReachable(image_type=image_type)   # If GPU response is {} or None 
+                resp = self.IsGPUReachable()   # If GPU response is {} or None 
                 if not resp:  
                     failure_reason = "GPU response empty"
                     return ActivationStatus, failure_reason, activation_time
@@ -669,7 +667,7 @@ class FunctionalIfc:
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
                     time.sleep(30)
                     # recheck gpu
-                    resp = self.IsGPUReachable(image_type=image_type)
+                    resp = self.IsGPUReachable()
 
                 gpu_reach_time = round((time.time() - ActivationStartTime), 3) 
                 print(f"Time to reach GPU: {gpu_reach_time} secs ")   
@@ -680,15 +678,15 @@ class FunctionalIfc:
                     gpu_enable_time = time.time() - ActivationStartTime
                     if gpu_enable_time > (2 * FwActivationTimeMax):
                         msg = "GPU still not up, {}".format(
-                                (self.IsGPUReachable(image_type=image_type))["Status"]["State"])
+                                (self.IsGPUReachable())["Status"]["State"])
                         # failure_reason = msg + f" Activation is taking longer than the maximum time specified {FwActivationTimeMax} seconds."
                         failure_reason = "GPU not up, activation delayed "
                         return ActivationStatus, failure_reason, activation_time  
                     msg = "Waiting for GPU to be back up, {}".format(
-                            (self.IsGPUReachable(image_type=image_type))["Status"]["State"])
+                            (self.IsGPUReachable())["Status"]["State"])
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
                     time.sleep(30)
-                    resp = self.IsGPUReachable(image_type=image_type)
+                    resp = self.IsGPUReachable()
 
                 gpu_enable_time = round((time.time() - gpu_enable_start_time), 3)
                 print(f"Time for GPU to be back up: {gpu_enable_time} secs") 

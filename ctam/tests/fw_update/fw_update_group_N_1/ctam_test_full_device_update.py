@@ -118,7 +118,7 @@ class CTAMTestFullDeviceUpdate(TestCase):
         if result:
             step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
             with step3.scope():
-                status, status_msg, activation_time = self.group.fw_update_ifc.ctam_activate_ac(fwupd_hyst_wait=False)
+                status, status_msg, activation_time = self.group.fw_update_ifc.ctam_activate_ac()
                 self.activation_time = round(activation_time, 2)
                 self.activation_status = status
                 self.activation_failure_reason = status_msg
