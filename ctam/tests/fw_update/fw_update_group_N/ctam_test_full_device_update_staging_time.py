@@ -99,19 +99,27 @@ class CTAMTestFullDeviceUpdateStagingTime(TestCase):
 
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if self.measurements["F0"].get("staging_time") != 0.0: #checks if staging time is non-zero
-                staging_time = self.measurements["F0"].get("staging_time")
-                print(f"Time took to stage: {staging_time:.3f} secs")
-                step1.add_log(
-                        LogSeverity.INFO, f"{self.test_id} : Skipping to step 6"
+            # check if F0 ran
+            if self.measurements.get("F0", {}).get("staging_time", 0.0) != 0.0:
+                if self.measurements.get("F0", {}).get("test_status", False) is False:
+                    result = False
+                    failure_reason = "F0 test failed"
+                    step1.add_log(
+                        LogSeverity.ERROR, f"{self.test_id} : {failure_reason}, skipping all steps"
                     )
-                skip_to_step_6 = True
+                else:
+                    staging_time = self.measurements["F0"].get("staging_time")
+                    print(f"Time took to stage: {staging_time:.3f} secs")
+                    step1.add_log(
+                            LogSeverity.INFO, f"{self.test_id} : Skipping to step 6"
+                        )
+                    skip_to_step_6 = True    
             else:
                 step1.add_log(
                         LogSeverity.INFO, f"{self.test_id} : Staging time not found, going to step 2"
                     )
         
-        if not skip_to_step_6:  
+        if result and not skip_to_step_6:  
             step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore       
             with step2.scope():  
                 status, status_msg = self.group.fw_update_ifc.ctam_fw_update_precheck()
@@ -169,29 +177,29 @@ class CTAMTestFullDeviceUpdateStagingTime(TestCase):
                         )
                         failure_reason = "Update Verification Failed"
                         result = False
-
-        step6 = self.test_run().add_step(f"{self.__class__.__name__} run(), step6")
-        with step6.scope():
-            if staging_time:
-                status, status_msg = self.group.fw_update_ifc.ctam_stage_time_check(staging_time)
-                if status:
-                    failure_reason = f"Measured Staging Time: {staging_time:.3f} secs"
-                    step6.add_log(
-                        LogSeverity.INFO,
-                        f"{self.test_id} : FW Update Staging Time under Threshold",
-                    )
+        if result:
+            step6 = self.test_run().add_step(f"{self.__class__.__name__} run(), step6")
+            with step6.scope():
+                if staging_time:
+                    status, status_msg = self.group.fw_update_ifc.ctam_stage_time_check(staging_time)
+                    if status:
+                        failure_reason = f"Measured Staging Time: {staging_time:.3f} secs"
+                        step6.add_log(
+                            LogSeverity.INFO,
+                            f"{self.test_id} : FW Update Staging Time under Threshold",
+                        )
+                    else:
+                        step6.add_log(
+                            LogSeverity.INFO, f"{self.test_id} : FW Update staging time too long"
+                        )
+                        failure_reason = status_msg
+                        result = False      
                 else:
                     step6.add_log(
-                        LogSeverity.INFO, f"{self.test_id} : FW Update staging time too long"
-                    )
-                    failure_reason = status_msg
-                    result = False      
-            else:
-                step6.add_log(
-                        LogSeverity.INFO, f"{self.test_id} : Unable to get FW Update staging time "
-                    )
-                failure_reason = "Unable to get FW Update staging time"
-                result = False        
+                            LogSeverity.INFO, f"{self.test_id} : Unable to get FW Update staging time "
+                        )
+                    failure_reason = "Unable to get FW Update staging time"
+                    result = False        
 
         # ensure setting of self.result and self.score prior to calling super().run()
         self.result = TestResult.PASS if result else TestResult.FAIL

@@ -156,7 +156,7 @@ class CTAMTestFullDeviceUpdate(TestCase):
         self.result = TestResult.PASS if result else TestResult.FAIL
         if self.result == TestResult.PASS:
             self.score = self.score_weight
-
+        self.test_status = result
         # call super last to log result and score
         super().run()
         return self.result, failure_reason

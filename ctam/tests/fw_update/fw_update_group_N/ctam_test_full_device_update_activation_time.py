@@ -103,16 +103,26 @@ class CTAMTestFullDeviceUpdateActivationTime(TestCase):
 
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            if self.measurements["F1"].get("activation_time") != 0.0: #checks if activation time is non-zero
-                activation_time = self.measurements["F1"].get("activation_time")
-                fwupd_hyst_wait = False
-                step1.add_log(LogSeverity.INFO, f"{self.test_id} : Time took for activation : {activation_time:.3f} secs")
-                skip_to_step_6 = True
+            # check if F1 ran
+            if self.measurements.get("F1", {}).get("activation_time", 0.0) != 0.0: 
+                # check if F1 passed
+                if self.measurements.get("F1", {}).get("test_status", False) is False:
+                    result = False
+                    failure_reason = "F1 test failed"
+                    step1.add_log(
+                        LogSeverity.ERROR, f"{self.test_id} : {failure_reason}, skipping all steps"
+                    )
+                else:    
+                    activation_time = self.measurements["F1"].get("activation_time")
+                    fwupd_hyst_wait = False
+                    step1.add_log(LogSeverity.INFO, f"{self.test_id} : Time took for activation : {activation_time:.3f} secs")
+                    step1.add_log(LogSeverity.INFO, f"{self.test_id} : Skipping to step 6")
+                    skip_to_step_6 = True 
             else:
                 step1.add_log(
                         LogSeverity.INFO, f"{self.test_id} : Activation time not found, going to step 2"
                     )
-        if not skip_to_step_6:
+        if result and not skip_to_step_6:
             step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
             with step2.scope():
                 status, status_msg = self.group.fw_update_ifc.ctam_fw_update_precheck()
@@ -170,35 +180,35 @@ class CTAMTestFullDeviceUpdateActivationTime(TestCase):
                         )
                         failure_reason = "Update Verification Failed"
                         result = False
-
-        step6 = self.test_run().add_step(f"{self.__class__.__name__} run(), step6")
-        with step6.scope():
-            if activation_time:
-                status, status_msg = self.group.fw_update_ifc.ctam_activate_time_check(activation_time, fwupd_hyst_wait=fwupd_hyst_wait)  # ctam_activate_time_check
-                if status:
-                    failure_reason = f"Measured activation time: {activation_time:.3f} secs"
-                    step6.add_log(
-                        LogSeverity.INFO,
-                        f"{self.test_id} : FW Update Activate Time under threshold",
-                    )
+        if result:
+            step6 = self.test_run().add_step(f"{self.__class__.__name__} run(), step6")
+            with step6.scope():
+                if activation_time:
+                    status, status_msg = self.group.fw_update_ifc.ctam_activate_time_check(activation_time, fwupd_hyst_wait=fwupd_hyst_wait)  # ctam_activate_time_check
+                    if status:
+                        failure_reason = f"Measured activation time: {activation_time:.3f} secs"
+                        step6.add_log(
+                            LogSeverity.INFO,
+                            f"{self.test_id} : FW Update Activate Time under threshold",
+                        )
+                    else:
+                        step6.add_log(
+                            LogSeverity.INFO, f"{self.test_id} : FW Update activation time too long"
+                        )
+                        failure_reason = status_msg
+                        result = False      
                 else:
                     step6.add_log(
-                        LogSeverity.INFO, f"{self.test_id} : FW Update activation time too long"
-                    )
-                    failure_reason = status_msg
-                    result = False      
-            else:
-                step6.add_log(
-                        LogSeverity.INFO, f"{self.test_id} : Unable to get FW Update activation time "
-                    )
-                failure_reason = "Unable to get FW Update activation time"
-                result = False
+                            LogSeverity.INFO, f"{self.test_id} : Unable to get FW Update activation time "
+                        )
+                    failure_reason = "Unable to get FW Update activation time"
+                    result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
         self.result = TestResult.PASS if result else TestResult.FAIL
         if self.result == TestResult.PASS:
             self.score = self.score_weight
-
+        
         # call super last to log result and score
         super().run()
         return self.result, failure_reason

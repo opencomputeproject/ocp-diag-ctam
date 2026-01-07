@@ -774,9 +774,8 @@ class TestRunner:
                         self.active_run.add_log(severity=LogSeverity.ERROR, message=msg)
                         failure_reason = "spec version not supported"
                     else:
-                        # Inject measurements from (F1/F0 results) into all test instances (F63 and F64)
-                        if self.measurements: 
-                            test_instance.measurements = self.measurements
+                        # Inject measurements into all test cases
+                        test_instance.measurements = self.measurements
                         test_result, failure_reason = test_instance.run()
                         if (
                             test_result == TestResult.FAIL
@@ -811,7 +810,7 @@ class TestRunner:
                     staging_time = getattr(test_instance, "staging_time", 0.0)
                     staging_status = getattr(test_instance, "staging_status", False)
                     staging_failure_reason = getattr(test_instance, "staging_failure_reason", "")
-
+                    test_status = getattr(test_instance, "test_status", False)
                     self.measurements[test_id] = { 
                         "activation_time": activation_time,
                         "activation_status": activation_status,
@@ -819,6 +818,7 @@ class TestRunner:
                         "staging_time": staging_time,
                         "staging_status": staging_status,
                         "staging_failure_reason": staging_failure_reason,
+                        "test_status": test_status
                     }
                     print(f"{self.measurements}")     
                     execution_endtime = time.perf_counter()

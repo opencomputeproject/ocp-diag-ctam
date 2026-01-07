@@ -653,7 +653,7 @@ class FunctionalIfc:
             try:
                 resp = self.IsGPUReachable()   # If GPU response is {} or None 
                 if not resp:  
-                    failure_reason = "GPU response empty"
+                    failure_reason = "GPU wasn't reachable after reboot"
                     return ActivationStatus, failure_reason, activation_time
             
                 while "error" in resp or "Not Implemented" in resp:  # declaration pending
