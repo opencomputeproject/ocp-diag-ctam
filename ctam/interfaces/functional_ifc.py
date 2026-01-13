@@ -522,15 +522,18 @@ class FunctionalIfc:
 
     def NodeACReset(self):
         """
-        :Description:        It will Reset the node.
+        :Description:       It will Reset the node.
 
-        :returns:	         None
-        :rtype:              Bool
+        :returns:           True if power cycle succeeds, False otherwise
+        :rtype:             bool
         """
         MyName = __name__ + "." + self.NodeACReset.__qualname__
         single_shot_power_cycle = self.dut().dut_config.get("SingleShotPowerCycle", {}).get("value", "")
+        single_shot_power_cycle_triggered = False
         if single_shot_power_cycle:
             single_shot_power_command = self.dut().dut_config.get("SingleShotPowerCycleCommand", {}).get("value", "")
+            # Fetch SingleShotPowerCycleTimeOut duration from dut_config and set default value to 30 seconds
+            time_out = self.dut().dut_config.get("SingleShotPowerCycleTimeOut", {}).get("value", 30)
             if not single_shot_power_command:
                 self.test_run().add_log(LogSeverity.INFO, "Please provide single command for power off and power on in dut config!")
                 return False
@@ -539,9 +542,31 @@ class FunctionalIfc:
             arguments = shlex.split(single_shot_power_command)
             cwd_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
             cwd_path = None if cwd_path == "/tmp" else cwd_path
-            subprocess.check_output(arguments, cwd=cwd_path)
+
+            try:
+                subprocess.check_output(arguments, cwd=cwd_path,timeout=time_out, stderr=subprocess.STDOUT)
+            except subprocess.TimeoutExpired:
+                self.test_run().add_log(LogSeverity.INFO, "Command timed out (device likely rebooting)")
+                single_shot_power_cycle_triggered = True
+            except subprocess.CalledProcessError as e:
+                if e.returncode in (1, 255):
+                    single_shot_power_cycle_triggered = True
+                    self.test_run().add_log(LogSeverity.INFO, "Power cycle triggered (connection reset expected)")
+                else:
+                    self.test_run().add_log(LogSeverity.ERROR, f"Power cycle failed with return code {e.returncode}: {e.output}")
+                    return False
+
+            except Exception as e:
+                self.test_run().add_log(LogSeverity.ERROR, f"Unexpected error during power cycle | "
+                                        f"Exception: {type(e).__name__} | "
+                                        f"Message: {e}")
+                return False
+
             time.sleep(self.dut().dut_config.get("PowerOnWaitTime", {}).get("value", 300))
             self.test_run().add_log(LogSeverity.INFO, "Power ON wait time done")
+            # The channel connection may be inactive since the power cycle was initiated by logging into the DUT.
+            if (single_shot_power_cycle_triggered and not self.dut().ssh_tunnel.ssh_tunnel.is_active):
+                self.dut().ssh_tunnel.ssh_tunnel.restart()
         else:
             power_off_command = self.dut().dut_config.get("PowerOffCommand", {}).get("value", "")
             power_on_command = self.dut().dut_config.get("PowerOnCommand", {}).get("value", "")

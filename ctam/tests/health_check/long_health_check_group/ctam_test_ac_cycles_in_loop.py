@@ -27,7 +27,7 @@ LICENSE file in the root directory of this source tree.
                                            Optional - None
                             
         <dut_info.json>                   : Required - <FwActivationTimeMax>, <PowerOnWaitTime>, <PowerOffCommand>, <PowerOnCommand>, <PowerOffWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>
-                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>, <SingleShotPowerCycleTimeOut>
 """
 
 from typing import List, Union

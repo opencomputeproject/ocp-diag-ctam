@@ -332,6 +332,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         self.ctam_get_fw_version(PostInstall=1)
         msg = json.dumps(self.PostInstallDetails, indent=4)
         self.test_run().add_log(LogSeverity.DEBUG, msg)
+        exclude_targets_list = self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("exclude_targets_list", [])
         if self.dut().dut_config.get("CompareFirmwareInventoryCount",{}).get("value", True):
             # Check if all components are reporting
             Update_Verified = self.ctam_compare_active_components_count()
@@ -339,7 +340,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         # Verify version of components currently reporting in FW inventory
         for element in self.PostInstallDetails:
             try:
-                if element["Id"] in self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("exclude_targets_list", []):
+                if element["Id"] in exclude_targets_list:
                     msg = f"Skipping {element['Id']} as it is in the exclude list"
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
                     continue
@@ -382,9 +383,18 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     msg += "Update Interrupted as Expected"
                 
                 else:
-                    msg += "Update Successful"
-                    update_successful.append(element['SoftwareId'])
-                    
+                    if element["Id"] not in exclude_targets_list:
+                        if element["Status"]["Health"] != "OK" or element["Status"]["State"]!="Enabled":
+                            update_failed.append(element['SoftwareId'])
+                            Update_Verified = False
+                            msg += f"Component Health/Status Failed : Expected Status['Health'] : OK and Status['State'] : Enabled"
+                        else:
+                            msg += "Update Successful"
+                            update_successful.append(element['SoftwareId'])
+                    else:
+                        msg += "Update Successful"
+                        update_successful.append(element['SoftwareId'])
+
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
             except Exception as e:
                 failure_reason = " Exception occured: " + str(e)
