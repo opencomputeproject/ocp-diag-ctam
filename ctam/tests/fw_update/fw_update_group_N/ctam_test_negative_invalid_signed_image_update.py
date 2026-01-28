@@ -105,7 +105,7 @@ class CTAMTestNegativeInvalidSignedImageUpdate(TestCase):
 
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
-            status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, 
+            status, status_msg, task_id, _ = self.group.fw_update_ifc.ctam_stage_fw(partial=1, 
                                                                                  image_type="invalid_sign")
             failure_reason = status_msg
             if status:
@@ -137,7 +137,7 @@ class CTAMTestNegativeInvalidSignedImageUpdate(TestCase):
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope(): 
-            if self.group.fw_update_ifc.ctam_activate_ac(gpu_check=False):
+            if self.group.fw_update_ifc.ctam_activate_ac():
                 msg = f"{self.test_id} : Teardown : AC Cycle Passed"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)  
             else:

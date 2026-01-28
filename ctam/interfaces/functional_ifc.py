@@ -575,20 +575,64 @@ class FunctionalIfc:
         ctam_getus_uri = self.dut().uri_builder.format_uri(
             redfish_str="{BaseURI}{GPUCheckURI}", component_type="GPU"
         )
-        response = self.dut().run_redfish_command(uri=ctam_getus_uri)
-        resp_header = response.getheader(name="Content-Type")
-        if resp_header:
-            JSONData = response.dict
+        FwActivationTimeMax = self.dut().dut_config["FwActivationTimeMax"]["value"] 
+        threshold = 2 * FwActivationTimeMax
+        try: 
+            start_time = time.time()
+            response = self.dut().run_redfish_command(uri=ctam_getus_uri)
+            while response == None:
+                if (time.time() - start_time > threshold):
+                    msg = f"GPU has reached max wait time: {threshold} secs"
+                    self.test_run().add_log(LogSeverity.ERROR, msg)
+                    return {}
+                time.sleep(5)
+                response = self.dut().run_redfish_command(uri=ctam_getus_uri) # wait until redfish endpoint is reachable
+            connection_establish_time = time.time() - start_time    
+            self.test_run().add_log(
+                LogSeverity.INFO, f"GPU connection established in {connection_establish_time:.3f} secs"
+                )         
+            if hasattr(response, "getheader"):
+                resp_header = response.getheader(name="Content-Type")
+                if resp_header:
+                    JSONData = response.dict
+                else:
+                    JSONData = response.text
+                msg = "GPU Reachable info : {}".format(JSONData)
+                self.test_run().add_log(LogSeverity.INFO, msg)
+                return JSONData
+            return {}
+        except Exception as e:
+            msg = f"Exception Raised: {str(e)}"
+            self.test_run().add_log(LogSeverity.ERROR, msg)
+            return {} 
+			  
+    def ctam_activate_time_check(self, activation_time, fwupd_hyst_wait=True):
+        FwActivationTimeMax = self.dut().dut_config["FwActivationTimeMax"]["value"]
+        failure_reason = ""
+        if (activation_time) > FwActivationTimeMax:
+            ActivationStatus = False
+            msg = f"activation time = {activation_time}, Expected <= {FwActivationTimeMax} seconds."
+            self.test_run().add_log(LogSeverity.WARNING, msg)
+            failure_reason = msg
         else:
-            JSONData = response.text
-        msg = "GPU Reachable info : {}".format(JSONData)
-        self.test_run().add_log(LogSeverity.INFO, msg)
-        return JSONData
+            ActivationStatus = True
 
-    def ctam_activate_ac(self, check_time=False, gpu_check=True, fwupd_hyst_wait=True):
+        if fwupd_hyst_wait:
+            IdleWaitTime = self.dut().dut_config["IdleWaitTimeAfterFirmwareUpdate"]["value"]
+            msg = f"Execution will be delayed by {IdleWaitTime} seconds."
+            self.test_run().add_log(LogSeverity.INFO, msg)
+            time.sleep(IdleWaitTime)
+            msg = f"Execution is delayed successfully by {IdleWaitTime} seconds."
+            self.test_run().add_log(LogSeverity.INFO, msg)
+            
+        return ActivationStatus, failure_reason  
+        
+
+    
+    def ctam_activate_ac(self, gpu_check=True, fwupd_hyst_wait=True):
         """
         :Description:					Activate AC
-
+        
         :param check_time:              Check the activation time does not exceed maximum time per spec
 
         :returns:				    	ActivationStatus
@@ -597,56 +641,66 @@ class FunctionalIfc:
         MyName = __name__ + "." + self.ctam_activate_ac.__qualname__
         ActivationStatus = False
         failure_reason = ""
+        activation_time = 0
         FwActivationTimeMax = self.dut().dut_config["FwActivationTimeMax"]["value"]
-        if check_time:
-            if self.dut().dut_config["PowerOnWaitTime"]["value"] > FwActivationTimeMax:
-                msg = f"PowerOnWaitTime is greater than FwActivationTimeMax as per the json config file. Setting FwActivationTimeMax = PowerOnWaitTime"
-                self.test_run().add_log(LogSeverity.WARNING, msg)
-                FwActivationTimeMax = self.dut().dut_config["PowerOnWaitTime"]["value"]
 
         if not self.NodeACReset():  # NodeACReset declaration pending
             failure_reason = "Error while running power cycle"
-            return ActivationStatus, failure_reason
-
+            return ActivationStatus, failure_reason, activation_time 
+        
         if gpu_check:
-            if (check_time):
-                ActivationStartTime = time.time() - self.dut().dut_config["PowerOnWaitTime"]["value"] # When the system was reset
-            else:
-                ActivationStartTime = time.time()
-
-            while "error" in self.IsGPUReachable() or "Not Implemented" in self.IsGPUReachable():  # declaration pending
-                if ((time.time() - ActivationStartTime) > FwActivationTimeMax):
-                    msg = "GPU showing error"
+            ActivationStartTime = time.time()
+            try:
+                resp = self.IsGPUReachable()   # If GPU response is {} or None 
+                if not resp:  
+                    failure_reason = "GPU wasn't reachable after reboot"
+                    return ActivationStatus, failure_reason, activation_time
+            
+                while "error" in resp or "Not Implemented" in resp:  # declaration pending
+                    gpu_reach_time = time.time() - ActivationStartTime
+                    if gpu_reach_time > (2 * FwActivationTimeMax): 
+                        msg = "GPU showing error"
+                        self.test_run().add_log(LogSeverity.DEBUG, msg)
+                        failure_reason = msg
+                        return ActivationStatus, failure_reason, activation_time
+                    msg = "Waiting for GPU to be back up"
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
-                    failure_reason = msg
-                    return ActivationStatus, failure_reason
-                msg = "Waiting for GPU to be back up"
-                self.test_run().add_log(LogSeverity.DEBUG, msg)
-                time.sleep(30)
+                    time.sleep(30)
+                    # recheck gpu
+                    resp = self.IsGPUReachable()
 
-            if not check_time:
-                ActivationStartTime = time.time()
+                gpu_reach_time = round((time.time() - ActivationStartTime), 3) 
+                print(f"Time to reach GPU: {gpu_reach_time} secs ")   
 
-            while (self.IsGPUReachable()["Status"]["State"] != "Enabled"): # declaration pending
-                if (time.time() - ActivationStartTime) > FwActivationTimeMax:
-                    msg = "GPU still not up, {}".format(
+                gpu_enable_start_time = time.time()
+                while (resp["Status"]["State"] != "Enabled"): # declaration pending
+                    # put this in try except
+                    gpu_enable_time = time.time() - ActivationStartTime
+                    if gpu_enable_time > (2 * FwActivationTimeMax):
+                        msg = "GPU still not up, {}".format(
+                                (self.IsGPUReachable())["Status"]["State"])
+                        # failure_reason = msg + f" Activation is taking longer than the maximum time specified {FwActivationTimeMax} seconds."
+                        failure_reason = "GPU not up, activation delayed "
+                        return ActivationStatus, failure_reason, activation_time  
+                    msg = "Waiting for GPU to be back up, {}".format(
                             (self.IsGPUReachable())["Status"]["State"])
-                    failure_reason = msg + f" Activation is taking longer than the maximum time specified {FwActivationTimeMax} seconds."
-                    return ActivationStatus, failure_reason
-                msg = "Waiting for GPU to be back up, {}".format(
-                        (self.IsGPUReachable())["Status"]["State"])
-                self.test_run().add_log(LogSeverity.DEBUG, msg)
-                time.sleep(30)
+                    self.test_run().add_log(LogSeverity.DEBUG, msg)
+                    time.sleep(30)
+                    resp = self.IsGPUReachable()
+
+                gpu_enable_time = round((time.time() - gpu_enable_start_time), 3)
+                print(f"Time for GPU to be back up: {gpu_enable_time} secs") 
+
+            except Exception as e:
+                ActivationStatus = False
+                msg = f"Exception Raised: {str(e)}"
+                self.test_run().add_log(LogSeverity.ERROR, msg)
+                failure_reason = msg
+                return ActivationStatus, failure_reason, activation_time
 
             ActivationEndTime = time.time()
-
-            if check_time and (ActivationEndTime - ActivationStartTime) > FwActivationTimeMax:
-                ActivationStatus = False
-                msg = f"Activation is taking longer than the maximum time specified {FwActivationTimeMax} seconds."
-                self.test_run().add_log(LogSeverity.WARNING, msg)
-                failure_reason = msg
-            else:
-                ActivationStatus = True
+            activation_time = ActivationEndTime - ActivationStartTime   
+            ActivationStatus = True
 
         if fwupd_hyst_wait == True:
             IdleWaitTime = self.dut().dut_config["IdleWaitTimeAfterFirmwareUpdate"]["value"]
@@ -655,9 +709,9 @@ class FunctionalIfc:
             time.sleep(IdleWaitTime)
             msg = f"Execution is delayed successfully by {IdleWaitTime} seconds."
             self.test_run().add_log(LogSeverity.INFO, msg)
-
-        return ActivationStatus, failure_reason
-
+            
+        return ActivationStatus, failure_reason, activation_time
+    
     def RedfishTriggerDumpCollection(self, DiagnosticDataType, URI, OEMDiagnosticDataType=None):
         """
         :Description:                     It will trigger the collection of diagnostic data.
@@ -672,7 +726,7 @@ class FunctionalIfc:
         URL = URI + "/LogServices/Dump/Actions/LogService.CollectDiagnosticData"
         msg = "Dump Collection URL = {}".format(URL)
         self.test_run().add_log(LogSeverity.DEBUG, msg)
-
+        
         payload = { "DiagnosticDataType": DiagnosticDataType }
         if OEMDiagnosticDataType:
             payload["OEMDiagnosticDataType"] = "DiagnosticType=" + OEMDiagnosticDataType
@@ -681,13 +735,13 @@ class FunctionalIfc:
 
         msg = "{0}: RedFish Input: {1} Result: {2}".format(MyName, payload, JSONData)
         self.test_run().add_log(LogSeverity.INFO, msg)
-
+        
         return JSONData
-
+    
     def RedfishDownloadDump(self, DumpURI):
         """
         :Description:              It will download the specified dump using redfish command and untar the downloaded dump.
-        :param DumpLocation:	   Dump location URI
+        :param DumpLocation:	   Dump location URI 
 
         :returns:				   DumpPath (Path to downloaded dump)
         :rtype:                    string

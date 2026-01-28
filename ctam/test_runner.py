@@ -129,6 +129,7 @@ class TestRunner:
         self.redfish_response_messages = {}
         self.default_config_path = default_config_path
         self.show_spec_bindings = False
+        self.measurements = {}  
     
         if self.default_config_path:
             self._show_spec_bindings()
@@ -772,7 +773,9 @@ class TestRunner:
                         msg = f"{test_instance.__class__.__name__} skipped due to :{error_msg}"
                         self.active_run.add_log(severity=LogSeverity.ERROR, message=msg)
                         failure_reason = "spec version not supported"
-                    else:    
+                    else:
+                        # Inject measurements into all test cases
+                        test_instance.measurements = self.measurements
                         test_result, failure_reason = test_instance.run()
                         if (
                             test_result == TestResult.FAIL
@@ -788,8 +791,36 @@ class TestRunner:
                     group_result = TestResult.FAIL
                 finally:
                     # attempt test cleanup even if test exception raised
-                    test_instance.teardown()
+                    try:
+                        test_instance.teardown()
+                    except Exception as e:
+                        exception_details = traceback.format_exc()
+                        self.active_run.add_log(
+                            severity=LogSeverity.FATAL, message=exception_details
+                        )
+                        failure_reason += f" Teardown failed due to exception: {repr(e)}"   
+                        test_instance.result = TestResult.FAIL
+                           
                     test_case_step.end(status=TestStatus.COMPLETE)
+
+                    test_id = test_instance.test_id
+                    activation_time = getattr(test_instance, "activation_time", 0.0) 
+                    activation_status = getattr(test_instance, "activation_status", False) 
+                    activation_failure_reason = getattr(test_instance, "activation_failure_reason", "")
+                    staging_time = getattr(test_instance, "staging_time", 0.0)
+                    staging_status = getattr(test_instance, "staging_status", False)
+                    staging_failure_reason = getattr(test_instance, "staging_failure_reason", "")
+                    test_status = getattr(test_instance, "test_status", False)
+                    self.measurements[test_id] = { 
+                        "activation_time": activation_time,
+                        "activation_status": activation_status,
+                        "activation_failure_reason": activation_failure_reason,
+                        "staging_time": staging_time,
+                        "staging_status": staging_status,
+                        "staging_failure_reason": staging_failure_reason,
+                        "test_status": test_status
+                    }
+                    print(f"{self.measurements}")     
                     execution_endtime = time.perf_counter()
                     execution_time = round(execution_endtime - execution_starttime, 3)
                     test_instance.execution_time = timedelta(seconds=round(execution_endtime - test_starttime, 3))

@@ -37,7 +37,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
     #     if not isinstance(cls._instance, cls):
     #         cls._instance = super(FWUpdateIfc, cls).__new__(cls, *args, **kwargs)
     #     return cls._instance
-
+    
     def __init__(self):
         super().__init__()
         self.included_targets = []
@@ -156,7 +156,18 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 VersionsDifferent = False
 
         return VersionsDifferent, failure_reason
-
+    
+    def ctam_stage_time_check(self, stage_time):
+        FwStagingTimeMax = self.dut().dut_config["FwStagingTimeMax"]["value"]
+        if stage_time > FwStagingTimeMax:
+            stage_msg = f"staging time = {stage_time} seconds, Expected <= {FwStagingTimeMax} seconds."
+            self.test_run().add_log(LogSeverity.DEBUG, stage_msg)
+            status = False
+        else:
+            status = True
+            stage_msg = ""
+        return status, stage_msg
+            
     def ctam_stage_fw(
         self, partial=0, image_type="default", wait_for_stage_completion=True,
         corrupted_component_id=None, corrupted_component_list=[],
@@ -171,13 +182,14 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         :param corrupted_component_list:        List component names (Ids) which are corrupted
         :param check_time:                      Check the staging time does not exceed maximum time per spec
 
-        :returns:                               StageFWOOB_Status, StageFWOOB_Status_message, return_task_id
+        :returns:                               StageFWOOB_Status, StageFWOOB_Status_message, return_task_id 
         :rtype:                                 Bool, str, str
         """
         failure_reason = ""
         MyName = __name__ + "." + self.ctam_stage_fw.__qualname__
         StartTime = time.time()
         pushtargets = self.dut().uri_builder.format_uri(redfish_str="{HttpPushUriTargets}", component_type="GPU_FWUpdate")
+        staging_time = 0
         if partial == 0 and pushtargets:
             self.ctam_pushtargets()
         JSONFWFilePayload = self.get_JSONFWFilePayload_file(image_type=image_type, corrupted_component_id=corrupted_component_id)
@@ -187,7 +199,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 failure_reason = "Error in creating corrupted component!"
             else:
                 failure_reason = "Package file missing in workspace!"
-            return False, failure_reason, ""
+            return False, failure_reason, "", staging_time
         if self.dut().is_debug_mode():
             print(JSONFWFilePayload)
         update_uri = self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("UpdateURI", "")
@@ -204,7 +216,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         if not status:
             self.test_run().add_log(LogSeverity.DEBUG, f"Unable to find update uri from UpdateService resource!!!")
             failure_reason = "Update URI missing from UpdateService!"
-            return False, failure_reason, ""
+            return False, failure_reason, "", staging_time
         targets = self.get_target_inventorys(targets=specific_targets) if specific_targets else []
         if self.dut().is_debug_mode():
             self.test_run().add_log(LogSeverity.DEBUG, f"URI : {uri}")
@@ -226,11 +238,12 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 FwStagingTimeMax = self.dut().dut_config["FwStagingTimeMax"]["value"]
                 StageFWOOB_Status, JSONData = self.ctam_monitor_task(FwUpdTaskID)
                 EndTime = time.time()
+                staging_time = EndTime - StagingStartTime
                 if check_time and (EndTime - StagingStartTime) > FwStagingTimeMax:
                     msg = f"FW copy operation exceeded the maximum time {FwStagingTimeMax} seconds."
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
                     StageFWOOB_Status = False
-                    stage_msg = msg
+                    stage_msg = msg   
 
                 msg = "{0}: GPU Deployment Time: {1} GPU Update Time: {2} \n Redfish Outcome: {3}".format(
                     MyName,
@@ -278,7 +291,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     if message.split(".")[-1].lower() == resp_msg.lower():
                         StageFWOOB_Status = False
                         stage_msg = "ExpectedMessage"
-
+            
             elif image_type == "large":
                 message = JSONData.get("error", {}).get("@Message.ExtendedInfo", {})[0].get("MessageId", "")
                 if not message:
@@ -290,7 +303,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                         stage_msg = "UnexpectedMessage"
                     else:
                         StageFWOOB_Status = True
-
+        
             elif not image_type in self.NegativeTestImages:
                 msg = "Staging failed with incorrect error message {}".format(
                     JSONData["error"]
@@ -299,7 +312,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
                 StageFWOOB_Status = False
                 stage_msg = msg
-        return StageFWOOB_Status, stage_msg, FwUpdTaskID
+        return StageFWOOB_Status, stage_msg, FwUpdTaskID, staging_time
 
     def ctam_fw_update_verify(self, image_type="default", corrupted_component_id=None, specific_targets=[], version_check=True):
         """
@@ -314,7 +327,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         Update_Verified = True
         exception = False
         update_successful = []
-        update_failed = []
+        update_failed = []        
         failure_reason = ""
         self.ctam_get_fw_version(PostInstall=1)
         msg = json.dumps(self.PostInstallDetails, indent=4)
@@ -331,7 +344,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
                     continue
                 negative_case = (
-                    image_type == "negate"
+                    image_type == "negate" 
                     or str(element["Updateable"]).lower() == "false" # Note, this may mean empty SoftwareId. So this condition needs to come before the next one
                     or (image_type == "corrupt_component" and int(element["SoftwareId"], 16) == int(corrupted_component_id, 16) )
                     or (self.included_targets != []
@@ -344,10 +357,10 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                         ExpectedVersion
                     )
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
-
+                
                 elif specific_targets and element["Id"] not in specific_targets:
                     ExpectedVersion = self.PreInstallVersionDetails[element["Id"]]
-
+                    
                 else:
                     SoftwareId = str(hex(int(element["SoftwareId"], 16)))
                     # FW version should be updated per PLDM bundle
@@ -356,7 +369,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 if not ExpectedVersion:
                     # Either not present in PLDM bundle or not present in PreInstallVersionDetails
                     msg += "Not in the PLDM bundle"
-
+                
                 elif element.get("Version", '') not in ExpectedVersion:
                     # Both positive and negative test case
                     update_failed.append(element['SoftwareId'])
@@ -367,11 +380,11 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 elif negative_case:
                     # Negative test case, but expected.
                     msg += "Update Interrupted as Expected"
-
+                
                 else:
                     msg += "Update Successful"
                     update_successful.append(element['SoftwareId'])
-
+                    
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
             except Exception as e:
                 failure_reason = " Exception occured: " + str(e)
@@ -387,7 +400,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         msg = f"Updated Components count - {len(update_successful)} and Failed Components count - {len(update_failed)}"
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         return Update_Verified, failure_reason
-
+    
     def get_target_inventorys(self, targets):
         return [
             self.dut().uri_builder.format_uri(
@@ -404,14 +417,14 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         :returns:                       whether uri was found, update uri and if it supports multipart push
         :rtype:                         Bool, Str, Bool
         """
-
+        
         uri = self.dut().uri_builder.format_uri(
             redfish_str="{BaseURI}/UpdateService", component_type="GPU"
         )
         response = self.dut().run_redfish_command(uri=uri, mode="GET")
         if 'MultipartHttpPushUri' in response.dict and self.dut().multipart_push_uri_support:
             return True, response.dict['MultipartHttpPushUri'], True
-
+        
         elif 'HttpPushUri' in response.dict:
             return True, response.dict['HttpPushUri'], False
             # return True, uri, False  #FIXME Once we have product compliance, we will uncomment the above line.

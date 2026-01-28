@@ -85,6 +85,12 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
     def run(self) -> TestResult:
         """
         actual test verification
+
+        :Description: This method runs the test case which stages the firmware update, activates it, and verifies the update in a loop.
+                      It ensures that the firmware update process is stable and that ongoing rollbacks are not affected by subsequent updates.
+
+        :PASS Criteria: The test passes if all firmware updates complete successfully without errors in the loop.
+        :FAIL Criteria: The test fails if any firmware update encounters an error in the loop.
         """
         failure_reason = ""
         result = True
@@ -105,7 +111,7 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
 
-            status, status_msg, task_id =self.group.fw_update_ifc.ctam_stage_fw(
+            status, status_msg, task_id, _ =self.group.fw_update_ifc.ctam_stage_fw(
                 wait_for_stage_completion=False
             )
             failure_reason = status_msg
@@ -125,7 +131,7 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
                 keep_disturbing = True
                 disturb_count = 1
                 while keep_disturbing:
-                    status, msg, _ = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup")
+                    status, msg, _, _ = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup")
                     failure_reason = msg
                     if status:
                         keep_disturbing = False
@@ -167,7 +173,7 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
         if result or unexpected_error:
             step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")  # type: ignore
             with step4.scope():
-                status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
+                status, status_msg, _ = self.group.fw_update_ifc.ctam_activate_ac()
                 failure_reason = status_msg
                 if status:
                     step4.add_log(
