@@ -7,4 +7,4 @@ LICENSE file in the root directory of this source tree.
 
 """
 
-__version__ = "1.1.2"
+__version__ = "1.1.3"
