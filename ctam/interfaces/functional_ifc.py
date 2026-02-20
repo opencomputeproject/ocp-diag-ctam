@@ -345,6 +345,23 @@ class FunctionalIfc:
                 )
         return pldm_json_file
 
+    def get_fwpkg_path(self, image_type="default"):
+        """
+        Get full path to the fwpkg for the given image type (N/N-1).
+        Used when JSON is not provided and header is extracted from bundle.
+        """
+        pkg_path = ""
+        if image_type == "default":
+            cfg = self.dut().package_config.get("GPU_FW_IMAGE", {})
+            pkg_path = os.path.join(self.dut().cwd, cfg.get("Path", ""), cfg.get("Package", ""))
+        elif image_type == "backup":
+            cfg = self.dut().package_config.get("GPU_FW_IMAGE_BACKUP", {})
+            pkg_path = os.path.join(self.dut().cwd, cfg.get("Path", ""), cfg.get("Package", ""))
+        elif image_type == "old_version":
+            cfg = self.dut().package_config.get("GPU_FW_IMAGE_OLD", {})
+            pkg_path = os.path.join(self.dut().cwd, cfg.get("Path", ""), cfg.get("Package", ""))
+        return pkg_path
+
     def ctam_getfi(self, expanded=0):
         """
         :Description:               Act Get Firmware Inventory
