@@ -293,7 +293,8 @@ class TestRunner:
             redfish_response_messages=self.redfish_response_messages,
             default_config_path=self.default_config_path,
             logger_path=self.output_dir,
-            workspace_dir=self.workspace_dir
+            workspace_dir=self.workspace_dir,
+            output_dir=self.output_dir
         )
         self.comp_tool_dut.current_test_name = "Initialization"
         

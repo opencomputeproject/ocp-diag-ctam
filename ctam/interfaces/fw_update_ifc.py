@@ -12,6 +12,7 @@ import time
 import random
 from interfaces.functional_ifc import FunctionalIfc
 from ocptv.output import LogSeverity
+from utils.fwpkg_utils import PLDMUnpack
 from utils.json_utils import *
 
 try:
@@ -650,26 +651,44 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
     def ctam_get_version_from_bundle(self, image_type):
         """
-        :Description:           It will check the PLDM bundle json and find FW version
-                                of the component with the specified software id.
-        
+        :Description:           Check PLDM bundle json for FW version by software id.
+                                If JSON not provided for N/N-1, extract from fwpkg and write
+                                <fwpkg_basename>_header.json to run output dir.
+
         :param image_type:      image type
 
         :returns:               ComponentVersions
         :rtype:                 string
         """
-        
         ComponentIdsAndVersions = {}
-
-        # Then get the PLDM bundle json
+        PLDMPkgJson = {}
         PLDMPkgJson_file = self.get_PLDMPkgJson_file(image_type=image_type)
 
-        # check again above code
+        # N/N-1: if JSON missing, extract header from bundle and save to run output dir
+        if image_type in ("default", "backup", "old_version") and (not PLDMPkgJson_file or not os.path.isfile(PLDMPkgJson_file)):
+            fwpkg_path = self.get_fwpkg_path(image_type=image_type)
+            if fwpkg_path and os.path.isfile(fwpkg_path):
+                try:
+                    pldm_parser = PLDMUnpack(fwpkg_path)
+                    if pldm_parser.parse_pldm_package():
+                        pldm_parser.get_full_metadata_json()
+                        basename = os.path.basename(fwpkg_path)
+                        header_path = os.path.join(self.dut().output_dir, "{}_header.json".format(basename))
+                        with open(header_path, "w") as f:
+                            json.dump(pldm_parser.full_header, f, indent=4, sort_keys=False)
+                        self.test_run().add_log(LogSeverity.INFO, "Extracted PLDM header from bundle to {}".format(header_path))
+                        PLDMPkgJson_file = header_path
+                    else:
+                        self.test_run().add_log(LogSeverity.WARNING, "Failed to parse PLDM package for header: {}".format(fwpkg_path))
+                except (IOError, OSError) as e:
+                    self.test_run().add_log(LogSeverity.WARNING, "Header extraction failed ({}): {}".format(fwpkg_path, e))
+            else:
+                self.test_run().add_log(LogSeverity.DEBUG, "Fwpkg not found for image_type={}, skipping header extraction".format(image_type))
+
         if PLDMPkgJson_file and os.path.isfile(PLDMPkgJson_file):
             with open(PLDMPkgJson_file, "r") as f:
                 PLDMPkgJson = json.load(f)
 
-        #Using jsonmultivaluehunt to get the multiple values by passing two json keys
         jsonmultivaluehunt(PLDMPkgJson, "ComponentIdentifier", "ComponentVersionString", ComponentIdsAndVersions)
         ComponentIdsAndVersions = {str(hex(int(key, 16))): value for key, value in ComponentIdsAndVersions.items()}
         return ComponentIdsAndVersions
