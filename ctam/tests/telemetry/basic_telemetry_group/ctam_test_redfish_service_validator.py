@@ -87,7 +87,7 @@ class CTAMTestServiceValidator(TestCase):
         with step1.scope():
             step1.add_log(LogSeverity.INFO, f"Cloning repo for Redfish Service Validator.")
             result = git.clone_repo(repo_url="https://github.com/DMTF/Redfish-Service-Validator.git",
-                                  repo_path="RedfishServiceValidator")
+                                  repo_path="RedfishServiceValidator", branch_name="2.5.1")
             if not result:
                 step1.add_log(LogSeverity.ERROR, f"Cloning repo for Redfish Service Validator failed.")
                 failure_reason += "Cloning repo failed. "
@@ -105,14 +105,16 @@ class CTAMTestServiceValidator(TestCase):
                 
                 step2.add_log(LogSeverity.INFO, f"Running Redfish Service command.")
                 result, msg = git.validate_redfish_service(file_name=file_name, connection_url=connection_url,
-                                                       user_name=self.dut().user_name, user_pass=self.dut().user_pass,
+                                                        user_name=self.dut().user_name, user_pass=self.dut().user_pass,
+                                                        auth_type="Basic",
                                                        log_path=self.dut().logger_path, schema_directory=schema_directory,
                                                        depth="Single",
                                                        service_uri="/redfish/v1")
                 if not result:
                     step2.add_log(LogSeverity.ERROR, f"Something went wrong while running redfish command. Please see error msg {msg}.")
                     failure_reason += "Error occurred running Redfish command."
-                step2.add_log(LogSeverity.INFO, f"Redfish Service Command ran successfully and validated.")
+                else:
+                    step2.add_log(LogSeverity.INFO, f"Redfish Service Command ran successfully and validated.")
         
         step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
         with step3.scope():
