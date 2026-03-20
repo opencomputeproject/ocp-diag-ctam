@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		T4
 :Group Name:	Telemetry
 :Score Weight:	10
+:Spec Versions:  ">= 1.0"
 
 :Description:	This test case discovers the list of all metric reports available on the Device Under Test (DUT)
                 and prints their details. It ensures that the telemetry interface can retrieve and display the
@@ -25,7 +26,7 @@ LICENSE file in the root directory of this source tree.
 :Dependencies: None
 
 """
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from prettytable import PrettyTable
 from ocptv.output import (
@@ -46,6 +47,7 @@ class CTAMTestTelemetryMRRead(TestCase):
     score_weight: int = 10
     tags: List[str] = ["L2"]
     compliance_level: str = "L2"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: BasicTelemetryTestGroup):
         """
@@ -84,7 +86,7 @@ class CTAMTestTelemetryMRRead(TestCase):
                 self.test_run().add_log(LogSeverity.INFO, msg)
             else:
                 self.test_run().add_log(LogSeverity.FATAL, "Could not extract the Metric Reports. Proceed with manual debug")
-                failure_reason += "Could not extract the Metric Reports. Proceed with manual debug"
+                failure_reason += "Could not extract Metric Reports."
                 result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()

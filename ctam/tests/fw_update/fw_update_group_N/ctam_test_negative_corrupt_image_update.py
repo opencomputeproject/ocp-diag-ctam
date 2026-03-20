@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F23
 :Group Name:	fw_update
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	
     This test case is a negative test. It searches for GPU_FW_IMAGE_CORRUPT referenced by package_info.json and attempts
@@ -30,7 +31,7 @@ LICENSE file in the root directory of this source tree.
                                            Optional - <HttpPushUriTargets>, <IsMultiPart>, <MultiPartFormData>
                             
         <dut_info.json>                   : Required - <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
-                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>, <SingleShotPowerCycleTimeOut>
                             
         <package_info.json>               : Required - <Path>, <Package>, <JSON>
                                            Optional - <CorruptComponentIdentifier>, <HasSignature>, <SignatureStructBytes>, <MetadataSizeBytes>
@@ -39,7 +40,7 @@ LICENSE file in the root directory of this source tree.
                                            Optional -  <LargeFWImageUpdate>
 """
 
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -66,6 +67,7 @@ class CTAMTestNegativeCorruptImageUpdate(TestCase):
     score_weight: int = 10
     tags: List[str] = ["Negative", "L2"]
     compliance_level: str = "L2"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """
@@ -105,19 +107,20 @@ class CTAMTestNegativeCorruptImageUpdate(TestCase):
 
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
-            status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="corrupt")
-            failure_reason += status_msg
+            status, status_msg, task_id, _ = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="corrupt")
+            failure_reason = status_msg
             if status:
                 step2.add_log(
                     LogSeverity.INFO,
                     f"{self.test_id} : FW Update Staged Initiation Failed as Expected",
                 )
             else:
+                failure_reason += " " + "FW Update Staging Initiated - Unexpected"
                 step2.add_log(
                     LogSeverity.ERROR,
-                    f"{self.test_id} : FW Update Staging Initiated - Unexpected",
+                    f"{self.test_id} : {failure_reason}",
                 )
-                failure_reason += " " + "FW Update Staging Initiated - Unexpected"
+                failure_reason = "FW Update Staging Initiated - Unexpected"
                 result = False
                 
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -136,7 +139,7 @@ class CTAMTestNegativeCorruptImageUpdate(TestCase):
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope(): 
-            if self.group.fw_update_ifc.ctam_activate_ac(gpu_check=False):
+            if self.group.fw_update_ifc.ctam_activate_ac():
                 msg = f"{self.test_id} : Teardown : AC Cycle Passed"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)  
             else:

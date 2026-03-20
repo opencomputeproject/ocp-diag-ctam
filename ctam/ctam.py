@@ -11,6 +11,7 @@ import traceback
 import json
 from pathlib import Path
 from datetime import datetime
+import importlib
 # until the folder structure gets fixed to a more pip/setuptools oriented format
 # we need to manually adjust the path so that running the main script's imports work
 sys.path.append(str(Path(__file__).resolve().parent))
@@ -87,6 +88,18 @@ def parse_args():
         help="Path to the previous test report for consolidation",
         nargs="+",
     )
+    parser.add_argument(
+        "--spec", 
+        required=False, 
+        help="The spec version to run the test with"
+    )
+
+    parser.add_argument(
+        "--test_help",
+        action="store_true",
+        help="Show detailed help for a specific test case and exit"
+    )
+    
     return parser.parse_args()
 
 def get_exception_details(exec: Exception = ""):
@@ -151,8 +164,14 @@ def main():
         raw_log_file = os.path.join(logs_output_dir, "Command_Line_Logs.log")
         redirect_output = RedirectOutput(raw_log_file)
         redirect_output.start()
-        default_config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "json_spec", "input")
-        default_config_path = default_config_path.replace('/tmp/', '') if default_config_path.startswith('/tmp/') else default_config_path 
+
+        spec_version = args.spec   
+        default_config_path = None 
+        
+        if spec_version:
+            default_config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "json_spec", "input", f"spec_{spec_version}")
+            default_config_path = default_config_path.replace('/tmp/', '') if default_config_path.startswith('/tmp/') else default_config_path 
+        
         if not args.workspace:
             ifc_dir = os.path.join(os.path.dirname(__file__), "interfaces")
             ext_test_root_dir =  os.path.join(os.path.dirname(__file__), "tests")
@@ -179,6 +198,7 @@ def main():
             return 1, None, "Missing required files"
         print(f"Version : {__version__}")
         print(f"WorkSpace : {args.workspace}")
+        print(f"Spec version: {args.spec}")
         if args.consolidate:
             print(f"Test report paths : {args.consolidate}")
         
@@ -212,8 +232,12 @@ def main():
         
         # NOTE: We have added internal test directory as mandatory if 'internal_testing' is true in test runner json.
         # NOTE: If internal_test is true in test runner json then both internal and external tests we can run, else we can continue our existing flow.
-        with open(test_runner_json, "r") as f:
-            test_runner_config = json.load(f)
+        
+        if test_runner_json:
+            with open(test_runner_json, "r") as f:
+                test_runner_config = json.load(f)
+
+        test_runner_spec_version = test_runner_config.get("spec_version", None)        
 
         internal_testing = test_runner_config.get("internal_testing", False)
 
@@ -232,6 +256,24 @@ def main():
         if args.list:
             test_hierarchy.print_test_groups_test_cases(args.group)
             return 0, None, "List of tests is printed"
+        
+        if args.test_help:
+            _, test_case_instances = test_hierarchy.instantiate_obj_for_testcase(args.testcase)
+            
+            for test_instance in test_case_instances:
+                module_name = test_instance.__class__.__module__
+                if module_name in sys.modules:
+                    module = sys.modules[module_name]
+                else:
+                    module = importlib.import_module(module_name)
+
+                module_doc = module.__doc__
+                
+                print("\n========== Test Description ==========")
+                print(module_doc)
+                print("======================================\n")
+
+            return 0, None, "Help for the test case is printed"
 
         if args.Discovery:
             runner = TestRunner(
@@ -245,6 +287,8 @@ def main():
                 redfish_response_messages=redfish_response_messages,
                 default_config_path=default_config_path,
                 net_rc=net_rc,
+                spec_version=spec_version,
+                test_runner_spec_version=test_runner_spec_version,
             )
             status_code, exit_string = runner.get_system_details()
             return status_code, None, exit_string
@@ -262,11 +306,12 @@ def main():
                 default_config_path=default_config_path,
                 consolidate = args.consolidate,
                 net_rc=net_rc,
+                spec_version=spec_version,
+                test_runner_spec_version=test_runner_spec_version,
             )
             status_code, exit_string = runner.consolidate_run()
             return status_code, None, exit_string
         
-
         elif args.testcase:
             runner = TestRunner(
                 workspace_dir=args.workspace,
@@ -280,7 +325,10 @@ def main():
                 default_config_path=default_config_path,
                 net_rc=net_rc,
                 single_test_override=args.testcase,
+                spec_version=spec_version,
+                test_runner_spec_version=test_runner_spec_version,
             )
+
         elif args.testcase_sequence:
             runner = TestRunner(
                 workspace_dir=args.workspace,
@@ -294,7 +342,10 @@ def main():
                 default_config_path=default_config_path,
                 net_rc=net_rc,
                 sequence_test_override=args.testcase_sequence,
+                spec_version=spec_version,
+                test_runner_spec_version=test_runner_spec_version,
             )
+
         elif args.group:
             runner = TestRunner(
                 workspace_dir=args.workspace,
@@ -308,7 +359,10 @@ def main():
                 default_config_path=default_config_path,
                 net_rc=net_rc,
                 single_group_override=args.group,
+                spec_version=spec_version,
+                test_runner_spec_version=test_runner_spec_version,
             )
+            
         elif args.group_sequence:
             runner = TestRunner(
                 workspace_dir=args.workspace,
@@ -322,8 +376,9 @@ def main():
                 default_config_path=default_config_path,
                 net_rc=net_rc,
                 sequence_group_override=args.group_sequence,
+                spec_version=spec_version,
+                test_runner_spec_version=test_runner_spec_version,
             )
-        
         
         else:
             all_tests = test_hierarchy.get_all_tests()
@@ -338,7 +393,9 @@ def main():
                 redfish_uri_config_file=redfish_uri_config,
                 redfish_response_messages=redfish_response_messages,
                 default_config_path=default_config_path,
-                run_all_tests=all_tests
+                run_all_tests=all_tests,
+                spec_version=spec_version,
+                test_runner_spec_version=test_runner_spec_version,
             )
 
         status_code, exit_string = runner.run()

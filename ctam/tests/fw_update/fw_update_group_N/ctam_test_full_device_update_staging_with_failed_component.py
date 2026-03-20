@@ -7,7 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F55
 :Group Name:	fw_update
 :Score Weight:	10
-
+:Spec Versions: ">= 1.0"
 :Description:	
     Firmware Update Stack Robustness Test. If one component copying (staging) fails, verify other component copying (staging) goes through.
     Vendor needs to provide a fwpkg where a component image is corrupted (If it not provided in package info testcase can generate), and all other component images are good (i.e. it will not fail the update).
@@ -29,7 +29,7 @@ LICENSE file in the root directory of this source tree.
                                            Optional - <exclude_targets_list>, <HttpPushUriTargets>, <IsMultiPart>, <MultiPartFormData>
                             
         <dut_info.json>                   : Required - <CompareFirmwareInventoryCount>, <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
-                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>, <SingleShotPowerCycleTimeOut>
 
         <package_info.json>               : Required - <Path>, <Package>, <JSON>, <CorruptComponentIdentifier>
                                            Optional - <HasSignature>, <SignatureStructBytes>
@@ -38,7 +38,7 @@ LICENSE file in the root directory of this source tree.
                                            Optional -  <LargeFWImageUpdate>
 """
 
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -65,6 +65,7 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
     score_weight: int = 10
     tags: List[str] = ["L3"]
     compliance_level: str = "L3"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """
@@ -100,7 +101,7 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
                     LogSeverity.ERROR, f"{self.test_id} : Corrupt Component Id Retrieval Failed"
                 )
                 result = False
-                failure_reason += f"{self.test_id} : Corrupt Component Id Retrieval Failed"
+                failure_reason = "Corrupt Component Id Retrieval Failed"
             else:
                 step0.add_log(LogSeverity.INFO, f"{self.test_id} : Corrupt Component Id Retrieved")
 
@@ -108,7 +109,7 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
             step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
             with step1.scope():
                 status, status_msg = self.group.fw_update_ifc.ctam_fw_update_precheck()
-                failure_reason += status_msg
+                failure_reason = status_msg
                 if not status:
                     step1.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Capable")
                 else:
@@ -118,17 +119,17 @@ class CTAMTestFullDeviceUpdateStagingWithFailedComponent(TestCase):
 
             step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
             with step2.scope():
-                status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(image_type="corrupt_component", 
+                status, status_msg, task_id, _ = self.group.fw_update_ifc.ctam_stage_fw(image_type="corrupt_component", 
                     corrupted_component_id=self.corrupted_component_id
                     )
-                failure_reason += " " + status_msg
+                failure_reason = status_msg
                 if status:
                     step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
                 else:
                     step2.add_log(
                         LogSeverity.ERROR, f"{self.test_id} : FW Update Stage Failed"
                     )
-                    failure_reason += " " + "FW Update Stage Failed"
+                    failure_reason = "FW Update Stage Failed"
                     result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()

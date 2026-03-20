@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		T0
 :Group Name:	Telemetry
 :Score Weight:	10
+:Spec Versions:  ">= 1.0"   
 
 :Description:	This testcase will clone the RedfishServiceValidator repository and It will validate all of the available URIs under redfish.
 
@@ -25,7 +26,7 @@ LICENSE file in the root directory of this source tree.
 :Dependencies: None
 
 """
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 import os
 from ocptv.output import (
@@ -47,11 +48,12 @@ class CTAMTestServiceValidator(TestCase):
     :type TestCase:
     """
 
-    test_name: str = "CTAM Test Service Validator"
+    test_name: str = "CTAM Test Redfish Service Validator"
     test_id: str = "T0"
     score_weight: int = 10
     tags: List[str] = ["L2"]
     compliance_level: str = "L2"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: BasicTelemetryTestGroup):
         """
@@ -88,7 +90,7 @@ class CTAMTestServiceValidator(TestCase):
                                   repo_path="RedfishServiceValidator")
             if not result:
                 step1.add_log(LogSeverity.ERROR, f"Cloning repo for Redfish Service Validator failed.")
-                failure_reason += "Cloning repo for Redfish Service Validator failed. "
+                failure_reason += "Cloning repo failed. "
             step1.add_log(LogSeverity.INFO, f"Cloning repo for Redfish Service Validator successful.")
         
         if result:
@@ -109,7 +111,7 @@ class CTAMTestServiceValidator(TestCase):
                                                        service_uri="/redfish/v1")
                 if not result:
                     step2.add_log(LogSeverity.ERROR, f"Something went wrong while running redfish command. Please see error msg {msg}.")
-                    failure_reason += f"Something went wrong while running redfish command. Please see error msg {msg}."
+                    failure_reason += "Error occurred running Redfish command."
                 step2.add_log(LogSeverity.INFO, f"Redfish Service Command ran successfully and validated.")
         
         step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore

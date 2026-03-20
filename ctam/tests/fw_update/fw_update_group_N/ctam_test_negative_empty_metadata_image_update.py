@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F26
 :Group Name:	fw_update
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	
     This test case is a negative test. It makes a copy of the default FW image provided in package_info.json
@@ -30,7 +31,7 @@ LICENSE file in the root directory of this source tree.
                                            Optional - <exclude_targets_list>, <HttpPushUriTargets>, <MultiPartFormData>, <IsMultiPart>
                             
         <dut_info.json>                   : Required - <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
-                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>, <SingleShotPowerCycleTimeOut>
                             
         <package_info.json>               : Required - <Path>, <Package>, <JSON>, <CorruptComponentIdentifier>
                                            Optional - <HasSignature>, <SignatureStructBytes>, <MetadataSizeBytes>
@@ -39,7 +40,7 @@ LICENSE file in the root directory of this source tree.
                                            Optional -  <LargeFWImageUpdate>
 """
 
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -66,6 +67,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
     score_weight: int = 10
     tags: List[str] = ["Negative", "L2", "Single_Device"]
     compliance_level: str = "L2"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """
@@ -115,15 +117,15 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
                 step3.add_log(LogSeverity.INFO, f"{self.test_id} : Single Device Selected")
             else:
                 step3.add_log(LogSeverity.ERROR, f"{self.test_id} : Single Device Selection Failed")
-                failure_reason += f"{self.test_id} : Single Device Selection Failed"
+                failure_reason = "Single Device Selection Failed"
                 result = False
 
         step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4_{corrupted_component_list[0]}")  # type: ignore
         with step4.scope():
-            status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="empty_metadata", 
+            status, status_msg, task_id, _ = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="empty_metadata", 
                                                                                  corrupted_component_id=corrupted_component_id,
                                                                                  specific_targets=[corrupted_component_list[0]])
-            failure_reason += " " + status_msg
+            failure_reason = status_msg
             if status:
                 step4.add_log(
                     LogSeverity.INFO,
@@ -134,7 +136,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
                     LogSeverity.ERROR,
                     f"{self.test_id} : FW Update Staging Initiated - Unexpected",
                 )
-                failure_reason += " " + "FW Update Staging Initiated - Unexpected"
+                failure_reason = "FW Update Staging Initiated - Unexpected"
                 result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
@@ -160,7 +162,7 @@ class CTAMTestNegativeEmptyMetadataImageUpdate(TestCase):
             
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")
         with step2.scope():
-            if self.group.fw_update_ifc.ctam_activate_ac(gpu_check=False, fwupd_hyst_wait=False):
+            if self.group.fw_update_ifc.ctam_activate_ac():
                 msg = f"{self.test_id} : Teardown : AC Cycle Passed"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)  
             else:

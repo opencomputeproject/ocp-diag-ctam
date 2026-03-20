@@ -265,25 +265,26 @@ class TestHierarchy:
         :param group_name: Name of group, defaults to None
         :type group_name: str, optional
         """
-        t = PrettyTable(["GroupID", "GroupName", "GroupTag", "TestCaseID", "TestCaseName", "TestCaseTag", "TestCaseWeightScore"])
+        t = PrettyTable(["GroupID", "GroupName", "GroupTag", "TestCaseID", "TestCaseName", "TestCaseTag", "TestCaseWeightScore", "Spec Versions"])
         t.title = "Test Case info table"
 
         def print_group_info(group_name, group_info):
             total_cases = len(group_info["test_cases"])
             if total_cases == 0:
-                t.add_row([group_info["group_attributes"]["group_id"], group_name, "", "", "", "", ""])
+                t.add_row([group_info["group_attributes"]["group_id"], group_name, "", "", "", "", "", ""])
                 return
             count = 0
             # print(f'\nGroup ID: {group_info["group_attributes"]["group_id"]}      Test Group Name: {group_name}')
             for testcase in group_info["test_cases"]:
+                spec_support = testcase["attributes"].get("spec_versions", "")
                 if count != total_cases//2:
                     t.add_row(["", "", group_info["group_attributes"]["tags"],\
                           testcase["attributes"]["test_id"], testcase["testcase_name"], testcase["attributes"]["tags"],\
-                             testcase["attributes"]["score_weight"]])
+                             testcase["attributes"]["score_weight"], spec_support])
                 else:
                     t.add_row([group_info["group_attributes"]["group_id"], group_name, group_info["group_attributes"]["tags"],\
                           testcase["attributes"]["test_id"], testcase["testcase_name"], testcase["attributes"]["tags"],\
-                             testcase["attributes"]["score_weight"]])
+                             testcase["attributes"]["score_weight"], spec_support])
                 count += 1
                 # print(
                 #     f'    Test Case ID: {testcase["attributes"]["test_id"]}      Test Case Name: {testcase["testcase_name"]}'
@@ -293,11 +294,11 @@ class TestHierarchy:
             # If no group name is specified, print all groups.
             for group_name, group_info in self.test_groups.items():
                 print_group_info(group_name, group_info)
-                t.add_row(["","","","","","",""], divider=True)
+                t.add_row(["","","","","","","",""], divider=True)
                 
         else:
             # Otherwise, print the specified group.
-            #print(self.test_groups)
+            # print(self.test_groups)
             group_info = self._find_group(group_name)
             # group_info = self.test_groups.get(group_name)
             if group_info is not None:
@@ -395,7 +396,6 @@ class TestHierarchy:
         if not module_name or not module_path:
             print("Module name or module path is missing.")
             return None, None
-
         try:
             spec = importlib.util.spec_from_file_location(
                 module_name, os.path.join(module_path, module_name + ".py")

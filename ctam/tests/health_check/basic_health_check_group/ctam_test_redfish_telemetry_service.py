@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		H7
 :Group Name:	health_check
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	This test verifies the availability and correctness of the Redfish Telemetry Service.
                 The test attempts to retrieve telemetry data from the service and checks for errors.
@@ -20,7 +21,7 @@ LICENSE file in the root directory of this source tree.
 :Dependencies: None
 
 """
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -47,6 +48,7 @@ class CTAMTestRedfishTelemetryService(TestCase):
     score_weight: int = 10
     tags: List[str] = ["HCheck", "L3"]
     compliance_level: str = "L3"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     # exclude_tags: List[str] = ["NotCheck"]
 

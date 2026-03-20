@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		H6
 :Group Name:	health_check
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	This test case attempts to get the expanded firmware inventory from the update service and verifies its presence and correctness.
 
@@ -24,7 +25,7 @@ LICENSE file in the root directory of this source tree.
 :Dependencies: None
 
 """
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -51,6 +52,7 @@ class CTAMTestRedfishFirmwareInventoryExpandedCollection(TestCase):
     score_weight: int = 10
     tags: List[str] = ["HCheck", "L2"]
     compliance_level: str = "L2"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     # exclude_tags: List[str] = ["NotCheck"]
 
@@ -84,7 +86,7 @@ class CTAMTestRedfishFirmwareInventoryExpandedCollection(TestCase):
             JSONData = self.group.health_check_ifc.ctam_getfi(expanded=1)
             if JSONData is None or "error" in JSONData:
                 step1.add_log(LogSeverity.ERROR, f"{self.test_id} : Redfish FW Inventory Expanded Collection Read - Failed")
-                failure_reason += "Redfish FW Inventory Expanded Collection Read - Failed"
+                failure_reason += "Expanded Collection Read Failed"
                 result = False
             else:
                 step1.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish FW Inventory Expanded Collection Read - Completed")
@@ -96,7 +98,7 @@ class CTAMTestRedfishFirmwareInventoryExpandedCollection(TestCase):
                     step2.add_log(LogSeverity.INFO, f"{self.test_id} : Redfish FW Inventory Expanded Collection Verification - Passed")
                 else:
                     step2.add_log(LogSeverity.ERROR,f"{self.test_id} : Redfish FW Inventory Expanded Collection Verification - Failed")
-                    failure_reason += "Redfish FW Inventory Expanded Collection Verification - Failed"
+                    failure_reason += "Expanded Collection Verification Failed"
                     result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
