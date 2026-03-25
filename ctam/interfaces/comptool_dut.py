@@ -53,6 +53,7 @@ class CompToolDut(Dut):
         redfish_response_messages,
         default_config_path,
         logger_path,
+        output_dir,
         name: ty.Optional[str] = None,
         metadata: ty.Optional[Metadata] = None,
     ):
@@ -61,6 +62,8 @@ class CompToolDut(Dut):
 
         :param id: identification
         :type id: str
+        :param output_dir: path to current run output dir (e.g. workspace/TestRuns/<run_dir>)
+        :type output_dir: str
         :param debugMode: true if in debug mode
         :type debugMode: bool
         :param name: name to identify dyt, defaults to None
@@ -79,6 +82,7 @@ class CompToolDut(Dut):
         self.logger = logger
         self.workspace_dir = workspace_dir
         self.logger_path = logger_path
+        self.output_dir = output_dir
         self.test_info_logger = test_info_logger
         self.test_uri_response_check = test_uri_response_check
         self.redfish_response_messages = redfish_response_messages
