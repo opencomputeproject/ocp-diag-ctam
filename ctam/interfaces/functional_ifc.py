@@ -295,6 +295,44 @@ class FunctionalIfc:
             return ""
         return ""
 
+    def _get_pkg_cfg(self, image_type):
+        """
+        Retrieves the device configuration and package configuration based on the specified image type.
+
+        This is a helper method that maps image types to their corresponding configuration keys
+        and fetches the associated configuration from the device's package_config.
+
+        Args:
+            image_type (str): The type of image to fetch configuration for. Must be one of:
+                - "default": Maps to GPU_FW_IMAGE
+                - "backup": Maps to GPU_FW_IMAGE_BACKUP
+                - "old_version": Maps to GPU_FW_IMAGE_OLD
+                - "corrupt_component": Maps to GPU_FW_IMAGE_CORRUPT_COMPONENT
+
+        Returns:
+            tuple: A tuple containing:
+                - dut: The device under test object
+                - dict: The package configuration dictionary for the specified image type,
+                        or an empty dictionary if the key is not found
+
+        @param image_type The image type identifier string
+        @return tuple Containing the DUT object and its corresponding package configuration
+        """
+        cfg_map = {
+            "default": "GPU_FW_IMAGE",
+            "backup": "GPU_FW_IMAGE_BACKUP",
+            "old_version": "GPU_FW_IMAGE_OLD",
+            "corrupt_component": "GPU_FW_IMAGE_CORRUPT_COMPONENT",
+        }
+
+        key = cfg_map.get(image_type)
+        dut = self.dut()
+
+        if not key:
+            return dut, {}
+
+        return dut, dut.package_config.get(cfg_map[image_type], {})
+
     def get_PLDMPkgJson_file(self, image_type="default"):
         """
         :Description:           Get PLDM package file
@@ -304,46 +342,29 @@ class FunctionalIfc:
         :returns:	            File path
         :rtype:                 string
         """
-        # if not self.dut().package_config:
-        #     raise Exception("Please provide data in package config file to run this test case...")
         pldm_json_file = ""
-        if image_type == "default":
-            pldm_json_file = os.path.join(
-                self.dut().cwd,
-                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
-                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("JSON", ""),
-            )
+        dut, cfg = self._get_pkg_cfg(image_type)
+        # Special handling for corrupt_component
+        if image_type == "corrupt_component":
+            corrupt_cfg = dut.package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {})
 
-        elif image_type == "backup":
-            pldm_json_file = os.path.join(
-                self.dut().cwd,
-                self.dut()
-                .package_config.get("GPU_FW_IMAGE_BACKUP", {})
-                .get("Path", ""),
-                self.dut()
-                .package_config.get("GPU_FW_IMAGE_BACKUP", {})
-                .get("JSON", ""),
-            )
-        elif image_type == "old_version":
-            pldm_json_file = os.path.join(
-                self.dut().cwd,
-                self.dut().package_config.get("GPU_FW_IMAGE_OLD", {}).get("Path", ""),
-                self.dut().package_config.get("GPU_FW_IMAGE_OLD", {}).get("JSON", ""),
-            )
-        elif image_type == "corrupt_component":
-            if self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("JSON", "") != "":
-                pldm_json_file = os.path.join(
-                    self.dut().cwd,
-                    self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Path", ""),
-                    self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("JSON", ""),
-                )
+            # If JSON exists use it
+            if corrupt_cfg.get("JSON"):
+                pldm_json_file = os.path.join(dut.cwd,
+                                            corrupt_cfg.get("Path", ""),
+                                            corrupt_cfg.get("JSON", ""),)
             else:
-                pldm_json_file = os.path.join(
-                    self.dut().cwd,
-                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
-                    'corrupted-pkg.fwpkg.json',
-                )
-        return pldm_json_file
+                # Else fallback to default path + corrupted filename
+                fallback_cfg = dut.package_config.get("GPU_FW_IMAGE", {})
+                pldm_json_file = os.path.join(dut.cwd,
+                                            fallback_cfg.get("Path", ""),
+                                            "corrupted-pkg.fwpkg.json",)
+        else:
+            # Normal cases
+            if cfg:
+                pldm_json_file = os.path.join(dut.cwd, cfg.get("Path", ""), cfg.get("JSON", ""),)
+
+        return  pldm_json_file
 
     def get_fwpkg_path(self, image_type="default"):
         """
@@ -351,16 +372,13 @@ class FunctionalIfc:
         Used when JSON is not provided and header is extracted from bundle.
         """
         pkg_path = ""
-        if image_type == "default":
-            cfg = self.dut().package_config.get("GPU_FW_IMAGE", {})
-            pkg_path = os.path.join(self.dut().cwd, cfg.get("Path", ""), cfg.get("Package", ""))
-        elif image_type == "backup":
-            cfg = self.dut().package_config.get("GPU_FW_IMAGE_BACKUP", {})
-            pkg_path = os.path.join(self.dut().cwd, cfg.get("Path", ""), cfg.get("Package", ""))
-        elif image_type == "old_version":
-            cfg = self.dut().package_config.get("GPU_FW_IMAGE_OLD", {})
-            pkg_path = os.path.join(self.dut().cwd, cfg.get("Path", ""), cfg.get("Package", ""))
-        return pkg_path
+
+        dut, cfg = self._get_pkg_cfg(image_type)
+        package = cfg.get("Package")
+        if not package:
+            return ""
+
+        return os.path.join(dut.cwd, cfg.get("Path", ""), package)
 
     def ctam_getfi(self, expanded=0):
         """
