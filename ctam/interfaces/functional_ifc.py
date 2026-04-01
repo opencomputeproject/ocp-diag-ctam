@@ -307,7 +307,6 @@ class FunctionalIfc:
                 - "default": Maps to GPU_FW_IMAGE
                 - "backup": Maps to GPU_FW_IMAGE_BACKUP
                 - "old_version": Maps to GPU_FW_IMAGE_OLD
-                - "corrupt_component": Maps to GPU_FW_IMAGE_CORRUPT_COMPONENT
 
         Returns:
             tuple: A tuple containing:
@@ -322,7 +321,6 @@ class FunctionalIfc:
             "default": "GPU_FW_IMAGE",
             "backup": "GPU_FW_IMAGE_BACKUP",
             "old_version": "GPU_FW_IMAGE_OLD",
-            "corrupt_component": "GPU_FW_IMAGE_CORRUPT_COMPONENT",
         }
 
         key = cfg_map.get(image_type)
@@ -344,25 +342,10 @@ class FunctionalIfc:
         """
         pldm_json_file = ""
         dut, cfg = self._get_pkg_cfg(image_type)
-        # Special handling for corrupt_component
-        if image_type == "corrupt_component":
-            corrupt_cfg = dut.package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {})
 
-            # If JSON exists use it
-            if corrupt_cfg.get("JSON"):
-                pldm_json_file = os.path.join(dut.cwd,
-                                            corrupt_cfg.get("Path", ""),
-                                            corrupt_cfg.get("JSON", ""),)
-            else:
-                # Else fallback to default path + corrupted filename
-                fallback_cfg = dut.package_config.get("GPU_FW_IMAGE", {})
-                pldm_json_file = os.path.join(dut.cwd,
-                                            fallback_cfg.get("Path", ""),
-                                            "corrupted-pkg.fwpkg.json",)
-        else:
-            # Normal cases
-            if cfg:
-                pldm_json_file = os.path.join(dut.cwd, cfg.get("Path", ""), cfg.get("JSON", ""),)
+        # Normal cases
+        if cfg:
+            pldm_json_file = os.path.join(dut.cwd, cfg.get("Path", ""), cfg.get("JSON", ""),)
 
         return  pldm_json_file
 
