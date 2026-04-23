@@ -42,6 +42,9 @@ from utils.logger_utils import LoggingWriter, LogSanitizer, BuiltInLogSanitizers
 from version import __version__
 COUNTER = 0   
 
+class _NullActiveRun:
+    def add_log(self, *args, **kwargs):
+        pass
 
 class TestRunner:
     r"""
@@ -403,6 +406,8 @@ class TestRunner:
         self._executed_any_test = False
         gtotal = 0            # ensure initialized
         self._init_writer()
+        if self.active_run is None:
+            self.active_run = _NullActiveRun()
 
         try:
             status_code = 0
