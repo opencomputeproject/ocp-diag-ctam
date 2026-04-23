@@ -129,7 +129,9 @@ class TestRunner:
         self.redfish_response_messages = {}
         self.default_config_path = default_config_path
         self.show_spec_bindings = False
-        self.measurements = {}  
+        self.measurements = {}
+        self.writer = None
+        self.active_run = None
     
         if self.default_config_path:
             self._show_spec_bindings()
@@ -375,7 +377,19 @@ class TestRunner:
 
             elif tag in testcase.compliance_level:
                 testcase.score_weight = self.weighted_scores[tag]
-            
+
+    def _init_writer(self):
+        if self.writer is None:
+            self.writer = LoggingWriter(
+                self.output_dir,
+                self.console_log,
+                "OCPTV_CTAM_LOGS_",
+                "json",
+                self.debug_mode,
+                desanitize_log=self.sanitize_logs,
+                words_to_skip=self.words_to_skip
+            )
+
     def run(self):
         r"""
         Public API used to kick of the test suite
@@ -387,6 +401,8 @@ class TestRunner:
         status_code = -1        # default failure
         exit_string = ""        # always defined
         self._executed_any_test = False
+        gtotal = 0            # ensure initialized
+        self._init_writer()
 
         try:
             status_code = 0
