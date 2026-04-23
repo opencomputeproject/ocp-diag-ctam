@@ -1,4 +1,4 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -38,7 +38,7 @@ FAIL Criteria:
 
         <redfish_uri_config.json>         : Required - <TaskServiceURI>
 
-"""
+r"""
 from typing import Optional, List, Union
 from tests.test_case import TestCase
 from ocptv.output import (
@@ -54,12 +54,12 @@ from tests.ras.basic_ras_test_group import (
 
 
 class CTAMTestCollectCrashdumpManager(TestCase):
-    """
+    r"""
     Post CollectDiagnisticData for '\redfish\v1\Managers\{Manager}\LogService\EventLog with DiagnosticDataType = Manager
 
     :param TestCase: super class for all test cases
     :type TestCase:
-    """
+    r"""
 
     test_name: str = "CTAM Test Collect Crashdump Manager"
     test_id: str = "R2"
@@ -71,16 +71,16 @@ class CTAMTestCollectCrashdumpManager(TestCase):
     # exclude_tags: List[str] = ["NotCheck"]
 
     def __init__(self, group: BasicRasTestGroup):
-        """
+        r"""
         _summary_
-        """
+        r"""
         super().__init__()
         self.group = group
 
     def setup(self):
-        """
+        r"""
         set environment state for this test only
-        """
+        r"""
         # call super first
         super().setup()
 
@@ -90,9 +90,9 @@ class CTAMTestCollectCrashdumpManager(TestCase):
             pass
 
     def run(self) -> TestResult:
-        """
+        r"""
         actual test verification
-        """
+        r"""
         failure_reason = ""
         result = False
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")
@@ -115,9 +115,9 @@ class CTAMTestCollectCrashdumpManager(TestCase):
         return self.result, failure_reason
 
     def teardown(self):
-        """
+        r"""
         undo environment state change from setup() above, this function is called even if run() fails or raises exception
-        """
+        r"""
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():

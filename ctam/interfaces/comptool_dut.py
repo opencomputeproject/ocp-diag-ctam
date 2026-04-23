@@ -1,10 +1,10 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 Copyright (c) NVIDIA CORPORATION
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
-"""
+r"""
 
 import os
 import typing as ty
@@ -28,14 +28,14 @@ from utils.ssh_tunnel_utils import SSHTunnelWithLibrary, SSHTunnelWithSshpass
 
 
 class CompToolDut(Dut):
-    """
+    r"""
     This subclass derived from OCP dut allows for faster turnaround to add new functionality.
     Periodically this class can be reviewed to determine what functionality should be moved
     to ocptv Dut
 
     :param Dut: OCP super class
     :type Dut: ocptv.output.Dut
-    """
+    r"""
 
     def __init__(
         self,
@@ -57,7 +57,7 @@ class CompToolDut(Dut):
         name: ty.Optional[str] = None,
         metadata: ty.Optional[Metadata] = None,
     ):
-        """
+        r"""
         Passes same parameter to super class
 
         :param id: identification
@@ -70,7 +70,7 @@ class CompToolDut(Dut):
         :type name: ty.Optional[str], optional
         :param metadata: additional descriptive data, defaults to None
         :type metadata: ty.Optional[Metadata], optional
-        """
+        r"""
         self._debugMode: bool = debugMode
         self._console_log: bool = console_log
         self.__package_config_file = package_config
@@ -126,10 +126,10 @@ class CompToolDut(Dut):
 
 
     def set_up_connection(self):
-        """
+        r"""
         This method sets up connection to the DUT,
         which includes ssh_tunneling, Redfish client setup and login if needed
-        """
+        r"""
         # Set up SSH Tunneling if requested
         if self.ssh_tunnel_required:
             # Set up port forwarding
@@ -198,7 +198,7 @@ class CompToolDut(Dut):
         raise Exception("Connection IP can not be override...")
 
     def run_redfish_command(self, uri, mode="GET", body=None, headers=None, timeout=None):
-        """
+        r"""
         This method is for running redfish commands according to mode and log the output into
         a formatted log file and return the response
         
@@ -213,7 +213,7 @@ class CompToolDut(Dut):
 
         :return: response for requests
         :rtype: response object or None in case of failure
-        """
+        r"""
         try:
             start_time = time.time()
             response = None
@@ -300,7 +300,7 @@ class CompToolDut(Dut):
         
     
     def run_request_command(self, uri, mode="GET", body=None, headers=None, timeout=None, files=None, verify=False):
-        """
+        r"""
         This method is for running redfish commands according to mode and log the output into
         a formatted log file and return the response
         
@@ -315,7 +315,7 @@ class CompToolDut(Dut):
 
         :return: response for requests
         :rtype: response object or None in case of failure
-        """
+        r"""
         try:
             start_time = time.time()
             response = None
@@ -434,7 +434,7 @@ class CompToolDut(Dut):
             
     
     def is_debug_mode(self) -> bool:
-        """
+        r"""
         Typically shouldn't be necessary. Log messages of LogSeverity.DEBUG are filtered.
         So they can exist in final code, and will only be visible if system debug mode is enabled.
         ex self._test_run.add_log(severity=LogSeverity.DEBUG, message=msg)
@@ -442,7 +442,7 @@ class CompToolDut(Dut):
 
         :return: _description_
         :rtype: _type_
-        """
+        r"""
         return self._debugMode
     
     @property
@@ -465,12 +465,12 @@ class CompToolDut(Dut):
         
     
     def GetSystemDetails(self, print_details=0): # FIXME: Use logging method and fix the uri
-        """
+        r"""
         :Description:        Gets the System information from BMC.
 
         :returns:	         System Details & BMC Frimware Version
         :rtype:              None
-        """
+        r"""
         try:
             MyName = __name__ + "." + self.GetSystemDetails.__qualname__
             able_to_get_system_details = True

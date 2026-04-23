@@ -1,10 +1,10 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-"""
+r"""
 
 from typing import Optional, List
 from interfaces.functional_ifc import FunctionalIfc
@@ -24,11 +24,11 @@ class RasIfc(FunctionalIfc, metaclass=Meta):
 
     
     def ctam_discover_crashdump_cap(self):
-        """
+        r"""
         :Description:				Get CollectDiagnosticDataActionInfo 
 
         :returns:				    List of all action uris with LogService.CollectDiagnosticData
-        """
+        r"""
         collectdiagnostic_uri_list = []
         logservice_ras_uri_list = self.ctam_get_collectdiagnostic_logservices_uris()
         for uri in logservice_ras_uri_list:
@@ -37,11 +37,11 @@ class RasIfc(FunctionalIfc, metaclass=Meta):
         return collectdiagnostic_uri_list
     
     def ctam_get_collectdiagnostic_logservices_uris(self):
-        """
+        r"""
         :Description:				Similar to logservice uri list under health check interface, but only for systems and managers. 
 
         :returns:				    List of all URIs with "LogServices" as a property under /redfish/v1/Managers and /redfish/v1/Systems
-        """
+        r"""
         collectdiagnostic_logservices_uri_list=[]
         self.ctam_redfish_uri_deep_hunt("/redfish/v1/Managers", "LogServices", collectdiagnostic_logservices_uri_list, uri_analyzed=[])
         self.ctam_redfish_uri_deep_hunt("/redfish/v1/Systems", "LogServices", collectdiagnostic_logservices_uri_list, uri_analyzed=[])
@@ -58,14 +58,14 @@ class RasIfc(FunctionalIfc, metaclass=Meta):
         return collect_managers_list
     
     def check_location_list(self, JSONData):
-        """_summary_
+        r"""_summary_
 
         Args:
             JSONData (_type_): _description_
 
         Returns:
             _type_: _description_
-        """
+        r"""
         location_list = JSONData.get("Payload", {}).get("HttpHeaders", [])
         if not location_list:
             self.test_run().add_log(LogSeverity.FATAL, "Location list is not found")

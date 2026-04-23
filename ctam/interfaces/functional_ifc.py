@@ -1,11 +1,11 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 Copyright (c) NVIDIA CORPORATION
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-"""
+r"""
 from operator import contains
 import os
 import json
@@ -24,35 +24,35 @@ from interfaces.comptool_dut import CompToolDut
 from utils.fwpkg_utils import FwpkgSignature, PLDMFwpkg, PLDMUnpack
 
 class FunctionalIfc:
-    """
+    r"""
     This super class primarily provides access to the DUT.  It should NOT be used as a collection of miscellaneous
     items.  Create additional focused subclasses from this one.
-    """
+    r"""
 
     _dut: CompToolDut | None = None
     _test_run: Optional[tv.TestRun] = None  # OCP TestRun
 
     @staticmethod
     def SetUpAssociations(testrun: tv.TestRun, dut: CompToolDut):
-        """
+        r"""
         The test framework will instance interfaces first, and then this class static method is used
         to create the class associations.
 
         :param dut: device under test
         :type dut: CompToolDut
-        """
+        r"""
         FunctionalIfc._test_run = testrun
         FunctionalIfc._dut = dut
 
     @staticmethod
     def dut() -> CompToolDut:
-        """
+        r"""
         Robustness check to ensure associations have been setup before used at runtime
 
         :raises NotImplementedError: missed setup
         :return: active dut
         :rtype: CompToolDut
-        """
+        r"""
         if FunctionalIfc._dut:
             return FunctionalIfc._dut
         else:
@@ -60,26 +60,26 @@ class FunctionalIfc:
 
     @staticmethod
     def test_run() -> tv.TestRun:
-        """
+        r"""
         Robustness check to ensure associations have been setup before used at runtime
 
         :raises NotImplementedError: missed setup
         :return: active dut
         :rtype: CompToolDut
-        """
+        r"""
         if FunctionalIfc._test_run:
             return FunctionalIfc._test_run
         else:
             raise NotImplementedError(f"need to call FunctionalIfc.SetUpAssociations")
 
     def __init__(self):
-        """
+        r"""
         Default init for now
-        """
+        r"""
         pass
 
     def ctam_get_component_to_be_corrupted(self, VendorProvidedBundle=True):
-        """
+        r"""
         :Description:                   It will check the package_info.json for CorruptComponentIdentifier.
                                         If both corrupt package and CorruptComponentIdentifier are not provided,
                                         it'll find the first updatable element from firmware inventory.
@@ -89,7 +89,7 @@ class FunctionalIfc:
 
         :returns:		                SoftwareID of the component to be corrupted (in hex format)
         :rtype:                         str. None in case of failure
-        """
+        r"""
         MyName = __name__ + "." + self.ctam_get_component_to_be_corrupted.__qualname__
         vendor_provided_corrupt_pkg = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Package", "")
         if VendorProvidedBundle and vendor_provided_corrupt_pkg == "":
@@ -115,14 +115,14 @@ class FunctionalIfc:
 
 
     def get_JSONFWFilePayload_file(self, image_type="default", corrupted_component_id=None):
-        """
+        r"""
         :Description:           Get Payload file
 
         :param expanded:		image type
 
         :returns:	            File path
         :rtype:                 string
-        """
+        r"""
 
         # FIXME: Refactor.. Lots of repeated code
         # if not self.dut().package_config:
@@ -296,14 +296,14 @@ class FunctionalIfc:
         return ""
 
     def get_PLDMPkgJson_file(self, image_type="default"):
-        """
+        r"""
         :Description:           Get PLDM package file
 
         :param expanded:		image type
 
         :returns:	            File path
         :rtype:                 string
-        """
+        r"""
         # if not self.dut().package_config:
         #     raise Exception("Please provide data in package config file to run this test case...")
         pldm_json_file = ""
@@ -346,10 +346,10 @@ class FunctionalIfc:
         return pldm_json_file
 
     def get_fwpkg_path(self, image_type="default"):
-        """
+        r"""
         Get full path to the fwpkg for the given image type (N/N-1).
         Used when JSON is not provided and header is extracted from bundle.
-        """
+        r"""
         pkg_path = ""
         if image_type == "default":
             cfg = self.dut().package_config.get("GPU_FW_IMAGE", {})
@@ -363,13 +363,13 @@ class FunctionalIfc:
         return pkg_path
 
     def ctam_getfi(self, expanded=0):
-        """
+        r"""
         :Description:               Act Get Firmware Inventory
         :param expanded:		Expand Param
 
         :returns:	                JSON Data after running Redfish command
         :rtype:                     JSON Dict
-        """
+        r"""
         MyName = __name__ + "." + self.ctam_getfi.__qualname__
 
         if expanded == 1:
@@ -393,14 +393,14 @@ class FunctionalIfc:
         return data
 
     def ctam_getsi(self, expanded=0):
-        """
+        r"""
         :Description:       Get Software Inventory
 
         :param expanded:		Expand Param
 
         :returns:	        JSON Data after running Redfish command
         :rtype:             JSON Dict
-        """
+        r"""
         MyName = __name__ + "." + self.ctam_getsi.__qualname__
         if expanded == 1:
             ctam_getsi_uri = self.dut().uri_builder.format_uri(
@@ -422,11 +422,11 @@ class FunctionalIfc:
         return data
 
     def ctam_getts(self):
-        """
+        r"""
         :Description:       Act Get Telemetry Service
         :returns:	        JSON Data after running Redfish command
         :rtype:             JSON Dict
-        """
+        r"""
 
         MyName = __name__ + "." + self.ctam_getts.__qualname__
         ctam_getts_uri = self.dut().uri_builder.format_uri(
@@ -441,11 +441,11 @@ class FunctionalIfc:
         return data
 
     def ctam_getus(self):
-        """
+        r"""
         :Description:       Get Update Service
         :returns:	        JSON Data after running Redfish command
         :rtype:             JSON Dict
-        """
+        r"""
         MyName = __name__ + "." + self.ctam_getus.__qualname__
 
         ctam_getus_uri = self.dut().uri_builder.format_uri(
@@ -464,11 +464,11 @@ class FunctionalIfc:
         return response.dict, ctam_getes_uri
 
     def ctam_getes(self, path=None):
-        """
+        r"""
         :Description:       Get Event Service and child collection items.
         :returns:	        JSON Data after running Redfish command
         :rtype:             JSON Dict
-        """
+        r"""
 
         MyName = __name__ + "." + self.ctam_getes.__qualname__
 
@@ -500,11 +500,11 @@ class FunctionalIfc:
         return data
 
     def ctam_create_es(self, destination, RegistryPrefixes, Context, Protocol):
-        """
+        r"""
         :Description:       Create a subscription
         :returns:	        JSON Data after running Redfish command
         :rtype:             JSON Dict
-        """
+        r"""
         MyName = __name__ + "." + self.ctam_create_es.__qualname__
 
         ctam_uri = self.dut().uri_builder.format_uri(
@@ -520,11 +520,11 @@ class FunctionalIfc:
         return data
 
     def ctam_gettsks(self):
-        """
+        r"""
         :Description:       Get Task Service
         :returns:	        JSON Data after running Redfish command
         :rtype:             JSON Dict
-        """
+        r"""
         MyName = __name__ + "." + self.ctam_getus.__qualname__
 
         ctam_gettsks_uri = self.dut().uri_builder.format_uri(
@@ -538,12 +538,12 @@ class FunctionalIfc:
         return data
 
     def NodeACReset(self):
-        """
+        r"""
         :Description:       It will Reset the node.
 
         :returns:           True if power cycle succeeds, False otherwise
         :rtype:             bool
-        """
+        r"""
         MyName = __name__ + "." + self.NodeACReset.__qualname__
         single_shot_power_cycle = self.dut().dut_config.get("SingleShotPowerCycle", {}).get("value", "")
         single_shot_power_cycle_triggered = False
@@ -607,12 +607,12 @@ class FunctionalIfc:
         return True
 
     def IsGPUReachable(self):
-        """
+        r"""
         :Description:        It will check for GPU is available or not using Redfish command
 
         :returns:	         JSON data after executing redfish command
         :rtype:              JSON Dict
-        """
+        r"""
         MyName = __name__ + "." + self.IsGPUReachable.__qualname__
         ctam_getus_uri = self.dut().uri_builder.format_uri(
             redfish_str="{BaseURI}{GPUCheckURI}", component_type="GPU"
@@ -672,14 +672,14 @@ class FunctionalIfc:
 
     
     def ctam_activate_ac(self, gpu_check=True, fwupd_hyst_wait=True):
-        """
+        r"""
         :Description:					Activate AC
         
         :param check_time:              Check the activation time does not exceed maximum time per spec
 
         :returns:				    	ActivationStatus
         :rtype: 						Bool, string
-        """
+        r"""
         MyName = __name__ + "." + self.ctam_activate_ac.__qualname__
         ActivationStatus = False
         failure_reason = ""
@@ -755,7 +755,7 @@ class FunctionalIfc:
         return ActivationStatus, failure_reason, activation_time
     
     def RedfishTriggerDumpCollection(self, DiagnosticDataType, URI, OEMDiagnosticDataType=None):
-        """
+        r"""
         :Description:                     It will trigger the collection of diagnostic data.
         :param DiagnosticDataType:		  e.g. Manager, OEM etc.
         :param URI:		                  URI for creating URL
@@ -763,7 +763,7 @@ class FunctionalIfc:
 
         :returns:		      JSON data after executing redfish command
         :rtype:               JSON Dict
-        """
+        r"""
         MyName = __name__ + "." + self.RedfishTriggerDumpCollection.__qualname__
         URL = URI + "/LogServices/Dump/Actions/LogService.CollectDiagnosticData"
         msg = "Dump Collection URL = {}".format(URL)
@@ -781,13 +781,13 @@ class FunctionalIfc:
         return JSONData
     
     def RedfishDownloadDump(self, DumpURI):
-        """
+        r"""
         :Description:              It will download the specified dump using redfish command and untar the downloaded dump.
         :param DumpLocation:	   Dump location URI 
 
         :returns:				   DumpPath (Path to downloaded dump)
         :rtype:                    string
-        """
+        r"""
         MyName = __name__ + "." + self.RedfishDownloadDump.__qualname__
         check_response = self.dut().run_redfish_command(uri=DumpURI)
         if check_response.status in range(200, 202):
@@ -827,12 +827,12 @@ class FunctionalIfc:
             return None
 
     def ctam_monitor_task(self, TaskID=""):
-        """
+        r"""
         :Description:       CTAM Monitor a Task
         :param TaskID       Task ID of TaskService/Tasks (for accelerator management) to monitor
         :returns:	        (Task_Completed, JSONData response)
         :rtype:             Tuple
-        """
+        r"""
         Task_Completed = False
         JSONData = {}
         if not TaskID:
@@ -878,7 +878,7 @@ class FunctionalIfc:
 
 
     def ctam_redfish_uri_deep_hunt(self, URI, uri_hunt="", uri_listing=[], uri_analyzed=[],action=0):
-        """
+        r"""
         :Description:			CTAM Redfish URI Deep Hunt - a recursive function to look deep till we find all instances URI
         :param URI:             The top uri under which we are searching for the uri instances (type string)
         :param uri_hunt:        URI we are hunting for (type string).
@@ -888,7 +888,7 @@ class FunctionalIfc:
         :param action           Should be set if we are searching for action uris.
 
         :returns:				None
-        """
+        r"""
         response = self.dut().run_redfish_command("{}{}".format(self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU"), URI))
         JSONData = response.dict
         if uri_hunt in JSONData:
@@ -918,14 +918,14 @@ class FunctionalIfc:
                         self.ctam_redfish_uri_deep_hunt(URI, uri_hunt, uri_listing, uri_analyzed,action)
 
     def ctam_redfish_uri_hunt(self, URI, uri_hunt="", uri_listing=[]):
-        """
+        r"""
         :Description:			CTAM Redfish URI Hunt - a recursive function to look into Members till we find all instances URI
         :param URI:             The top uri under which we are searching for the uri instances (type string)
         :param uri_hunt:        URI we are hunting for (type string).
         :param uri_listing:     An array that will eventually contain a list of all URIs that house the member to hunt.
 
         :returns:				None
-        """
+        r"""
         response = self.dut().run_redfish_command(uri="{}{}".format(self.dut().uri_builder.format_uri(redfish_str="{GPUMC}", component_type="GPU"), URI))
         JSONData = response.dict
         if uri_hunt in JSONData:
@@ -943,14 +943,14 @@ class FunctionalIfc:
                     i = i + 1
 
     def ctam_redfish_action_hunt(self, ActionJson, target_action_hunt="", uri_listing=[],uri_analyzed=[]):
-        """
+        r"""
         :Description:			CTAM Redfish Action Hunt - a recursive function to look deep till we find all instances that contain a "target" or "actioninfo" whose value has target_action_hunt
         :param ActionJson:              Actions JSON Dict object to work on
         :param target_action_hunt:      URI we are hunting for (type string).
         :param uri_listing:             An array that will eventually contain a list of all URIs that house the member to hunt.
         :param uri_analyzed:            An array that contains the list of uris which are already analyzed.
         :returns:				        None
-        """
+        r"""
 
         if "target" in ActionJson and target_action_hunt in ActionJson["target"] and ActionJson["target"] not in uri_analyzed:
             uri_listing.append(ActionJson["target"])
@@ -966,13 +966,13 @@ class FunctionalIfc:
                     self.ctam_redfish_action_hunt(ActionJson[element], target_action_hunt, uri_listing, uri_analyzed)
 
     def write_test_info(self, message):
-        """
+        r"""
         :Description:           JSON Formatter for CTAM TestInfo File Logging
 
         :param message:		    MEssage to be added
 
         :returns:	            None
-        """
+        r"""
         msg = {
                 "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
                 "TestName": self.dut().current_test_name,
@@ -981,7 +981,7 @@ class FunctionalIfc:
         self.dut().test_info_logger.write(json.dumps(msg))
 
     def ctam_verify_expanded(self, JSONData):
-        """
+        r"""
         :Description:					Check if the Redfish API response is expanded correctly (level 1)
 
         :param JSONData:                Redfish response in json/dictionary format
@@ -989,7 +989,7 @@ class FunctionalIfc:
 
         :returns:				    	result (Pass/Fail)
         :rtype: 						Bool
-        """
+        r"""
         result = True
         for element in JSONData:
             # Simple dictionary
@@ -1009,14 +1009,14 @@ class FunctionalIfc:
         return result
 
     def ctam_getepc(self, expanded=1):
-        """
+        r"""
         :Description:       Get Expanded Processor Collection
 
         :param expanded:		Expand Param
 
         :returns:	        JSON Data after running Redfish command
         :rtype:             JSON Dict
-        """
+        r"""
         # [TODO] need to figure out a way to grab all of them.
         MyName = __name__ + "." + self.ctam_getepc.__qualname__
         if expanded == 1:
@@ -1033,11 +1033,11 @@ class FunctionalIfc:
 
 
     def ctam_deles(self):
-        """
+        r"""
         :Description:       Get Event Service and child collection items.
         :returns:	        JSON Data after running Redfish command
         :rtype:             JSON Dict
-        """
+        r"""
         # List all subscritions then grabbing one of them and delete
 
         MyName = __name__ + "." + self.ctam_deles.__qualname__
@@ -1063,7 +1063,7 @@ class FunctionalIfc:
         return result
 
     def ctam_redfish_GET_status_ok(self, uri):
-        """
+        r"""
         :Description:   Check if the Redfish API response status is OK
 
         :param uri:     Redfish uri
@@ -1071,7 +1071,7 @@ class FunctionalIfc:
 
         :returns:       result (Pass/Fail)
         :rtype:         bool
-        """
+        r"""
         result = True
         response = self.dut().run_redfish_command(uri=uri)
         JSONData = response.dict
@@ -1084,10 +1084,10 @@ class FunctionalIfc:
         return result
 
     def ctam_verify_components_health(self):
-        """
+        r"""
         :Description:       Get Firmware Inventory details and check health of all components.
         :returns:	        bool, List of health issue components
-        """
+        r"""
 
         fi_data = self.ctam_getfi(expanded=1)
 
@@ -1099,10 +1099,10 @@ class FunctionalIfc:
         return True, []
     
     def flatten_validator_output(self, testId, testName, logger_path):
-        """
+        r"""
         Moves RedfishInteropValidator_<timestamp> output files to parent folder
         and removes the extra directory to prevent long path issues.
-        """
+        r"""
         subdirs = glob.glob(os.path.join(logger_path, "RedfishInteropValidator_*"))
         dest_path = os.path.join(logger_path, f"{testId}_{testName}")
         os.makedirs(dest_path, exist_ok=True)

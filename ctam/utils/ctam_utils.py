@@ -12,22 +12,22 @@ import threading
 from ocptv.output import LogSeverity
 
 class GitUtils():
-    """_summary_
+    r"""_summary_
     GitUtils:
         This class is based on all git operations line cloning a repo. 
         Deleting after use
         Running any script provided to run using the cloned repo.
-    """
+    r"""
 
     def __init__(self) -> None:
-        """_summary_
-        """
+        r"""_summary_
+        r"""
         self.repo_path = ""
         self.temp_dir = tempfile.gettempdir()
         pass
 
     def clone_repo(self, repo_url, repo_path, branch_name="", install_requirements=True):
-        """_summary_
+        r"""_summary_
         This method helps to clone a git repo in destination path and install all the requirements.
 
         Args:
@@ -42,7 +42,7 @@ class GitUtils():
 
         Returns:
             _type_: bool
-        """
+        r"""
         try:
             self.repo_path = os.path.join(self.temp_dir, repo_path)
 
@@ -75,7 +75,7 @@ class GitUtils():
             return False
 
     def clean_repo(self, repo_path=""):
-        """_summary_
+        r"""_summary_
         This method helps to clean the repo after cloning and running the required test cases.
         It will clean after all test cases completed.
 
@@ -84,7 +84,7 @@ class GitUtils():
 
         Returns:
             _type_: bool
-        """
+        r"""
         try:
             if not repo_path:
                 repo_path = self.repo_path
@@ -103,7 +103,7 @@ class GitUtils():
 
     def validate_redfish_service(self, file_name, connection_url, user_name, user_pass,
                                   log_path, schema_directory, depth, service_uri, *args, **kwargs):
-        """_summary_
+        r"""_summary_
         This method helps to run the Service validator command,
         In this method we are creating the command using the method arguments.
 
@@ -119,7 +119,7 @@ class GitUtils():
 
         Returns:
             _type_: (bool, str): return status with pass and fail msg
-        """
+        r"""
             
         result = False
         log_path = os.path.join(log_path, file_name)
@@ -154,7 +154,7 @@ class GitUtils():
     @classmethod
     def ctam_redfish_interop_validator(cls, file_name, connection_url, user_name, user_pass,
                                         log_path, profile, *args, **kwargs):
-        """_summary_
+        r"""_summary_
         This method helps to run the Interop command line. It will construct the interop command using the arguments.
         If we are passing some arguments through **kwargs, then it will combine the key and value for those arguments and run the command.
 
@@ -167,7 +167,7 @@ class GitUtils():
             profile (str): The profile we need to validate against redfish interop uri
         Returns:
             _type_: (bool, int): returns if successfully validated or not
-        """
+        r"""
         service_base_command = "python {file_name}.py --ip {ip} \
                 -u {user} -p {pwd} --logdir {log_dir}".format(
                         file_name=file_name,
@@ -196,7 +196,7 @@ class GitUtils():
         
     @classmethod
     def ctam_run_dmtf_command(cls, command):
-        """_summary_
+        r"""_summary_
         This method helps to run any command on a command prompt using subprocess. 
         After running the command it will check for any error or any issue. If there are no errors, then
         it will return the output as list with status.
@@ -210,7 +210,7 @@ class GitUtils():
 
         Returns:
             _type_: (bool, list): returns status and the stdout result as list
-        """
+        r"""
         try:
             command = repr(command)[1:-1]
             with subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8') as process:

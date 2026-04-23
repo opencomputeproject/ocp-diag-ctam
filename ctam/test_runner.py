@@ -1,11 +1,11 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 Copyright (c) NVIDIA CORPORATION
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-"""
+r"""
 from pathlib import Path
 import os
 import re
@@ -44,9 +44,9 @@ COUNTER = 0
 
 
 class TestRunner:
-    """
+    r"""
     This class is the main controller for test execution
-    """
+    r"""
 
     def __init__(
         self,
@@ -69,7 +69,7 @@ class TestRunner:
         spec_version=None,
         test_runner_spec_version=None,
     ):
-        """
+        r"""
         Init function that handles test execution variations
 
         :param test_hierarchy: discovered list of test groups and associated test cases
@@ -91,7 +91,7 @@ class TestRunner:
         :param single_group_override: single group to run, defaults to None
         :type single_group_override: str, optional
         :raises Exception: no tests to run
-        """
+        r"""
         self.active_run = None
         self.comp_tool_dut = None
         self.test_hierarchy = test_hierarchy
@@ -232,7 +232,7 @@ class TestRunner:
         runner_exc_tags_set,
         # test_exc_tags,
     ):
-        """
+        r"""
         Helper function that inspects include and exclude tags to determine if group or test should run
             If exclude_tags list is not empty AND test_case_tag in exclude_tag list, 
             then exclude test case
@@ -253,7 +253,7 @@ class TestRunner:
         :type test_exc_tags: List[str]
         :return: true if it should run
         :rtype: bool
-        """
+        r"""
         if runner_exc_tags_set and any(tag in runner_exc_tags_set for tag in tags):
             return False
 
@@ -267,12 +267,12 @@ class TestRunner:
             
 
     def _start(self, testrun_name="initialization"):
-        """
+        r"""
         Helper function called at the start of every OCP test run
 
         :param testrun_name: name for the testrun
         :type testrun_name: str
-        """
+        r"""
         # system is up or not
         # If up then establish the connection and the discovery 
         self.cwd = os.path.dirname(os.path.dirname(__file__))
@@ -356,14 +356,14 @@ class TestRunner:
         # self.active_run.start(dut=tv.Dut(id="dut0"))
 
     def _end(self, run_status, run_result):
-        """
+        r"""
         Helper function called at the end of the OCP Testrun
 
         :param run_status: overall run status
         :type run_status: str
         :param run_result: overall run result
         :type run_result: str
-        """
+        r"""
         self.active_run.end(status=run_status, result=run_result)
         tv.config(writer=StdoutWriter())
 
@@ -377,12 +377,12 @@ class TestRunner:
                 testcase.score_weight = self.weighted_scores[tag]
             
     def run(self):
-        """
+        r"""
         Public API used to kick of the test suite
         
         :return: status_code, exit_string
         :rtype: int, str 
-        """
+        r"""
         try:
             status_code = 0
             self.create_json_configuration()
@@ -413,7 +413,7 @@ class TestRunner:
                         self.total_cases = len(self.test_sequence)
                         progress_thread.start()
 
-                """
+                r"""
                 1.Initialize previous_test_result:
                     The variable previous_test_result is initialized as True, representing the result of the previous test.
                 2.Iterate Over Test Sequence:
@@ -425,7 +425,7 @@ class TestRunner:
                 4.Update Previous Test Result:
                     Assign the result of the current test (group_result.value) to previous_test_result.
 
-                """
+                r"""
                 previous_test_result = True       
                 for index, test in enumerate(self.test_sequence):
                     if test == "PROF":
@@ -552,9 +552,9 @@ class TestRunner:
             return status_code, exit_string
         
     def consolidate_run(self):
-        """
+        r"""
         Consolidates test results from multiple JSON files and generates a final consolidated report.
-        """
+        r"""
         try:
             status_code = 0
             exit_string = "Test consolidation completed successfully"
@@ -612,10 +612,10 @@ class TestRunner:
         return status_code, exit_string
 
     def get_consolidated_test_scores(self,log_paths, consolidated_output_json):
-        """
+        r"""
         Retrieves JSON files matching the TestScore* filename from given folder paths,
         consolidates into a single JSON file.
-        """
+        r"""
         self.test_score_data = []
 
         for folder_path in log_paths:
@@ -677,9 +677,9 @@ class TestRunner:
         print(f"Consolidated JSON saved at: {consolidated_output_json}")
     
     def load_fixed_json(self, file_path):
-        """
+        r"""
         Reads and fixes improperly formatted JSON files before parsing.
-        """
+        r"""
         try:
             with open(file_path, "r", encoding="utf-8") as file:
                 content = file.read().strip()
@@ -706,7 +706,7 @@ class TestRunner:
 
        
     def _run_group_test_cases(self, group_instance, test_case_instances):
-        """
+        r"""
         for now, create a separate test run for each group. In the event of failures
         that will require smaller test runs to debug and evaluate resolutions
 
@@ -716,7 +716,7 @@ class TestRunner:
         :type test_case_instances: List[Testcase]]
         :returns: group_status, group_result
         :rtype:  ocptv.output.TestStatus, ocptv.output.TestResult
-        """
+        r"""
         global COUNTER
         group_status = TestStatus.ERROR
         group_result = TestResult.PASS
@@ -897,9 +897,9 @@ class TestRunner:
     
     
     def filter_and_update_test_results(self, test_instance, execution_time, failure_reason=None):
-        """
+        r"""
         Filter and update the test result cache with the current test instance based on result and execution time.
-        """
+        r"""
         
         test_id = test_instance.test_id
         test_result = TestResult(test_instance.result).name
@@ -935,9 +935,9 @@ class TestRunner:
 
           
     def generate_test_score_summary(self, filtered_data_dict=None, test_score_data=None):
-        """
+        r"""
         Generate a detailed JSON report summarizing test execution metrics, scores, and compliance levels for all test cases.
-        """
+        r"""
 
         try:
             # Generate a timestamped json filename for better tracking
@@ -1023,9 +1023,9 @@ class TestRunner:
     
         
     def domain_data(self, test_instance, t_score, execution_time, test_result, test_report):
-        """
+        r"""
         Update domain-wise test metrics in the test_score_summary.json report based on the current test execution.
-        """
+        r"""
 
         domain_count = self.test_hierarchy.get_domains()
         
@@ -1067,9 +1067,9 @@ class TestRunner:
             print(f"Warning: No matching domain found for test ID {test_instance.test_id}")
                         
     def compliance_level_weighted_data(self, test_instance, t_score, execution_time, test_result, test_report):
-        """
+        r"""
         Update compliance-level metrics in the test_score_summary.json based on current test execution.
-        """
+        r"""
 
         compliance_level = test_instance.compliance_level if test_instance.compliance_level in self.weighted_scores else "L3"
         available_testcases = self.test_hierarchy.get_compliance_test_cases()
@@ -1100,10 +1100,10 @@ class TestRunner:
         compliance["total_execution_time"] += execution_time
         
     def compliance_level_normalized_data(self, test_instance, t_score, execution_time, test_result, test_report):
-        """
+        r"""
         Update normalized compliance-level metrics and overall compliance in the test_score_summary.json 
         based on current test execution.
-        """
+        r"""
         compliance_level = test_instance.compliance_level if test_instance.compliance_level in self.weighted_scores else "L3"
         domain_count = self.test_hierarchy.get_domains()
         available_testcases = self.test_hierarchy.get_compliance_test_cases()
@@ -1156,18 +1156,18 @@ class TestRunner:
         overall_compliance["Overall_Compliance_Level_Weighted_Grade"] = round((self.score_max / total_sum) * 100, 2) if total_sum != 0 else 0
      
     def test_result_summary(self, test_report, test_score_data):
-        """
+        r"""
         Append the current test result from the test cache to the overall test result summary.
-        """
+        r"""
         test_result_all_summary = test_score_data if self.consolidate and self.inside else self.test_all_cache
         result_summary = test_report["test_results"]
         result_summary.extend(test_result_all_summary)
         
         
     def add_missing_compliance_levels(self, test_report):
-        """
+        r"""
         Ensure all expected compliance levels are included (e.g.,L0, L1, L2, L3).
-        """         
+        r"""         
         domain_summary = test_report["domain_summary"]["domains"]
         all_domains = self.test_hierarchy.get_domains()
         for domain, value in all_domains.items():
@@ -1223,9 +1223,9 @@ class TestRunner:
         
                 
     def generate_full_log_from_summary(self):
-        """
+        r"""
         Generate a complete test report log file with all tables using the summary JSON file.
-        """
+        r"""
         try:
             if not self.test_summary_path:
                 raise FileNotFoundError("Test summary JSON file not found.")
@@ -1414,17 +1414,17 @@ class TestRunner:
             
             
     def seconds_to_time(self, seconds):
-        """
+        r"""
         Convert seconds to a formatted timedelta string.
-        """
+        r"""
         return str(timedelta(seconds=round(seconds, 3)))
     
     
     # --- Generic Table Printer ---
     def print_pretty_table(self, title, headers, rows, total_row=None):
-        """
+        r"""
         Generic method to create, print, and write a PrettyTable to the log file.
-        """
+        r"""
         try:
             table = PrettyTable(headers)
             table.title = title
@@ -1450,12 +1450,12 @@ class TestRunner:
   
   
     def get_system_details(self):
-        """
+        r"""
         Method to perform System Discovery
         
         :return: status_code, exit_string
         :rtype: int, str 
-        """
+        r"""
         try:
             self._start()
             status_code, exit_string = 0, "System discovery is done"
@@ -1512,9 +1512,9 @@ class TestRunner:
             return f"Failed to create Configuration folder or store files: {e}"
     
     def display_progress_bar(self):
-        """
+        r"""
         shows a real-time progress bar in the console displaying the percentage of test cases completed.
-        """
+        r"""
         with alive_bar(self.total_cases, title= "Progress:", spinner="arrow") as bar:
             count = 0
             while count < self.total_cases:
@@ -1620,7 +1620,7 @@ class TestRunner:
             return eval(expr)
 
     def resolve_and_load_spec_version(self, test_instance): 
-        """
+        r"""
         Determines and loads the appropriate specification version for the test case
         based on inputs from the command line, the test_runner.json file, and the
         versions supported by the test case itself.
@@ -1645,7 +1645,7 @@ class TestRunner:
                 (bool, str or None)
                 - bool: Indicates whether the spec version was successfully resolved and loaded.
                 - str or None: Error message if resolution fails, None otherwise.
-        """
+        r"""
         spec_support = getattr(test_instance, "spec_versions", None)
         spec_version = self.spec_version  
         spec_version = Version(spec_version) if spec_version else None
@@ -1694,7 +1694,7 @@ class TestRunner:
 
 
     def initialize_spec_path(self, spec_version=None):
-        """
+        r"""
         Initializes and sets the default path for the given specification version.
 
         Args:
@@ -1703,7 +1703,7 @@ class TestRunner:
         Notes:
             - Ensures the spec bindings are displayed only once.
             - Only prepares the path reference; it does not create or modify any files.
-        """
+        r"""
         self.default_config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "json_spec", "input", f"spec_{spec_version}")
         self.default_config_path = self.default_config_path.replace('/tmp/', '') if self.default_config_path.startswith('/tmp/') else self.default_config_path
         if not self.show_spec_bindings:

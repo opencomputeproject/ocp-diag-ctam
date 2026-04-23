@@ -1,4 +1,4 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -7,7 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 :Command line:       Library functions are made as generic as possible.
 
-"""
+r"""
 import json
 
 
@@ -15,7 +15,7 @@ import json
 # Useful when the same keys are used across different members of the json.
 # For eg, we can use this to get version number of a component, given the ComponentIdentifier=0xff00  .
 def jsonhunt(jsondata, jsonkey, jsonvalue, jsonhuntkey):
-    """
+    r"""
     :Description:                       Deep searches for a key-value pair and returns the value of a key from the same dictionary set.
                                         For eg, we can use this to get version number of a component, given the ComponentIdentifier=0xff00
 
@@ -26,7 +26,7 @@ def jsonhunt(jsondata, jsonkey, jsonvalue, jsonhuntkey):
 
     :returns:                           jsonhuntvalue
     :rtype:                             JSON Dict
-    """
+    r"""
     if type(jsondata) == type(dict()):
         # print(jsondata.keys())
         if jsonkey in jsondata.keys():
@@ -50,7 +50,7 @@ def jsonhunt(jsondata, jsonkey, jsonvalue, jsonhuntkey):
 # Useful when the same keys are used across different members of the json.
 # For eg, we can use this to get a list of all "id"s whose key is "updatable" and corresponding value is true
 def jsonhuntall(jsondata, jsonkey, jsonvalue, jsonhuntkey, huntvalue_list):
-    """
+    r"""
     :Description:                       Deep searches for a key-value pair and returns a list of values of a key from the same dictionary set.
                                         Useful when the same keys are used across different members of the json.
 
@@ -62,7 +62,7 @@ def jsonhuntall(jsondata, jsonkey, jsonvalue, jsonhuntkey, huntvalue_list):
 
     :returns:                           None
     :rtype:                             None
-    """
+    r"""
     if type(jsondata) == type(dict()):
         # print(jsondata.keys())
         if jsonkey in jsondata.keys():
@@ -87,7 +87,7 @@ def jsonhuntall(jsondata, jsonkey, jsonvalue, jsonhuntkey, huntvalue_list):
 # if there is a dictionary A = {"a":"b","c":"d","e":"f"} then jsonmultihunt(A,"c","e",B) will create a dictionary B which holds {"d":"f"}.
 # For eg. we can use this to build a dictionary of [ComponentIdentifier]:[Version] for all components
 def jsonmultihunt(jsondata, jsonkey1, jsonkey2, jsonextract):
-    """
+    r"""
     :Description:                       Returns a new json in jsonextract, by pairing the values from the two-
                                         json key arguments passed assuming there are multiple instances of the two keys.
 
@@ -99,7 +99,7 @@ def jsonmultihunt(jsondata, jsonkey1, jsonkey2, jsonextract):
 
     :returns:                           None
     :rtype:                             None
-    """
+    r"""
     if type(jsondata) == type(dict()):
         # print(jsondata.keys())
         if jsonkey1 in jsondata.keys():
@@ -115,7 +115,7 @@ def jsonmultihunt(jsondata, jsonkey1, jsonkey2, jsonextract):
             jsonmultihunt(node, jsonkey1, jsonkey2, jsonextract)
 
 def jsonmultivaluehunt(jsondata, jsonkey1, jsonkey2, jsonextract):
-    """
+    r"""
     :Description:                       Returns a new json in jsonextract, by pairing the multiple values from the two-
                                         json key arguments passed assuming there are multiple instances of the two keys.
 
@@ -127,7 +127,7 @@ def jsonmultivaluehunt(jsondata, jsonkey1, jsonkey2, jsonextract):
 
     :returns:                           None
     :rtype:                             None
-    """
+    r"""
     if type(jsondata) == type(dict()):
         # print(jsondata.keys())
         if jsonkey1 in jsondata.keys():
@@ -147,7 +147,7 @@ def jsonmultivaluehunt(jsondata, jsonkey1, jsonkey2, jsonextract):
 
 # Recursively parses a json data till it finds the jsonkey to return its value. jsonkey should be an exact match, by case too. The return could be a json too.
 def jsondeephunt(jsondata, jsonkey):
-    """
+    r"""
     :Description:                       Recursively parses a json data till it finds the jsonkey to return its value.
                                         jsonkey should be an exact match, by case too. The return could be a json too.
 
@@ -157,7 +157,7 @@ def jsondeephunt(jsondata, jsonkey):
 
     :returns:                           jsonvalue
     :rtype:                             str
-    """
+    r"""
     jsonvalue = ""
     if type(jsondata) == type(dict()):
         if jsonkey in jsondata.keys():
@@ -178,7 +178,7 @@ def jsondeephunt(jsondata, jsonkey):
 
 # Quite often we only need the value against a member. Assumes that json file has "named" json members which have a key of interest. Returns a json dictionary with json member name : value of json key
 def json_collapse(jsondata, jsonkey):
-    """
+    r"""
     :Description:                       Quite often we only need the value against a member. Assumes that json file has "named" json members which have a key of interest.
                                         Returns a json dictionary with json member name : value of json key
 
@@ -188,7 +188,7 @@ def json_collapse(jsondata, jsonkey):
 
     :returns:                           collapsed_json
     :rtype:                             JSON Dict
-    """
+    r"""
     collapsed_json = {}
     for json_member in jsondata.keys():
         collapsed_json[str(json_member)] = jsondata[json_member][jsonkey]
@@ -198,7 +198,7 @@ def json_collapse(jsondata, jsonkey):
 def dump_cmd_result(
     file_path, file_name, cmd, json_data, curr_test, curr_test_id, status_code
 ):
-    """
+    r"""
     :Description:                      Dump JSON Dict object into file
 
 
@@ -211,7 +211,7 @@ def dump_cmd_result(
 
     :returns:                           None
     :rtype:                             NOne
-    """
+    r"""
     res = {}
     res["command"] = cmd
     res["test_name"] = curr_test

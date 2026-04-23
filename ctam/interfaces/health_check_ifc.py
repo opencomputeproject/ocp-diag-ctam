@@ -1,11 +1,11 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 Copyright (c) NVIDIA CORPORATION
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-"""
+r"""
 import time
 import json
 import os
@@ -20,9 +20,9 @@ except:
 
 
 class HealthCheckIfc(FunctionalIfc, metaclass=Meta):
-    """
+    r"""
     API's related to general health check of the dut
-    """
+    r"""
 
     # _instance: Optional["HealthCheckIfc"] = None
 
@@ -49,18 +49,18 @@ class HealthCheckIfc(FunctionalIfc, metaclass=Meta):
 
     @classmethod
     def get_instance(cls, *args, **kwargs):
-        """
+        r"""
         if there is an existing instance, return it, otherwise create the singleton instance and return it
 
         :return: instance
         :rtype: HealthCheckIfc
-        """
+        r"""
         if not isinstance(cls._instance, cls):
             cls._instance = cls(*args, **kwargs)
         return cls._instance
     
     def ctam_get_all_logservice_uris(self, resource_collection_list=["Systems", "Managers", "Chassis"]):
-        """
+        r"""
         :Description:	                    Look for "LogService" URIs under specific resourcse collection.
 
         :param resource_collection_list:    list of resource collectionsto check. Default is ["Systems", "Managers", "Chassis"]
@@ -68,7 +68,7 @@ class HealthCheckIfc(FunctionalIfc, metaclass=Meta):
         
         :return:                            list of LogServices uri
         :rtype:                             list
-        """
+        r"""
         for resource_collection in resource_collection_list:
             # Skip populating the list for this resource if it's present already
             if resource_collection not in self.logservice_uri_dict:
@@ -83,7 +83,7 @@ class HealthCheckIfc(FunctionalIfc, metaclass=Meta):
         return self.logservice_uri_list
     
     def ctam_verify_logservice_presence(self, resource_collection_list=["Systems", "Managers"]):
-        """
+        r"""
         :Description:	                    Verify if "LogService" URIs is present under the specified resourcse collection.
 
         :param resource_collection_list:    list of resource collectionsto check. Default is ["Systems", "Managers", "Chassis"]
@@ -91,7 +91,7 @@ class HealthCheckIfc(FunctionalIfc, metaclass=Meta):
         
         :return:                            result (Pass/Fail)
         :rtype:                             bool
-        """
+        r"""
         result = True
         if self.logservice_uri_dict == {}:
             self.test_run().add_log(LogSeverity.ERROR, f"LogServices URI List is empty. Nothing to verify!")
@@ -124,12 +124,12 @@ class HealthCheckIfc(FunctionalIfc, metaclass=Meta):
         return result
     
     def trigger_self_test_dump_collection(self):
-        """
+        r"""
         :Description:							Trigger Self-test Dump Collection
 
         :returns:				    			SelfTestDump_Status
         :rtype: 								Bool
-        """
+        r"""
         MyName = __name__ + "." + self.trigger_self_test_dump_collection.__qualname__
         StartTime = time.time()
         instances = ast.literal_eval(self.dut().uri_builder.format_uri(redfish_str="{BaseboardIDs}", component_type="GPU"))
@@ -183,12 +183,12 @@ class HealthCheckIfc(FunctionalIfc, metaclass=Meta):
         return SelfTestDump_Status
     
     def download_self_test_dump(self):
-        """
+        r"""
         :Description:							Download Self-test Dump
 
         :returns:				    			SelfTestDump_Status
         :rtype: 								Bool
-        """
+        r"""
         MyName = __name__ + "." + self.download_self_test_dump.__qualname__
         
         if self.selftest_dump_entry_uri:
@@ -206,12 +206,12 @@ class HealthCheckIfc(FunctionalIfc, metaclass=Meta):
         return SelfTestDump_Status
 
     def check_self_test_report(self):
-        """
+        r"""
         :Description:							Check Self-test Report for any Failure
 
         :returns:				    			SelfTestReport_Status
         :rtype: 								Bool
-        """
+        r"""
         MyName = __name__ + "." + self.download_self_test_dump.__qualname__
         SelfTestReport_Status = False
         
@@ -229,7 +229,7 @@ class HealthCheckIfc(FunctionalIfc, metaclass=Meta):
         return SelfTestReport_Status
     
     def ctam_get_all_logdump_uris(self, resource_collection_list=["Systems", "Managers"]):
-        """
+        r"""
         :Description:	                    Look for Dump URIs under all LogServices URIs of specific resourcse collection.
         
         :param resource_collection_list:    list of resource collectionsto check. Default is ["Systems", "Managers", "Chassis"]
@@ -237,7 +237,7 @@ class HealthCheckIfc(FunctionalIfc, metaclass=Meta):
 
         :return:                            list of LogServices Dump uri
         :rtype:                             list
-        """
+        r"""
         self.ctam_get_all_logservice_uris(resource_collection_list)
         for resource in resource_collection_list:
             dumplog_uri_list = []
@@ -249,7 +249,7 @@ class HealthCheckIfc(FunctionalIfc, metaclass=Meta):
         return self.dumplog_uri_list
     
     def ctam_verify_logdump_presence(self, resource_collection_list=["Systems", "Managers"]):
-        """
+        r"""
         :Description:	                    Verify if the Dump URI is present under all LogServices URI of specified resourcse collection.
         
         :param resource_collection_list:    list of resource collectionsto check. Default is ["Systems", "Managers", "Chassis"]
@@ -257,7 +257,7 @@ class HealthCheckIfc(FunctionalIfc, metaclass=Meta):
 
         :return:                            result if the verification passed/failed
         :rtype:                             bool
-        """
+        r"""
         result = True
         if self.dumplog_uri_dict == {}:
             self.test_run().add_log(LogSeverity.ERROR, f"LogServices Dump URI List is empty. Nothing to verify!")

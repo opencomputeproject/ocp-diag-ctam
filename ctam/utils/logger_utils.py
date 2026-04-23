@@ -18,14 +18,14 @@ from ocptv.output import  Writer
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
-        """
+        r"""
         :Description:                       Format method for formatting data into json output
 
         :param JSON Dict record:		    Dict object for Log JSON Data
 
         :returns:                           JSON object with indent 4
         :rtype                              JSON Dict
-        """
+        r"""
         msg = json.loads(getattr(record, "msg", None))
         f_msg = json.dumps(msg, indent=4) 
         return f_msg + ","
@@ -55,7 +55,7 @@ class LogSanitizer(logging.Formatter):
     def __init__(self, fmt=None, datefmt=None, style='%', string_list=None,
                 replacement_string='******', words_to_skip=[],
                 additional_regex=[]):
-        """
+        r"""
         Sanitizer constructor. Provide the list of strings to filter out from the logs
 
         :param fmt                  : Format string style. Doesn't affect sanitize() output.
@@ -73,7 +73,7 @@ class LogSanitizer(logging.Formatter):
         :type replacement_string    : str
         :param additional_regex     : List of in-built log collectors to be used
         :type additional_regex      : list of BuiltInLogSanitizers
-        """
+        r"""
         default_regex = [BuiltInLogSanitizers.IPV4, BuiltInLogSanitizers.IPV6]
         if additional_regex:
             additional_regex.extend(default_regex)
@@ -94,7 +94,7 @@ class LogSanitizer(logging.Formatter):
         self.replacement = replacement_string
 
     def sanitize(self, string):
-        """
+        r"""
         Sanitizes a given string based on initialized strings and in-built sanitizers
 
         :param string       : String to be sanitized
@@ -102,7 +102,7 @@ class LogSanitizer(logging.Formatter):
 
         :return             : string
         :rtype              : str
-        """
+        r"""
         return (re.sub(self.compiled_string, self.replacement, string)
                 if self.compiled_string else string)
 
@@ -111,16 +111,16 @@ class LogSanitizer(logging.Formatter):
 
 
 class LoggingWriter(Writer):
-    """
+    r"""
     Helper class registers python logger with OCP logger to be used for file output etc
 
     :param Writer: OCP Writer super class
     :type Writer:
-    """
+    r"""
 
     def __init__(self, output_dir, console_log, testrun_name,extension_name,  debug, desanitize_log=False,
                  words_to_skip=[]):
-        """
+        r"""
         Initialize file logging parameters
 
         :param output_dir: location of log file
@@ -133,7 +133,7 @@ class LoggingWriter(Writer):
         :type debug: 
         :desanitize_log: if true, will mask private details in log output
         :type bool
-        """
+        r"""
         dt = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
         file_name_tmp = "/{}_{}.{}".format(testrun_name, dt, extension_name)
         # Create a logger
@@ -165,13 +165,13 @@ class LoggingWriter(Writer):
             self.logger.addHandler(self.console_handler)
 
     def write(self, buffer: str):
-        """
+        r"""
         Called from the OCP framework for logging messages.  Use debug switch to filter
         LogSeverity.DEBUG messages.
 
         :param buffer: _description_
         :type buffer: str
-        """
+        r"""
         if not self.debug:
             if '"severity": "debug"' in buffer.lower():
                 return
@@ -192,13 +192,13 @@ class LoggingWriter(Writer):
             self.logger.info(buffer)
         
     def log(self, msg: str):
-        """
+        r"""
         Called from the OCP framework for logging messages. This method is a wrapper
         of the "write" method to add timestamp to a message.
 
         :param msg: Message to be logged
         :type msg: str
-        """
+        r"""
         json_msg = {
             "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
             "Message": msg}
@@ -211,14 +211,14 @@ class LoggingWriter(Writer):
 
 class FileJsonFormatter(logging.Formatter):
     def format(self, record):
-        """
+        r"""
         :Description:                       Format method for formatting data into json output
 
         :param JSON Dict record:		    Dict object for Log JSON Data
 
         :returns:                           JSON object with indent 4
         :rtype                              JSON Dict
-        """
+        r"""
         msg = json.loads(getattr(record, "msg", None))
         log_msg = super().format(record)
         log_msg = json.dumps(msg, indent=4) 
@@ -240,14 +240,14 @@ class StreamJsonFormatter(logging.Formatter):
     BLUE = '\033[94m'
     RESET = '\033[0m'
     def format(self, record):
-        """
+        r"""
         :Description:                       Format method for formatting data into json output
 
         :param JSON Dict record:		    Dict object for Log JSON Data
 
         :returns:                           JSON object with indent 4
         :rtype                              JSON Dict
-        """
+        r"""
         msg = json.loads(getattr(record, "msg", None))
         log_msg = super().format(record)
         log_msg = json.dumps(msg, indent=4) 

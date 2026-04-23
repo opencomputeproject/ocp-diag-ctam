@@ -1,4 +1,4 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -38,7 +38,7 @@ LICENSE file in the root directory of this source tree.
                                                       
         <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
                                            Optional -  <LargeFWImageUpdate>
-"""
+r"""
 
 from typing import Optional, List, Union
 from tests.test_case import TestCase
@@ -55,12 +55,12 @@ from tests.fw_update.fw_update_group_N._fw_update_group_N import (
 
 
 class CTAMTestNegativeCorruptImageUpdate(TestCase):
-    """
+    r"""
     Verify values of Software Inventory Collection are present
 
     :param TestCase: super class for all test cases
     :type TestCase:
-    """
+    r"""
 
     test_name: str = "CTAM Test Negative Corrupt Image Update"
     test_id: str = "F23"
@@ -70,16 +70,16 @@ class CTAMTestNegativeCorruptImageUpdate(TestCase):
     spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: FWUpdateTestGroupN):
-        """
+        r"""
         _summary_
-        """
+        r"""
         super().__init__()
         self.group = group
 
     def setup(self):
-        """
+        r"""
         set environment state for this test only
-        """
+        r"""
         # call super first
         super().setup()
 
@@ -89,9 +89,9 @@ class CTAMTestNegativeCorruptImageUpdate(TestCase):
             pass
 
     def run(self) -> TestResult:
-        """
+        r"""
         actual test verification
-        """
+        r"""
         result = True
         failure_reason = ""
 
@@ -133,9 +133,9 @@ class CTAMTestNegativeCorruptImageUpdate(TestCase):
         return self.result, failure_reason
 
     def teardown(self):
-        """
+        r"""
         undo environment state change from setup() above, this function is called even if run() fails or raises exception
-        """
+        r"""
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope(): 

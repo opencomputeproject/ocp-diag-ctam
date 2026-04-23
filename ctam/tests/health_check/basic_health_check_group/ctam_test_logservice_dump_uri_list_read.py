@@ -1,4 +1,4 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -29,7 +29,7 @@ FAIL Criteria:
 
 :Dependencies: None
                         
-"""
+r"""
 from typing import Optional, List, Union
 from tests.test_case import TestCase
 from pprint import pprint
@@ -45,12 +45,12 @@ from tests.health_check.basic_health_check_group.basic_health_check_test_group i
 )
 
 class CTAMTestLogServiceDumpURIListRead(TestCase):
-    """
+    r"""
         :param gpu_bb acc:		Accelerator Object
         :param Logger logger:	Logger Object
 
         :returns:				Test result [Pass/Fail], Test score
-    """
+    r"""
 
     test_name: str = "CTAM Test LogService Dump URI List Read"
     test_id: str = "H97"
@@ -60,16 +60,16 @@ class CTAMTestLogServiceDumpURIListRead(TestCase):
     spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: BasicHealthCheckTestGroup):
-        """
+        r"""
         _summary_
-        """
+        r"""
         super().__init__()
         self.group = group
 
     def setup(self):
-        """
+        r"""
         set environment state for this test only
-        """
+        r"""
         # call super first
         super().setup()
 
@@ -79,9 +79,9 @@ class CTAMTestLogServiceDumpURIListRead(TestCase):
             pass
 
     def run(self) -> TestResult:
-        """
+        r"""
         actual test verification
-        """
+        r"""
         failure_reason = ""
         result = True
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
@@ -121,9 +121,9 @@ class CTAMTestLogServiceDumpURIListRead(TestCase):
         return self.result, failure_reason
 
     def teardown(self):
-        """
+        r"""
         undo environment state change from setup() above, this function is called even if run() fails or raises exception
-        """
+        r"""
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():

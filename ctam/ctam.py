@@ -25,12 +25,12 @@ from version import __version__
 from utils.logger_utils import RedirectOutput
 
 def parse_args():
-    """
+    r"""
     :Description:                       Parse command line arguments
 
     :returns:                           Parsed arguments list
     :rtype:                             List
-    """
+    r"""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-t",
@@ -103,7 +103,7 @@ def parse_args():
     return parser.parse_args()
 
 def get_exception_details(exec: Exception = ""):
-    """
+    r"""
     :Description:                           It will trace back the exception object for getting
                                             mode details from the exception
 
@@ -111,7 +111,7 @@ def get_exception_details(exec: Exception = ""):
 
     :returns:                               A dict object for all exception details
     :rtype:                                 Dict
-    """
+    r"""
     exc_type, exc_obj, exc_tb = sys.exc_info()
     temp = exc_tb
 

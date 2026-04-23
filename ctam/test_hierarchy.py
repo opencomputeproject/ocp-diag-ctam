@@ -1,10 +1,10 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-"""
+r"""
 
 import ast
 import os
@@ -19,25 +19,25 @@ from prettytable import PrettyTable
 
 
 class TestHierarchy:
-    """
+    r"""
     This scans the tests directory structure and creates hierarchal dictionary of test groups
     and their associated test cases
 
-    """
+    r"""
 
     class ClassVisitor(ast.NodeVisitor):
-        """
+        r"""
         ast is a module that does the heavy lifting of scanning python files and arranging file contents
         into an easily parsable structure. This helper class is derived from ast and allows for custom inspection.
 
         :param ast: _description_
         :type ast: _type_
-        """
+        r"""
 
         def __init__(self):
-            """
+            r"""
             Re-init class values after every class visit.  Code below saves this info first
-            """
+            r"""
             self.test_groups = (
                 {}
             )  # dictionary with key is TestGroup, and value is a List of Testcases
@@ -58,7 +58,7 @@ class TestHierarchy:
                 raise ValueError(f"Unsupported node: {ast.dump(node)}")
 
         def visit_ClassDef(self, node):
-            """
+            r"""
             As part of ast, this function is a callback called during the line below:
             visitor.visit(tree)
 
@@ -70,7 +70,7 @@ class TestHierarchy:
 
             :param node: ast node
             :type node: ast node
-            """
+            r"""
             self.class_names.append(node.name)
             for base in node.bases:
                 if isinstance(base, ast.Name):
@@ -117,26 +117,26 @@ class TestHierarchy:
             self.generic_visit(node)
 
     def __init__(self, test_root_dir, ifc_dir):
-        """
+        r"""
         Only need to instantiate object and hierarchy is made available
 
         :param test_root_dir: entry point for all tests in the system
         :type test_root_dir: str
         :param ifc_dir: entry point for interfaces
         :type ifc_dir: str
-        """
+        r"""
         self.test_root_dir = test_root_dir
         self.ifc_dir = ifc_dir
         self.test_groups = self._find_groups_and_cases()
         self.ifc_files = self._find_ifc_files()
 
     def _find_ifc_files(self):
-        """
+        r"""
         _summary_
 
         :return: create a List of all of the interfaces. The List contains enough information to auto instantiate
         :rtype: List
-        """
+        r"""
         ifc_files = {}
 
         for root, dirs, files in os.walk(self.ifc_dir):
@@ -166,12 +166,12 @@ class TestHierarchy:
         return ifc_files
 
     def _find_groups_and_cases(self):
-        """
+        r"""
         Walk directory structure and find TestGroups and TestCases. Then assign the test cases according to the groups it belongs to.
 
         :return: List of TestGroups which contains a list of TestCases for that group
         :rtype: List
-        """
+        r"""
         visitor = self.ClassVisitor()
         test_root_dirs = ""
         if isinstance(self.test_root_dir, str):
@@ -232,9 +232,9 @@ class TestHierarchy:
         return visitor.test_groups
 
     def print_test_groups_all_info(self):
-        """
+        r"""
         Loop through hierarchy and print information
-        """
+        r"""
         for group_name, group_info in self.test_groups.items():
             print(f"Test Group Name: {group_name}")
             print(f'  Module Name: {group_info["module_name"]}')
@@ -249,22 +249,22 @@ class TestHierarchy:
                     print(f"        {attribute}: {value}")
 
     def get_total_group_cases(self, group):
-        """
+        r"""
         searches for group in test_groups and returns the number of test cases in that group
-        """
+        r"""
         for group_name, group_info in self.test_groups.items():
             if group_info["group_attributes"].get("group_id") == group or \
                 group == group_info["group_attributes"].get("group_name"):
                 return len(group_info["test_cases"])
 
     def print_test_groups_test_cases(self, group_name=None):
-        """
+        r"""
         Print test cases associated for a single test group
         If optional parameter is not included, print all groups
 
         :param group_name: Name of group, defaults to None
         :type group_name: str, optional
-        """
+        r"""
         t = PrettyTable(["GroupID", "GroupName", "GroupTag", "TestCaseID", "TestCaseName", "TestCaseTag", "TestCaseWeightScore", "Spec Versions"])
         t.title = "Test Case info table"
 
@@ -311,14 +311,14 @@ class TestHierarchy:
         print(t)
 
     def _find_testcase(self, param):
-        """
+        r"""
         Search all the test groups and see if param matches the testcase_name or test_id
 
         :param param: search item
         :type param: str
         :return: group attributes, test case attributes
         :rtype: group, testcase
-        """
+        r"""
         for group_name, group_info in self.test_groups.items():
             for testcase in group_info["test_cases"]:
                 # Check if the param matches the testcase name or the test_id
@@ -331,14 +331,14 @@ class TestHierarchy:
         return None, None
 
     def _find_group(self, param):
-        """
+        r"""
         Search all the test groups and see if param matches the group_name or group_id
 
         :param param: search item
         :type param: str
         :return: group attributes, 
         :rtype: group
-        """
+        r"""
         for group_name, group_info in self.test_groups.items():
             # print(group_name, group_info)
             # for group in group_info["group_attributes"]:
@@ -378,7 +378,7 @@ class TestHierarchy:
         return compliance_test_count  
     
     def _instantiate_object(self, obj_info, class_name, init_param=None):
-        """
+        r"""
         Used to instantiate a TestGroup or TestCase
 
         :param obj_info: metadata for the object to be instantiated
@@ -389,7 +389,7 @@ class TestHierarchy:
         :type init_param: str, optional
         :return: object instance, object module
         :rtype: object instance, object module
-        """
+        r"""
         module_name = obj_info.get("module_name")
         module_path = obj_info.get("module_path")
 
@@ -420,14 +420,14 @@ class TestHierarchy:
             raise
 
     def instantiate_obj_for_group(self, group_name):
-        """
+        r"""
         When given a TestGroup instantiate it and it's associated TestCases
 
         :param group_name: Name of the TestGroup
         :type group_name: str
         :return: group instance, List of Test Cases
         :rtype: group instance, List of Test Cases
-        """
+        r"""
         group_info = self._find_group(group_name)
         # group_info = self.test_groups.get(group_name)
         if not group_info:
@@ -452,7 +452,7 @@ class TestHierarchy:
         return group_instance, test_case_instances
 
     def instantiate_obj_for_testcase(self, testcase_name):
-        """
+        r"""
         When given a test case, search the hierarchy for the group it is in,
         instantiate the group and the single test case
 
@@ -460,7 +460,7 @@ class TestHierarchy:
         :type testcase_name: str
         :return: group instance, List with one entry of the test case(list is so upper level code works the same)
         :rtype: group instance, List of single testcase instance
-        """
+        r"""
         group_info, testcase_info = self._find_testcase(testcase_name)
         if not group_info or not testcase_info:
             print(f"Test case {testcase_name} not found.")
@@ -481,7 +481,7 @@ class TestHierarchy:
         return group_instance, [test_case_instance]
 
     def _parse_configure_interfaces(self, configure_interfaces_method):
-        """
+        r"""
         Pass in a configure_interfaces method from a TestGroup subclass
         ex: def configure_interfaces(self, hc_ifc: HealthCheckIfc):
 
@@ -492,7 +492,7 @@ class TestHierarchy:
         :type configure_interfaces_method: _type_
         :return: List of interface instances
         :rtype: List
-        """
+        r"""
         instances = []
 
         parameters = (inspect.signature(configure_interfaces_method)).parameters

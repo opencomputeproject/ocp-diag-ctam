@@ -1,22 +1,22 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-"""
+r"""
 from typing import Optional, List
 from tests.test_group import TestGroup
 from interfaces.ras_ifc import RasIfc
 
 
 class BasicRasTestGroup(TestGroup):
-    """
+    r"""
     Checks basic status of the dut
 
     :param TestGroup: super class for all test groups
     :type TestGroup:
-    """
+    r"""
 
     tags: List[str] = []
     group_id : str = "GR1"
@@ -24,24 +24,24 @@ class BasicRasTestGroup(TestGroup):
     # exclude_tags: List[str] = []
 
     def __init__(self):
-        """
+        r"""
         The test environment uses an auto discovery search and will instantiate all test groups and assign all of the
         group test cases to self.test_list[]   Since not all groups will be run, keep this init function minimal. Use
         configure_interfaces for most initialization
-        """
+        r"""
         super().__init__()
 
     def configure_interfaces(self, ras_ifc: RasIfc):
-        """
+        r"""
         See description for __init__() above. The framework uses lazy initialization.  This interfaces for this
         function are only instantiated if there are any test cases in this group that will be executed.
-        """
+        r"""
         self.ras_ifc = ras_ifc
 
     def setup(self):
-        """
+        r"""
         configure common environment state for all test cases in this group
-        """
+        r"""
         # call super first
         super().setup()
 
@@ -51,9 +51,9 @@ class BasicRasTestGroup(TestGroup):
             pass
 
     def teardown(self):
-        """
+        r"""
         undo environment state change from setup(), this function is called even if test cases fail or raise exception
-        """
+        r"""
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():

@@ -1,4 +1,4 @@
-"""
+r"""
 Copyright (c) NVIDIA CORPORATION
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -7,7 +7,7 @@ LICENSE file in the root directory of this source tree.
 
 :Command line:       Library functions are made as generic as possible.
 
-"""
+r"""
 
 import os
 import shutil
@@ -32,20 +32,20 @@ def copy_fwpkg(golden_fwpkg_path, clear_signature=False, signature_struct_bytes=
 
 
 class PLDMFwpkg:
-    """
+    r"""
     Methods related to PLDM fwpkg in general
-    """
+    r"""
 
     @staticmethod
     def corrupt_package_UUID(golden_fwpkg_path):
-        """
+        r"""
         :Description:                       Corrupt the PackageHeaderIdentifier (UUID) of the .
 
         :param str golden_fwpkg_path:	    Path to golden firmware package
 
         :returns:                           Path to corrupted package. None if corruption fails.
         :rtype:                             str
-        """
+        r"""
         corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
         try:
             with open(corrupted_package_path, 'r+b') as file:
@@ -60,7 +60,7 @@ class PLDMFwpkg:
 
     @staticmethod
     def clear_component_metadata_in_pkg(golden_fwpkg_path, component_id=None, metadata_size=4096):
-        """
+        r"""
         :Description:                       Clear metadata of any component in the PLDM bundle.
                                             If component_id is provided, corrupt the respective component's image.
 
@@ -70,7 +70,7 @@ class PLDMFwpkg:
 
         :returns:                           Path to corrupted package. None if corruption fails.
         :rtype:                             str
-        """
+        r"""
         corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
 
         pldm_parser = PLDMUnpack(corrupted_package_path)
@@ -88,7 +88,7 @@ class PLDMFwpkg:
     @staticmethod
     def corrupt_component_image_in_pkg(golden_fwpkg_path, component_id=None, metadata_size=4096,
                                        has_signature=False, singature_struct_bytes=1024):
-        """
+        r"""
         :Description:                       Corrupt image/payload of any component in the PLDM bundle.
                                             If component_id is provided, corrupt the respective component's image.
 
@@ -98,7 +98,7 @@ class PLDMFwpkg:
 
         :returns:                           Path to corrupted package. None if corruption fails.
         :rtype:                             str
-        """
+        r"""
         corrupted_package_path = copy_fwpkg(golden_fwpkg_path, has_signature, singature_struct_bytes)
 
         pldm_parser = PLDMUnpack(corrupted_package_path)
@@ -114,7 +114,7 @@ class PLDMFwpkg:
 
     @staticmethod
     def clear_component_image_in_pkg(golden_fwpkg_path, component_id=None):
-        """
+        r"""
         :Description:                       Clear image/payload of any component in the PLDM bundle.
                                             If component_id is provided, corrupt the respective component's image.
 
@@ -123,7 +123,7 @@ class PLDMFwpkg:
 
         :returns:                           Path to corrupted package. None if corruption fails.
         :rtype:                             str
-        """
+        r"""
         corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
 
         pldm_parser = PLDMUnpack(corrupted_package_path)
@@ -140,7 +140,7 @@ class PLDMFwpkg:
 
     @staticmethod
     def make_large_package(golden_fwpkg_path, max_bundle_size):
-        """
+        r"""
         :Description:                       Create a package that is larger than the allowed max size.
 
         :param str golden_fwpkg_path:	    Path to golden firmware package
@@ -148,7 +148,7 @@ class PLDMFwpkg:
 
         :returns:                           Path to corrupted package. None if corruption fails.
         :rtype:                             str
-        """
+        r"""
         corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
 
         with open(golden_fwpkg_path, 'rb') as infile:
@@ -168,14 +168,14 @@ class PLDMFwpkg:
 
     @staticmethod
     def corrupt_device_record_uuid_in_pkg(golden_fwpkg_path, has_signature=False, singature_struct_bytes=None):
-        """
+        r"""
         :Description:                       Corrupt UUID of all devices in the FirmwareDeviceIDRecords section
 
         :param str golden_fwpkg_path:	    Path to golden firmware package
 
         :returns:                           Path to corrupted package. None if corruption fails.
         :rtype:                             str
-        """
+        r"""
         corrupted_package_path = copy_fwpkg(golden_fwpkg_path, has_signature, singature_struct_bytes)
 
         pldm_parser = PLDMUnpack(corrupted_package_path)
@@ -190,23 +190,23 @@ class PLDMFwpkg:
 
 
 class FwpkgSignature:
-    """
+    r"""
     Methods related to PLDM fwpkg signature
-    """
+    r"""
     PKG_SIGNATURE_STRUCT_BYTES = 1024
     HeaderV2 = 2
     HeaderV3 = 3
 
     @staticmethod
     def get_major_minor_version_of_package_signature(package_path):
-        """
+        r"""
         :Description:                       Get the major and minor version of the FW Update Package Signature Format.
 
         :param str fwpkg_path:      	    Path to firmware package
 
         :returns:                           The major and minor versions extracted from the package. (-1, -1) in case of failure.
         :rtype:                             Tuple[int, int]
-        """
+        r"""
         try:
             with open(package_path, 'rb') as infile:
                 infile.seek(-FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES, os.SEEK_END)
@@ -220,7 +220,7 @@ class FwpkgSignature:
 
     @staticmethod
     def corrupt_single_byte_in_package_signature(fwpkg_path, skip_byte, value):
-        """
+        r"""
         :Description:                       Corrupt a given single byte in the given FW package.
 
         :param str fwpkg_path:      	    Path to firmware package to be corrupted
@@ -229,7 +229,7 @@ class FwpkgSignature:
 
         :returns:                           True if the corruption was successful, False otherwise.
         :rtype:                             bool
-        """
+        r"""
         try:
             with open(fwpkg_path, 'r+b') as file:
                 file.seek(-FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES + skip_byte, os.SEEK_END)
@@ -241,7 +241,7 @@ class FwpkgSignature:
 
     @staticmethod
     def corrupt_signature_type_in_package(golden_fwpkg_path):
-        """
+        r"""
         :Description:                       Corrupts the signature type in the FW package,
                                             which is present at 14th byte from the start of signature header.
 
@@ -249,7 +249,7 @@ class FwpkgSignature:
 
         :returns:                           Path to corrupted package. None if corruption fails.
         :rtype:                             str
-        """
+        r"""
         major_package_version, _ = FwpkgSignature.get_major_minor_version_of_package_signature(golden_fwpkg_path)
         if int(major_package_version) not in [FwpkgSignature.HeaderV2, FwpkgSignature.HeaderV3]:
             print(
@@ -268,7 +268,7 @@ class FwpkgSignature:
 
     @staticmethod
     def invalidate_signature_in_pkg(golden_fwpkg_path):
-        """
+        r"""
         :Description:                       Corrupts the magic number in the FW package,
                                             which is present at 14th byte from the start of signature header.
 
@@ -276,7 +276,7 @@ class FwpkgSignature:
 
         :returns:                           Path to corrupted package. None if corruption fails.
         :rtype:                             str
-        """
+        r"""
         corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
         try:
             with open(corrupted_package_path, 'r+b') as file:
@@ -291,7 +291,7 @@ class FwpkgSignature:
 
     @staticmethod
     def clear_entire_signature_in_pkg(golden_fwpkg_path):
-        """
+        r"""
         :Description:                       Clear the signature data appended at the end of
                                             the PLDM bundle.
 
@@ -299,7 +299,7 @@ class FwpkgSignature:
 
         :returns:                           Path to corrupted package. None if corruption fails.
         :rtype:                             str
-        """
+        r"""
         corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
         try:
             with open(corrupted_package_path, 'r+b') as file:
@@ -315,14 +315,14 @@ class FwpkgSignature:
 
     @staticmethod
     def clear_signature_in_pkg(golden_fwpkg_path):
-        """
+        r"""
         :Description:                       Clear the signature field in the PLDM bundle signature.
 
         :param str golden_fwpkg_path:	    Path to golden firmware package
 
         :returns:                           Path to corrupted package. None if corruption fails.
         :rtype:                             str
-        """
+        r"""
         major_package_version, _ = FwpkgSignature.get_major_minor_version_of_package_signature(golden_fwpkg_path)
         if int(major_package_version) not in [FwpkgSignature.HeaderV2, FwpkgSignature.HeaderV3]:
             print(
@@ -352,14 +352,14 @@ class FwpkgSignature:
         return corrupted_package_path
 
 class PLDMUnpack:
-    """
+    r"""
     PLDMUnpack class implements a PLDM parser and the unpack tool
     along with its required features.
-    """
+    r"""
     def __init__(self, package_name: str):
-        """
+        r"""
         Contructor for PLDMUnpack class
-        """
+        r"""
         self.unpack = True
         self.package = package_name
         self.fwpkg_fd = 0
@@ -380,12 +380,12 @@ class PLDMUnpack:
         ]
 
     def parse_header(self):
-        """
+        r"""
         :Description:                       Parse PLDM header data into self.header_map
 
         :returns:                           True if parsing successful
         :rtype:                             bool
-        """
+        r"""
         # check if UUID is valid
         pldm_fw_header_id_v1_0 = b'\xf0\x18\x87\x8c\xcb\x7d\x49\x43\x98\x00\xa0\x2f\x05\x9a\xca\x02'
         uuid_v1_0 = str(uuid.UUID(bytes=pldm_fw_header_id_v1_0))
@@ -419,12 +419,12 @@ class PLDMUnpack:
         return True
 
     def parse_device_id_records(self):
-        """
+        r"""
         :Description:                       Parse PLDM FirmwareDeviceIDRecords data into self.fd_id_record_list
 
         :returns:                           True if parsing successful
         :rtype:                             bool
-        """
+        r"""
         # pylint: disable=line-too-long
         self.device_id_record_count = int.from_bytes(self.fwpkg_fd.read(1),
                                                      byteorder='little',
@@ -522,12 +522,12 @@ class PLDMUnpack:
         return True
 
     def parse_component_img_info(self):
-        """
+        r"""
         :Description:                       Parse PLDM Component Image info data into self.fd_id_record_list
 
         :returns:                           True if parsing successful
         :rtype:                             bool
-        """
+        r"""
         component_image_count = int.from_bytes(self.fwpkg_fd.read(2),
                                                byteorder='little',
                                                signed=False)
@@ -569,24 +569,24 @@ class PLDMUnpack:
         return True
 
     def get_pldm_header_checksum(self):
-        """
+        r"""
         :Description:                       Read PLDM header checksum
 
         :returns:                           None
         :rtype:                             None
-        """
+        r"""
         self.full_header['Package Header Checksum'] = int.from_bytes(
             self.fwpkg_fd.read(4), byteorder='little', signed=False)
 
     def parse_pldm_package(self):
-        """
+        r"""
         :Description:                       Parse the PLDM package and get information about components included in the FW image.
 
         :param str package_name:	        Path to the firmware package to be parsed
 
         :returns:                           True if parsing successful
         :rtype:                             bool
-        """
+        r"""
         try:
             with open(self.package, "rb") as self.fwpkg_fd:
                 parsing_valid = self.parse_header()
@@ -602,7 +602,7 @@ class PLDMUnpack:
             return False
 
     def corrupt_component_metadata_in_pkg(self, component_id=None, metadata_size=4096):
-        """
+        r"""
         :Description:                       Corrupt a component's metadata in the given FW package.
                                             If component_id is provided, corrupt the respective component's image.
                                             Otherwise, corrupt the first component image in the package.
@@ -612,7 +612,7 @@ class PLDMUnpack:
 
         :returns:                           True if the corruption was successful, False otherwise.
         :rtype:                             bool
-        """
+        r"""
         corruption_status = False
         with open(self.package, 'rb') as infile: # Need to resolve
             fwpkg_content = infile.read()
@@ -641,7 +641,7 @@ class PLDMUnpack:
         return corruption_status
 
     def corrupt_component_image_in_pkg(self, component_id=None, metadata_size=4096):
-        """
+        r"""
         :Description:                       Corrupt a component's image/payload in the given FW package.
                                             If component_id is provided, corrupt the respective component's image.
                                             Otherwise, corrupt the first component image in the package.
@@ -651,7 +651,7 @@ class PLDMUnpack:
 
         :returns:                           True if the corruption was successful, False otherwise.
         :rtype:                             bool
-        """
+        r"""
         corruption_status = False
         with open(self.package, 'rb') as infile: # Need to fix this
             fwpkg_content = infile.read()
@@ -679,7 +679,7 @@ class PLDMUnpack:
         return corruption_status
 
     def clear_component_image_in_pkg(self, component_id=None):
-        """
+        r"""
         :Description:                       Clear a component's image/payload in the given FW package.
                                             If component_id is provided, corrupt the respective component's image.
                                             Otherwise, corrupt the first component image in the package.
@@ -688,7 +688,7 @@ class PLDMUnpack:
 
         :returns:                           True if the corruption was successful, False otherwise.
         :rtype:                             bool
-        """
+        r"""
         corruption_status = False
         with open(self.package, 'rb') as infile: # Need to Fix this
             fwpkg_content = infile.read()
@@ -716,12 +716,12 @@ class PLDMUnpack:
         return corruption_status
 
     def corrupt_device_record_uuid_in_pkg(self):
-        """
+        r"""
         :Description:                       Corrupt UUID of all devices in the FirmwareDeviceIDRecords section
 
         :returns:                           True if the corruption was successful, False otherwise.
         :rtype:                             bool
-        """
+        r"""
         corruption_status = False
         try:
             with open(self.package, 'r+b') as self.fwpkg_fd:
@@ -760,10 +760,10 @@ class PLDMUnpack:
         return corruption_status
 
     def get_applicable_component_index(self, applicable_component):
-        """
+        r"""
         Return list of indices of applicable component images from
         applicable_component index bitmap.
-        """
+        r"""
         # number of images in the image section
         max_bits = len(self.component_img_info_list)
         indices = []
@@ -776,7 +776,7 @@ class PLDMUnpack:
         return indices
 
     def decode_descriptor_data(self, desc_type_name, desc_data):
-        """ Formatting for descriptor data based on endianess"""
+        r""" Formatting for descriptor data based on endianess"""
         desc_val = ""
         if desc_type_name in self.little_endian_list:
             desc_val = get_padded_hex(desc_data)
@@ -785,7 +785,7 @@ class PLDMUnpack:
         return desc_val
 
     def get_full_metadata_json(self):
-        """ Decode byte value descriptors for full package metadata command """
+        r""" Decode byte value descriptors for full package metadata command """
         for device_records in self.full_header[
                 'FirmwareDeviceIdentificationArea']['FirmwareDeviceIDRecords']:
             device_records[
@@ -820,7 +820,7 @@ class PLDMUnpack:
             device_records["RecordDescriptors"] = descriptors
 
 def get_timestamp_str(timestamp):
-    """
+    r"""
     :Description:                       Parse timestamp string from 13 byte binary data
                                         according to PLDM Base specification
 
@@ -828,7 +828,7 @@ def get_timestamp_str(timestamp):
 
     :returns:                           Timestamp in PLDM base spec format
     :rtype:                             str
-    """
+    r"""
     year = timestamp[11]
     year = year << 8
     year = year | timestamp[10]
@@ -855,9 +855,9 @@ def get_timestamp_str(timestamp):
     return time_str
 
 def get_descriptor_type_name(desc_type):
-    """
+    r"""
     Return the descriptive name for given integer descriptor type.
-    """
+    r"""
     desc_type_dict = {
         0x0000: "PCI Vendor ID",
         0x0001: "IANA Enterprise ID",
@@ -883,9 +883,9 @@ def get_descriptor_type_name(desc_type):
     return name
 
 def get_padded_hex(byte_arr):
-        """
+        r"""
         Get hex formatted version of a byte array padded with 0
-        """
+        r"""
         total_len = len(byte_arr)
         hex_str = hex(
             int.from_bytes(byte_arr, byteorder='little', signed=False))[2:]

@@ -45,13 +45,13 @@ class SSHTunnelWithLibrary(SSHTunnel):
             return False, None
 
     def setup_ssh_tunnel(self, local_port, remote_host, remote_port, ssh_host, ssh_port, ssh_username, ssh_password):
-        """
+        r"""
         Setup SSH Tunneling to AMC
 
         :raises Exception: failed port forwarding/ssh tunneling
         :return: None
         :rtype: None
-        """
+        r"""
         if self.ssh_tunnel:
             return
 
@@ -74,12 +74,12 @@ class SSHTunnelWithLibrary(SSHTunnel):
         return self.binded_port
     
     def kill_ssh_tunnel(self):
-        """
+        r"""
         Kill SSH Tunneling to AMC
 
         :return: None
         :rtype: None
-        """
+        r"""
         if self.ssh_tunnel:
             self.ssh_tunnel.close()
             self.test_info_logger.log("SSH tunnel is killed successfully!")
@@ -105,13 +105,13 @@ class SSHTunnelWithSshpass(SSHTunnel):
 
     def setup_ssh_tunnel(self, local_port, remote_host, remote_port, ssh_host,
                         ssh_port, ssh_username, ssh_password):
-        """
+        r"""
         Setup SSH Tunneling to AMC
 
         :raises Exception: failed port forwarding/ssh tunneling
         :return: None
         :rtype: None
-        """
+        r"""
         if self.ssh_tunnel:
             return
 
@@ -136,12 +136,12 @@ class SSHTunnelWithSshpass(SSHTunnel):
         return self.binded_port
 
     def kill_ssh_tunnel(self):
-        """
+        r"""
         Kill SSH Tunneling to AMC
 
         :return: None
         :rtype: None
-        """
+        r"""
         # First, find all the PIDs associated with the binded port
         port_pid = ["lsof", "-t", "-i", ":{0}".format(self.binded_port)] # ANother option is to add -sTCP:LISTEN
         process = subprocess.Popen(port_pid, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

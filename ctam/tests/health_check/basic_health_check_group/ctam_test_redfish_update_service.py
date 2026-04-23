@@ -1,4 +1,4 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -20,7 +20,7 @@ LICENSE file in the root directory of this source tree.
 
 :Dependencies: None
 
-"""
+r"""
 from typing import Optional, List, Union
 from tests.test_case import TestCase
 from test_hierarchy import TestHierarchy
@@ -40,12 +40,12 @@ from interfaces.health_check_ifc import HealthCheckIfc
 
 
 class CTAMTestRedfishUpdateService(TestCase):
-    """
+    r"""
     Verify the output of Update Service
 
     :param TestCase: super class for all test cases
     :type TestCase:
-    """
+    r"""
 
     test_name: str = "CTAM Test Redfish Update Service"
     test_id: str = "H4"
@@ -57,17 +57,17 @@ class CTAMTestRedfishUpdateService(TestCase):
     # exclude_tags: List[str] = ["NotCheck"]
 
     def __init__(self, group: BasicHealthCheckTestGroup):
-        """
+        r"""
         _summary_
-        """
+        r"""
         super().__init__()
         self.group = group
         self.git_utils = GitUtils()
 
     def setup(self):
-        """
+        r"""
         set environment state for this test only
-        """
+        r"""
         # call super first
         super().setup()
 
@@ -77,9 +77,9 @@ class CTAMTestRedfishUpdateService(TestCase):
             pass
 
     def run(self) -> TestResult:
-        """
+        r"""
         actual test verification
-        """
+        r"""
         failure_reason = ""
         result = True
         logger_path = os.path.join(self.dut().logger_path, "RedfishInteropValidator")
@@ -126,9 +126,9 @@ class CTAMTestRedfishUpdateService(TestCase):
         return self.result, failure_reason
 
     def teardown(self):
-        """
+        r"""
         undo environment state change from setup() above, this function is called even if run() fails or raises exception
-        """
+        r"""
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():

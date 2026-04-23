@@ -1,11 +1,11 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 Copyright (c) NVIDIA CORPORATION
 
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
-"""
+r"""
 import os
 import json
 import time
@@ -22,9 +22,9 @@ except:
 
 
 class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
-    """
+    r"""
     API's related to general health check of the dut
-    """
+    r"""
 
     # _instance: Optional["FWUpdateIfc"] = None
 
@@ -62,7 +62,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
     #     return cls._instance
 
     def PLDMComponentVersions(self, image_type):
-        """
+        r"""
         :Description:       if the FW versions from PLDM bundle file are already populated, just return the existing dictionary.
                             Other
 
@@ -70,19 +70,19 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
         :return:            _PLDMComponentVersions
         :rtype:             dict
-        """
+        r"""
         if not self._PLDMComponentVersions.get(image_type):
             self.test_run().add_log(severity=LogSeverity.INFO, message=f"Populating FW Versions for image_type = {image_type}")
             self._PLDMComponentVersions[image_type] = self.ctam_get_version_from_bundle(image_type)
         return self._PLDMComponentVersions[image_type]
 
     def ctam_get_fw_version(self, PostInstall=0):
-        """
+        r"""
         :Description:               Get Firmware Version
         :param PostInstall:     Get Version after install the Firmware or before installing
 
         :returns:                   None
-        """
+        r"""
 
         MyName = __name__ + "." + self.ctam_get_fw_version.__qualname__
         JSONData = self.ctam_getfi(expanded=1)
@@ -100,13 +100,13 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         self.test_run().add_log(LogSeverity.DEBUG, msg)
 
     def ctam_fw_update_precheck(self, image_type="default"):
-        """
+        r"""
         :Description:               Check Firmware before installation
         :param image_type:          Type of the Firmware image
 
         :returns:                   VersionsDifferent
         :rtype:                     Bool
-        """
+        r"""
         MyName = __name__ + "." + self.ctam_fw_update_precheck.__qualname__
         VersionsDifferent = True
         failure_reason = ""
@@ -174,7 +174,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         corrupted_component_id=None, corrupted_component_list=[],
         check_time=False, specific_targets=[], is_force_update=True
     ):
-        """
+        r"""
         :Description:                           Stage Firmware
         :param partial:                         Partial
         :param image_type:                      Type of Firmware Image
@@ -185,7 +185,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
         :returns:                               StageFWOOB_Status, StageFWOOB_Status_message, return_task_id 
         :rtype:                                 Bool, str, str
-        """
+        r"""
         failure_reason = ""
         MyName = __name__ + "." + self.ctam_stage_fw.__qualname__
         StartTime = time.time()
@@ -316,14 +316,14 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         return StageFWOOB_Status, stage_msg, FwUpdTaskID, staging_time
 
     def ctam_fw_update_verify(self, image_type="default", corrupted_component_id=None, specific_targets=[], version_check=True):
-        """
+        r"""
         :Description:                   Firmware Update verification
         :param image_type:              Firmware image type
         :param corrupted_component_id:  ComponentIdentifier (in hex format) of the corrupted component image
 
         :returns:                       Update_Verified, string
         :rtype:                         Bool, string
-        """
+        r"""
         MyName = __name__ + "." + self.ctam_fw_update_verify.__qualname__
         Update_Verified = True
         exception = False
@@ -423,11 +423,11 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         ]
 
     def get_update_uri(self):
-        """
+        r"""
         :Description:                   Get supported fwupdate uri, multipart push uri over httpush
         :returns:                       whether uri was found, update uri and if it supports multipart push
         :rtype:                         Bool, Str, Bool
-        """
+        r"""
         
         uri = self.dut().uri_builder.format_uri(
             redfish_str="{BaseURI}/UpdateService", component_type="GPU"
@@ -473,14 +473,14 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         return PushSuccess
 
     def RedFishFWUpdate(self, BinPath, URI, targets=[], is_multipart=False, is_force_update=True):
-        """
+        r"""
         :Description:         It will update system firmware using redfish command.
         :param BinPath:       Path for the bin
         :param URI:           URI for creating URL
 
         :returns:             JSON data after executing redfish command
         :rtype:               JSON Dict
-        """
+        r"""
         MyName = __name__ + "." + self.RedFishFWUpdate.__qualname__
         JSONData = {}
 
@@ -567,7 +567,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         return PartialDeviceSelected
 
     def ctam_get_component_to_be_corrupted(self, VendorProvidedBundle=True):
-        """
+        r"""
         :Description:                   It will check the package_info.json for CorruptComponentIdentifier.
                                         If both corrupt package and CorruptComponentIdentifier are not provided,
                                         it'll find the first updatable element from firmware inventory.
@@ -577,7 +577,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
         :returns:                       SoftwareID of the component to be corrupted (in hex format)
         :rtype:                         str. None in case of failure
-        """
+        r"""
         MyName = __name__ + "." + self.ctam_get_component_to_be_corrupted.__qualname__
         vendor_provided_corrupt_pkg = self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Package", "")
         if VendorProvidedBundle and vendor_provided_corrupt_pkg == "":
@@ -604,7 +604,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         return corrupt_component_id
 
     def ctam_check_component_fwupd_failure(self, task_message_list, corrupted_component_id):
-        """
+        r"""
         :Description:                       It will check if the task status message list is showing the
                                             corrupted component update failed and all other component
                                             copying (staging) went through.
@@ -614,7 +614,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
         :returns:                           NonCorruptCompStaging_Success
         :rtype:                             Bool
-        """
+        r"""
         MyName = __name__ + "." + self.ctam_check_component_fwupd_failure.__qualname__
         NonCorruptCompStaging_Success = True
 
@@ -631,7 +631,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         return NonCorruptCompStaging_Success
 
     def ctam_get_component_list(self, component_id):
-        """
+        r"""
         :Description:                       It will check FW Inventory and find all the components with
                                             the provided component ID.
 
@@ -639,14 +639,14 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
         :returns:                           List of components with the component ID
         :rtype:                             list
-        """
+        r"""
         JSONData = self.ctam_getfi(expanded=1)
         component_list = []
         jsonhuntall(JSONData, "SoftwareId", component_id, "Id", component_list)
         return component_list
 
     def ctam_compare_active_components_count(self):
-        """
+        r"""
         :Description:                       It will compare FW Inventory from Pre and Post Fw update
                                             to make sure all components have come back online. Raises exception
                                             if pre install and post install details are empty. Make sure to
@@ -654,7 +654,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
         :returns:                           AllComponentsActive
         :rtype:                             Bool
-        """
+        r"""
 
         if not self.PreInstallDetails or not self.PostInstallDetails:
             raise RuntimeError(f"Pre and Post install details are missing.\
@@ -675,7 +675,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         return AllComponentsActive
 
     def ctam_get_version_from_bundle(self, image_type):
-        """
+        r"""
         :Description:           Check PLDM bundle json for FW version by software id.
                                 If JSON not provided for N/N-1, extract from fwpkg and write
                                 <fwpkg_basename>_header.json to run output dir.
@@ -684,7 +684,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
         :returns:               ComponentVersions
         :rtype:                 string
-        """
+        r"""
         ComponentIdsAndVersions = {}
         PLDMPkgJson = {}
         PLDMPkgJson_file = self.get_PLDMPkgJson_file(image_type=image_type)
