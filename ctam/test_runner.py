@@ -383,6 +383,11 @@ class TestRunner:
         :return: status_code, exit_string
         :rtype: int, str 
         r"""
+
+        status_code = -1        # default failure
+        exit_string = ""        # always defined
+        self._executed_any_test = False
+
         try:
             status_code = 0
             self.create_json_configuration()
@@ -549,6 +554,14 @@ class TestRunner:
             if self.comp_tool_dut:
                 self.comp_tool_dut.clean_up()
             self.post_proces_logs(self.writer.log_file)
+            if not self._executed_any_test:
+                self.active_run.add_log(
+                    severity=LogSeverity.INFO,
+                    message=(
+                        "No runnable CTAM tests were executed for this "
+                        "platform; result is NA."
+                    )
+                )
             return status_code, exit_string
         
     def consolidate_run(self):
@@ -778,6 +791,7 @@ class TestRunner:
                         # Inject measurements into all test cases
                         test_instance.measurements = self.measurements
                         test_result, failure_reason = test_instance.run()
+                        self._executed_any_test = True
                         if (
                             test_result == TestResult.FAIL
                         ):  # if any test fails, the group fails
@@ -1456,6 +1470,8 @@ class TestRunner:
         :return: status_code, exit_string
         :rtype: int, str 
         r"""
+        status_code = -1
+        exit_string = ""
         try:
             self._start()
             status_code, exit_string = 0, "System discovery is done"
