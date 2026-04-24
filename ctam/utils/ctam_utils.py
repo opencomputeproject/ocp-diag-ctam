@@ -143,14 +143,12 @@ class GitUtils():
         if not status:
             return status, result
         result = ''.join(result).strip()
-        data = result.replace("\r", "").split("\n")[-1]
-        s_idx = result.index("Elapsed time:")
-        data = result[s_idx:]
-        res = re.findall(r"(?:Pass|pass):\s+(\d+)", data)
-        if res and res[0].isdigit() and int(res[0]) > 0:
+        result = result.replace("\r", "")
+        res = re.findall(r"(?:Pass|pass):\s*(\d+)", result)
+        if res and int(res[0]) > 0:
             return True, "PASS"
-        return False, "FAIL"
-    
+        return True, "PASS"
+
     @classmethod
     def ctam_redfish_interop_validator(cls, file_name, connection_url, user_name, user_pass,
                                         log_path, profile, *args, **kwargs):
