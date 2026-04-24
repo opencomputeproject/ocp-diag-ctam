@@ -85,14 +85,36 @@ class CTAMTestServiceValidator(TestCase):
         repo_path = "RedfishServiceValidator"
         
         with step1.scope():
-            step1.add_log(LogSeverity.INFO, f"Cloning repo for Redfish Service Validator.")
-            result = git.clone_repo(repo_url="https://github.com/DMTF/Redfish-Service-Validator.git",
-                                  repo_path="RedfishServiceValidator")
+            step1.add_log(LogSeverity.INFO, "Preparing Redfish Service Validator")
+            validator_path = "/tmp/RedfishServiceValidator"
+            if os.path.isdir(validator_path):
+                step1.add_log(
+                    LogSeverity.INFO,
+                    "Redfish Service Validator already exists, reusing existing repo."
+                )
+                result = True
+            else:
+                step1.add_log(
+                    LogSeverity.INFO,
+                    "Cloning repo for Redfish Service Validator."
+                )
+                result = git.clone_repo(
+                    repo_url="https://github.com/DMTF/Redfish-Service-Validator.git",
+                    repo_path=validator_path
+                )
+
             if not result:
-                step1.add_log(LogSeverity.ERROR, f"Cloning repo for Redfish Service Validator failed.")
+                step1.add_log(
+                    LogSeverity.ERROR,
+                    "Cloning repo for Redfish Service Validator failed."
+                 )
                 failure_reason += "Cloning repo failed. "
-            step1.add_log(LogSeverity.INFO, f"Cloning repo for Redfish Service Validator successful.")
-        
+            else:
+                step1.add_log(
+                    LogSeverity.INFO,
+                    "Redfish Service Validator ready."
+                )
+
         if result:
             step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
             with step2.scope():
