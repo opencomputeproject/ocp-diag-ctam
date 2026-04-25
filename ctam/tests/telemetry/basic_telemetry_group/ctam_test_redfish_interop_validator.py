@@ -41,6 +41,7 @@ from tests.telemetry.basic_telemetry_group.basic_telemetry_group import (
     BasicTelemetryTestGroup,
 )
 from utils.ctam_utils import GitUtils
+from urllib.parse import urlparse
 
 class CTAMTestRedfishInteropValidator(TestCase):
     r"""
@@ -101,11 +102,16 @@ class CTAMTestRedfishInteropValidator(TestCase):
                 file_name="RedfishInteropValidator"
                 base_uri = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}",
                                                                     component_type="GPU")
+
+                parsed = urlparse(self.dut().connection_url)
+                # Passthrough breaks non-default ports (e.g. QEMU :8080)
+                passthrough = base_uri if parsed.port is None else None
+
                 repo_file_name = os.path.join(self.git_utils.repo_path, file_name)
                 
                 result,error_count = GitUtils.ctam_redfish_interop_validator(file_name=repo_file_name, connection_url=self.dut().connection_url,
                                                 user_name=self.dut().user_name, user_pass=self.dut().user_pass,
-                                                log_path=logger_path, passthrough=base_uri,
+                                                log_path=logger_path, passthrough=passthrough,
                                                 profile=json_file_path
                                                 )
                 self.group.telemetry_ifc.flatten_validator_output(self.__class__.test_id, self.__class__.__name__, logger_path)

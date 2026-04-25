@@ -39,6 +39,7 @@ from tests.health_check.basic_health_check_group.basic_health_check_test_group i
 )
 from utils.ctam_utils import GitUtils
 from interfaces.functional_ifc import FunctionalIfc
+from urllib.parse import urlparse
 
 class CTAMTestRedfishInteropValidatorFirmwareInventory(TestCase):
     r"""
@@ -102,11 +103,14 @@ class CTAMTestRedfishInteropValidatorFirmwareInventory(TestCase):
                 file_name="RedfishInteropValidator"
                 base_uri = self.dut().uri_builder.format_uri(redfish_str="{GPUMC}",
                                                                     component_type="GPU")
+                parsed = urlparse(self.dut().connection_url)
+                # Disable passthrough when a non-default port is used (e.g. QEMU :8080)
+                passthrough = base_uri if parsed.port is None else None
                 repo_file_name = os.path.join(self.git_utils.repo_path, file_name)
                 
                 result,error_count = GitUtils.ctam_redfish_interop_validator(file_name=repo_file_name, connection_url=self.dut().connection_url,
                                                 user_name=self.dut().user_name, user_pass=self.dut().user_pass,
-                                                log_path=logger_path, passthrough=base_uri,
+                                                log_path=logger_path, passthrough=passthrough,
                                                 payload="NodeTree /redfish/v1/UpdateService/FirmwareInventory",
                                                 profile=json_file_path,
                                                 )
