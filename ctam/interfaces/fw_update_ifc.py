@@ -218,7 +218,10 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             self.test_run().add_log(LogSeverity.DEBUG, f"Unable to find update uri from UpdateService resource!!!")
             failure_reason = "Update URI missing from UpdateService!"
             return False, failure_reason, "", staging_time
-        targets = self.get_target_inventorys(targets=specific_targets) if specific_targets else []
+        if specific_targets:
+            targets = self.get_target_inventorys(targets=specific_targets)
+        else:
+            targets = self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("full_update_targets", [])
         if self.dut().is_debug_mode():
             self.test_run().add_log(LogSeverity.DEBUG, f"URI : {uri}")
             self.test_run().add_log(LogSeverity.DEBUG, f"Targets : {targets}")
