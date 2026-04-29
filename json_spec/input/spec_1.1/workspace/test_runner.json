@@ -8,6 +8,10 @@
     "debug_mode": true,
     "console_log": true,
     "progress_bar":  false,
+    "service_validator": {
+        "branch_name": "",
+        "auth_type": "Basic"
+    },
     "include_tags": [],
     "exclude_tags": [],
     "test_sequence" : [],

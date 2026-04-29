@@ -687,33 +687,52 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         """
         ComponentIdsAndVersions = {}
         PLDMPkgJson = {}
+
+        dut = self.dut()
+        test_run = self.test_run()
         PLDMPkgJson_file = self.get_PLDMPkgJson_file(image_type=image_type)
 
         # N/N-1: if JSON missing, extract header from bundle and save to run output dir
-        if image_type in ("default", "backup", "old_version") and (not PLDMPkgJson_file or not os.path.isfile(PLDMPkgJson_file)):
+        if not PLDMPkgJson_file or not os.path.isfile(PLDMPkgJson_file):
             fwpkg_path = self.get_fwpkg_path(image_type=image_type)
+
             if fwpkg_path and os.path.isfile(fwpkg_path):
                 try:
                     pldm_parser = PLDMUnpack(fwpkg_path)
+
                     if pldm_parser.parse_pldm_package():
                         pldm_parser.get_full_metadata_json()
                         basename = os.path.basename(fwpkg_path)
-                        header_path = os.path.join(self.dut().output_dir, "{}_header.json".format(basename))
+                        header_path = os.path.join(dut.output_dir,
+                                                    f"{basename}_header.json")
+
                         with open(header_path, "w") as f:
                             json.dump(pldm_parser.full_header, f, indent=4, sort_keys=False)
-                        self.test_run().add_log(LogSeverity.INFO, "Extracted PLDM header from bundle to {}".format(header_path))
+
+                        test_run.add_log(LogSeverity.INFO,
+                                        f"Extracted PLDM header from bundle to {header_path}")
                         PLDMPkgJson_file = header_path
                     else:
-                        self.test_run().add_log(LogSeverity.WARNING, "Failed to parse PLDM package for header: {}".format(fwpkg_path))
+                        test_run.add_log(LogSeverity.WARNING,
+                                        f"Failed to parse PLDM package for header: {fwpkg_path}")
                 except (IOError, OSError) as e:
-                    self.test_run().add_log(LogSeverity.WARNING, "Header extraction failed ({}): {}".format(fwpkg_path, e))
+                    test_run.add_log(LogSeverity.WARNING,
+                                    f"Header extraction failed ({fwpkg_path}): {e}")
             else:
-                self.test_run().add_log(LogSeverity.DEBUG, "Fwpkg not found for image_type={}, skipping header extraction".format(image_type))
+                test_run.add_log(LogSeverity.DEBUG,
+                                f"Fwpkg not found for image_type={image_type}, skipping header extraction")
 
+        # Load JSON if available
         if PLDMPkgJson_file and os.path.isfile(PLDMPkgJson_file):
             with open(PLDMPkgJson_file, "r") as f:
                 PLDMPkgJson = json.load(f)
 
-        jsonmultivaluehunt(PLDMPkgJson, "ComponentIdentifier", "ComponentVersionString", ComponentIdsAndVersions)
-        ComponentIdsAndVersions = {str(hex(int(key, 16))): value for key, value in ComponentIdsAndVersions.items()}
+        jsonmultivaluehunt(PLDMPkgJson, "ComponentIdentifier",
+                            "ComponentVersionString", ComponentIdsAndVersions)
+
+        ComponentIdsAndVersions = {
+            str(hex(int(key, 16))): value
+            for key, value in ComponentIdsAndVersions.items()
+        }
+
         return ComponentIdsAndVersions
