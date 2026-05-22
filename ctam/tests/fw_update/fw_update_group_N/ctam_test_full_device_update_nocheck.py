@@ -25,7 +25,7 @@ LICENSE file in the root directory of this source tree.
         <redfish_uri_config.json>         : Required - <UpdateURI>, <TaskServiceURI>, <GPUCheckURI>, <MultiPartPushUriSupport>
                                            Optional - <exclude_targets_list>, <HttpPushUriTargets>, <IsMultiPart>, <MultiPartFormData>
         <dut_info.json>                   : Required - <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
-                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>, <SingleShotPowerCycleTimeOut>
 
         <package_info.json>               : Required - <Path>, <Package>, <JSON>
                                            Optional - <HasSignature>, <SignatureStructBytes>

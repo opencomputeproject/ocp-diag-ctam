@@ -295,6 +295,42 @@ class FunctionalIfc:
             return ""
         return ""
 
+    def _get_pkg_cfg(self, image_type):
+        """
+        Retrieves the device configuration and package configuration based on the specified image type.
+
+        This is a helper method that maps image types to their corresponding configuration keys
+        and fetches the associated configuration from the device's package_config.
+
+        Args:
+            image_type (str): The type of image to fetch configuration for. Must be one of:
+                - "default": Maps to GPU_FW_IMAGE
+                - "backup": Maps to GPU_FW_IMAGE_BACKUP
+                - "old_version": Maps to GPU_FW_IMAGE_OLD
+
+        Returns:
+            tuple: A tuple containing:
+                - dut: The device under test object
+                - dict: The package configuration dictionary for the specified image type,
+                        or an empty dictionary if the key is not found
+
+        @param image_type The image type identifier string
+        @return tuple Containing the DUT object and its corresponding package configuration
+        """
+        cfg_map = {
+            "default": "GPU_FW_IMAGE",
+            "backup": "GPU_FW_IMAGE_BACKUP",
+            "old_version": "GPU_FW_IMAGE_OLD",
+        }
+
+        key = cfg_map.get(image_type)
+        dut = self.dut()
+
+        if not key:
+            return dut, {}
+
+        return dut, dut.package_config.get(cfg_map[image_type], {})
+
     def get_PLDMPkgJson_file(self, image_type="default"):
         """
         :Description:           Get PLDM package file
@@ -304,46 +340,28 @@ class FunctionalIfc:
         :returns:	            File path
         :rtype:                 string
         """
-        # if not self.dut().package_config:
-        #     raise Exception("Please provide data in package config file to run this test case...")
         pldm_json_file = ""
-        if image_type == "default":
-            pldm_json_file = os.path.join(
-                self.dut().cwd,
-                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
-                self.dut().package_config.get("GPU_FW_IMAGE", {}).get("JSON", ""),
-            )
+        dut, cfg = self._get_pkg_cfg(image_type)
 
-        elif image_type == "backup":
-            pldm_json_file = os.path.join(
-                self.dut().cwd,
-                self.dut()
-                .package_config.get("GPU_FW_IMAGE_BACKUP", {})
-                .get("Path", ""),
-                self.dut()
-                .package_config.get("GPU_FW_IMAGE_BACKUP", {})
-                .get("JSON", ""),
-            )
-        elif image_type == "old_version":
-            pldm_json_file = os.path.join(
-                self.dut().cwd,
-                self.dut().package_config.get("GPU_FW_IMAGE_OLD", {}).get("Path", ""),
-                self.dut().package_config.get("GPU_FW_IMAGE_OLD", {}).get("JSON", ""),
-            )
-        elif image_type == "corrupt_component":
-            if self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("JSON", "") != "":
-                pldm_json_file = os.path.join(
-                    self.dut().cwd,
-                    self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("Path", ""),
-                    self.dut().package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("JSON", ""),
-                )
-            else:
-                pldm_json_file = os.path.join(
-                    self.dut().cwd,
-                    self.dut().package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
-                    'corrupted-pkg.fwpkg.json',
-                )
-        return pldm_json_file
+        # Normal cases
+        if cfg:
+            pldm_json_file = os.path.join(dut.cwd, cfg.get("Path", ""), cfg.get("JSON", ""),)
+
+        return  pldm_json_file
+
+    def get_fwpkg_path(self, image_type="default"):
+        """
+        Get full path to the fwpkg for the given image type (N/N-1).
+        Used when JSON is not provided and header is extracted from bundle.
+        """
+        pkg_path = ""
+
+        dut, cfg = self._get_pkg_cfg(image_type)
+        package = cfg.get("Package")
+        if not package:
+            return ""
+
+        return os.path.join(dut.cwd, cfg.get("Path", ""), package)
 
     def ctam_getfi(self, expanded=0):
         """
@@ -522,15 +540,18 @@ class FunctionalIfc:
 
     def NodeACReset(self):
         """
-        :Description:        It will Reset the node.
+        :Description:       It will Reset the node.
 
-        :returns:	         None
-        :rtype:              Bool
+        :returns:           True if power cycle succeeds, False otherwise
+        :rtype:             bool
         """
         MyName = __name__ + "." + self.NodeACReset.__qualname__
         single_shot_power_cycle = self.dut().dut_config.get("SingleShotPowerCycle", {}).get("value", "")
+        single_shot_power_cycle_triggered = False
         if single_shot_power_cycle:
             single_shot_power_command = self.dut().dut_config.get("SingleShotPowerCycleCommand", {}).get("value", "")
+            # Fetch SingleShotPowerCycleTimeOut duration from dut_config and set default value to 30 seconds
+            time_out = self.dut().dut_config.get("SingleShotPowerCycleTimeOut", {}).get("value", 30)
             if not single_shot_power_command:
                 self.test_run().add_log(LogSeverity.INFO, "Please provide single command for power off and power on in dut config!")
                 return False
@@ -539,9 +560,31 @@ class FunctionalIfc:
             arguments = shlex.split(single_shot_power_command)
             cwd_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
             cwd_path = None if cwd_path == "/tmp" else cwd_path
-            subprocess.check_output(arguments, cwd=cwd_path)
+
+            try:
+                subprocess.check_output(arguments, cwd=cwd_path,timeout=time_out, stderr=subprocess.STDOUT)
+            except subprocess.TimeoutExpired:
+                self.test_run().add_log(LogSeverity.INFO, "Command timed out (device likely rebooting)")
+                single_shot_power_cycle_triggered = True
+            except subprocess.CalledProcessError as e:
+                if e.returncode in (1, 255):
+                    single_shot_power_cycle_triggered = True
+                    self.test_run().add_log(LogSeverity.INFO, "Power cycle triggered (connection reset expected)")
+                else:
+                    self.test_run().add_log(LogSeverity.ERROR, f"Power cycle failed with return code {e.returncode}: {e.output}")
+                    return False
+
+            except Exception as e:
+                self.test_run().add_log(LogSeverity.ERROR, f"Unexpected error during power cycle | "
+                                        f"Exception: {type(e).__name__} | "
+                                        f"Message: {e}")
+                return False
+
             time.sleep(self.dut().dut_config.get("PowerOnWaitTime", {}).get("value", 300))
             self.test_run().add_log(LogSeverity.INFO, "Power ON wait time done")
+            # The channel connection may be inactive since the power cycle was initiated by logging into the DUT.
+            if (single_shot_power_cycle_triggered and not self.dut().ssh_tunnel.ssh_tunnel.is_active):
+                self.dut().ssh_tunnel.ssh_tunnel.restart()
         else:
             power_off_command = self.dut().dut_config.get("PowerOffCommand", {}).get("value", "")
             power_on_command = self.dut().dut_config.get("PowerOnCommand", {}).get("value", "")

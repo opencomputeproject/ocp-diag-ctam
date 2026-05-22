@@ -12,6 +12,7 @@ import time
 import random
 from interfaces.functional_ifc import FunctionalIfc
 from ocptv.output import LogSeverity
+from utils.fwpkg_utils import PLDMUnpack
 from utils.json_utils import *
 
 try:
@@ -332,6 +333,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         self.ctam_get_fw_version(PostInstall=1)
         msg = json.dumps(self.PostInstallDetails, indent=4)
         self.test_run().add_log(LogSeverity.DEBUG, msg)
+        exclude_targets_list = self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("exclude_targets_list", [])
         if self.dut().dut_config.get("CompareFirmwareInventoryCount",{}).get("value", True):
             # Check if all components are reporting
             Update_Verified = self.ctam_compare_active_components_count()
@@ -339,7 +341,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         # Verify version of components currently reporting in FW inventory
         for element in self.PostInstallDetails:
             try:
-                if element["Id"] in self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("exclude_targets_list", []):
+                if element["Id"] in exclude_targets_list:
                     msg = f"Skipping {element['Id']} as it is in the exclude list"
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
                     continue
@@ -382,9 +384,18 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     msg += "Update Interrupted as Expected"
                 
                 else:
-                    msg += "Update Successful"
-                    update_successful.append(element['SoftwareId'])
-                    
+                    if element["Id"] not in exclude_targets_list:
+                        if element["Status"]["Health"] != "OK" or element["Status"]["State"]!="Enabled":
+                            update_failed.append(element['SoftwareId'])
+                            Update_Verified = False
+                            msg += f"Component Health/Status Failed : Expected Status['Health'] : OK and Status['State'] : Enabled"
+                        else:
+                            msg += "Update Successful"
+                            update_successful.append(element['SoftwareId'])
+                    else:
+                        msg += "Update Successful"
+                        update_successful.append(element['SoftwareId'])
+
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
             except Exception as e:
                 failure_reason = " Exception occured: " + str(e)
@@ -665,26 +676,63 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
     def ctam_get_version_from_bundle(self, image_type):
         """
-        :Description:           It will check the PLDM bundle json and find FW version
-                                of the component with the specified software id.
+        :Description:           Check PLDM bundle json for FW version by software id.
+                                If JSON not provided for N/N-1, extract from fwpkg and write
+                                <fwpkg_basename>_header.json to run output dir.
 
         :param image_type:      image type
 
         :returns:               ComponentVersions
         :rtype:                 string
         """
-
         ComponentIdsAndVersions = {}
         PLDMPkgJson = {}
-        # Then get the PLDM bundle json
+
+        dut = self.dut()
+        test_run = self.test_run()
         PLDMPkgJson_file = self.get_PLDMPkgJson_file(image_type=image_type)
 
-        # check again above code
+        # N/N-1: if JSON missing, extract header from bundle and save to run output dir
+        if not PLDMPkgJson_file or not os.path.isfile(PLDMPkgJson_file):
+            fwpkg_path = self.get_fwpkg_path(image_type=image_type)
+
+            if fwpkg_path and os.path.isfile(fwpkg_path):
+                try:
+                    pldm_parser = PLDMUnpack(fwpkg_path)
+
+                    if pldm_parser.parse_pldm_package():
+                        pldm_parser.get_full_metadata_json()
+                        basename = os.path.basename(fwpkg_path)
+                        header_path = os.path.join(dut.output_dir,
+                                                    f"{basename}_header.json")
+
+                        with open(header_path, "w") as f:
+                            json.dump(pldm_parser.full_header, f, indent=4, sort_keys=False)
+
+                        test_run.add_log(LogSeverity.INFO,
+                                        f"Extracted PLDM header from bundle to {header_path}")
+                        PLDMPkgJson_file = header_path
+                    else:
+                        test_run.add_log(LogSeverity.WARNING,
+                                        f"Failed to parse PLDM package for header: {fwpkg_path}")
+                except (IOError, OSError) as e:
+                    test_run.add_log(LogSeverity.WARNING,
+                                    f"Header extraction failed ({fwpkg_path}): {e}")
+            else:
+                test_run.add_log(LogSeverity.DEBUG,
+                                f"Fwpkg not found for image_type={image_type}, skipping header extraction")
+
+        # Load JSON if available
         if PLDMPkgJson_file and os.path.isfile(PLDMPkgJson_file):
             with open(PLDMPkgJson_file, "r") as f:
                 PLDMPkgJson = json.load(f)
 
-        #Using jsonmultivaluehunt to get the multiple values by passing two json keys
-        jsonmultivaluehunt(PLDMPkgJson, "ComponentIdentifier", "ComponentVersionString", ComponentIdsAndVersions)
-        ComponentIdsAndVersions = {str(hex(int(key, 16))): value for key, value in ComponentIdsAndVersions.items()}
+        jsonmultivaluehunt(PLDMPkgJson, "ComponentIdentifier",
+                            "ComponentVersionString", ComponentIdsAndVersions)
+
+        ComponentIdsAndVersions = {
+            str(hex(int(key, 16))): value
+            for key, value in ComponentIdsAndVersions.items()
+        }
+
         return ComponentIdsAndVersions

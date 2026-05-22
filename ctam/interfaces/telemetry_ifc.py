@@ -103,7 +103,30 @@ class TelemetryIfc(FunctionalIfc, metaclass=Meta):
             print(t)
         self.write_test_info("{}".format(mr_json))
         return mr_json
-    
+
+    def get_service_validator_info(self):
+        """
+        Retrieve service validator information from the test runner configuration file.
+
+        This method attempts to read a 'test_runner.json' file located in the DUT's
+        workspace directory and extracts the 'service_validator' section from it.
+
+        Returns:
+            dict: A dictionary containing service validator configuration data.
+                  Returns an empty dictionary if:
+                  - The test_runner.json file does not exist
+                  - The file cannot be read (OSError)
+                  - The file contains invalid JSON (json.JSONDecodeError)
+        """
+        path = os.path.join(self.dut().workspace_dir, "test_runner.json")
+        if not os.path.isfile(path):
+            return {}
+
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f).get("service_validator", {})
+        except (json.JSONDecodeError, OSError):
+            return {}
     
 
     

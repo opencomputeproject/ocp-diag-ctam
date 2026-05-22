@@ -98,7 +98,12 @@
 			"description": "Single command to power off and power on the remote system",
 			"type": "string",
 			"value": ""
-		}
+		},
+                "SingleShotPowerCycleTimeOut": {
+                        "description": "TimeOut duration in seconds for single command power cycle operation",
+                        "type": "int",
+                        "value": 30
+                }
 	},
 	"required": [
 		"ConnectionTo",
