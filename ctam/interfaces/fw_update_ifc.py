@@ -6,6 +6,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
 """
+import ast
 import os
 import json
 import time
@@ -218,7 +219,13 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             self.test_run().add_log(LogSeverity.DEBUG, f"Unable to find update uri from UpdateService resource!!!")
             failure_reason = "Update URI missing from UpdateService!"
             return False, failure_reason, "", staging_time
-        targets = self.get_target_inventorys(targets=specific_targets) if specific_targets else []
+        if not specific_targets:
+            cfg_targets = self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("specific_targets", [])
+            if isinstance(cfg_targets, str):
+                cfg_targets = ast.literal_eval(cfg_targets) if cfg_targets else []
+            specific_targets = [t for t in (cfg_targets or []) if t]
+        targets = [t if str(t).startswith("/redfish/") else self.get_target_inventorys([t])[0]
+                   for t in specific_targets]
         if self.dut().is_debug_mode():
             self.test_run().add_log(LogSeverity.DEBUG, f"URI : {uri}")
             self.test_run().add_log(LogSeverity.DEBUG, f"Targets : {targets}")
