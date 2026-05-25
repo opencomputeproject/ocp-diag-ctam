@@ -1,4 +1,4 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -23,7 +23,7 @@ LICENSE file in the root directory of this source tree.
 :Dependencies: None
 
 """
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Dict
 from tests.test_case import TestCase
 from test_hierarchy import TestHierarchy
 import os
@@ -52,7 +52,11 @@ class CTAMTestRedfishInteropValidatorFirmwareInventory(TestCase):
     test_id: str = "H5"
     score_weight: int = 10
     tags: List[str] = ["HCheck", "L1"]
-    compliance_level: str ="L1"
+    #compliance_level: str ="L1"
+    compliance_level: Dict[str, str] = {
+    ">=1.0,<1.2": "L1",
+    ">=1.2": "L2"
+    }
     spec_versions: Union[str, List[str]] = ">= 1.0"
 
     # exclude_tags: List[str] = ["NotCheck"]
