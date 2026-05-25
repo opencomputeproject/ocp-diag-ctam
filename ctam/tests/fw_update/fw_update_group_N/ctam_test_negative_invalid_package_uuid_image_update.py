@@ -39,7 +39,7 @@ LICENSE file in the root directory of this source tree.
                                            Optional -  <LargeFWImageUpdate>
 """
 
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Dict
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -65,7 +65,11 @@ class CTAMTestNegativeInvalidPackageUUIDImageUpdate(TestCase):
     test_id: str = "F27"
     score_weight: int = 10
     tags: List[str] = ["Negative", "L2"]
-    compliance_level: str = "L2"
+    #compliance_level: str = "L2"
+    compliance_level: Dict[str, str] = {
+    ">=1.0,<1.2": "L2",
+    ">=1.2": "L3"
+    }
     spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: FWUpdateTestGroupN):
