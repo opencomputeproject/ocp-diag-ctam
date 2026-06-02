@@ -21,6 +21,8 @@ def copy_fwpkg(golden_fwpkg_path, clear_signature=False, signature_struct_bytes=
     corrupted_package =  os.path.join(os.path.dirname(golden_fwpkg_path), "corrupted-pkg.fwpkg")
     corrupted_package_path = shutil.copy(golden_fwpkg_path, corrupted_package)
     if clear_signature:
+        if not signature_struct_bytes or not isinstance(signature_struct_bytes, int):
+            signature_struct_bytes = FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES
         try:
             with open(corrupted_package_path, 'r+b') as file:
                 file.seek(-signature_struct_bytes, os.SEEK_END)
@@ -386,13 +388,25 @@ class PLDMUnpack:
         :returns:                           True if parsing successful
         :rtype:                             bool
         """
-        # check if UUID is valid
+        # check if UUID is valid (support PLDM v1.0 through v1.3)
         pldm_fw_header_id_v1_0 = b'\xf0\x18\x87\x8c\xcb\x7d\x49\x43\x98\x00\xa0\x2f\x05\x9a\xca\x02'
-        uuid_v1_0 = str(uuid.UUID(bytes=pldm_fw_header_id_v1_0))
-        self.header_map["PackageHeaderIdentifier"] = str(
-            uuid.UUID(bytes=self.fwpkg_fd.read(16)))
-        if uuid_v1_0 != self.header_map["PackageHeaderIdentifier"]:
-            log_msg = "Expected PLDM v1.0 but PackageHeaderIdentifier is "\
+        pldm_fw_header_id_v1_1 = b'\x12\x44\xd2\x64\x8d\x7d\x47\x18\xa0\x30\xfc\x8a\x56\x58\x7d\x5a'
+        pldm_fw_header_id_v1_2 = b'\x31\x19\xce\x2f\xe8\x0a\x4a\x99\xaf\x6d\x46\xf8\xb1\x21\xf6\xbf'
+        pldm_fw_header_id_v1_3 = b'\x7b\x29\x1c\x99\x6d\xb6\x42\x08\x80\x1b\x02\x02\x6e\x46\x3c\x78'
+        valid_uuids = {
+            str(uuid.UUID(bytes=pldm_fw_header_id_v1_0)): "1.0",
+            str(uuid.UUID(bytes=pldm_fw_header_id_v1_1)): "1.1",
+            str(uuid.UUID(bytes=pldm_fw_header_id_v1_2)): "1.2",
+            str(uuid.UUID(bytes=pldm_fw_header_id_v1_3)): "1.3",
+        }
+        try:
+            self.header_map["PackageHeaderIdentifier"] = str(
+                uuid.UUID(bytes=self.fwpkg_fd.read(16)))
+        except ValueError:
+            print("Error: incorrect package format.")
+            return False
+        if self.header_map["PackageHeaderIdentifier"] not in valid_uuids:
+            log_msg = "Expected PLDM v1.0/v1.1/v1.2/v1.3 but PackageHeaderIdentifier is "\
             + self.header_map["PackageHeaderIdentifier"]
             print(log_msg)
             return False
@@ -414,7 +428,7 @@ class PLDMUnpack:
                                          signed=False)
         self.header_map["PackageVersionStringLength"] = version_str_len
         self.header_map["PackageVersionString"] = self.fwpkg_fd.read(
-            version_str_len).decode('utf-8')
+            version_str_len).split(b'\x00')[0].decode('utf-8')
         self.full_header["PackageHeaderInformation"] = self.header_map
         return True
 
@@ -445,6 +459,9 @@ class PLDMUnpack:
                     self.fwpkg_fd.read(1), byteorder='little', signed=False)
             id_record_map["FirmwareDevicePackageDataLength"] = int.from_bytes(
                 self.fwpkg_fd.read(2), byteorder='little', signed=False)
+            if int(self.header_map.get("PackageHeaderFormatVersion", "0")) >= 4:
+                id_record_map["ReferenceManifestLength"] = int.from_bytes(
+                    self.fwpkg_fd.read(4), byteorder='little', signed=False)
             applicable_component_size = math.ceil(
                 self.header_map["ComponentBitmapBitLength"] / 8)
             id_record_map["ApplicableComponents"] = int.from_bytes(
@@ -454,7 +471,7 @@ class PLDMUnpack:
             id_record_map[
                 "ComponentImageSetVersionString"] = self.fwpkg_fd.read(
                     id_record_map["ComponentImageSetVersionStringLength"]
-                ).decode('utf-8')
+                ).split(b'\x00')[0].decode('utf-8')
             descriptors = []
             for j in range(id_record_map["DescriptorCount"]):
                 descriptor_map = {}
@@ -514,10 +531,26 @@ class PLDMUnpack:
             id_record_map["FirmwareDevicePackageData"] = self.fwpkg_fd.read(
                 id_record_map["FirmwareDevicePackageDataLength"]).decode(
                     'utf-8')
+            if "ReferenceManifestLength" in id_record_map and id_record_map["ReferenceManifestLength"] > 0:
+                self.fwpkg_fd.read(id_record_map["ReferenceManifestLength"])
             self.fd_id_record_list.append(id_record_map)
         self.full_header["FirmwareDeviceIdentificationArea"] = {
             "DeviceIDRecordCount": self.device_id_record_count,
             "FirmwareDeviceIDRecords": self.fd_id_record_list
+        }
+        return True
+
+    def parse_downstream_device_identification_area(self):
+        """
+        :Description:                       Parse PLDM DownstreamDeviceIdentificationArea (v1.3+)
+
+        :returns:                           True if parsing successful
+        :rtype:                             bool
+        """
+        downstream_device_id_record_count = int.from_bytes(
+            self.fwpkg_fd.read(1), byteorder='little', signed=False)
+        self.full_header["DownstreamDeviceIdentificationArea"] = {
+            "DownstreamDeviceIDRecordCount": downstream_device_id_record_count
         }
         return True
 
@@ -560,7 +593,13 @@ class PLDMUnpack:
             comp_info["ComponentVersionStringLength"] = int.from_bytes(
                 self.fwpkg_fd.read(1), byteorder='little', signed=False)
             comp_info["ComponentVersionString"] = self.fwpkg_fd.read(
-                comp_info["ComponentVersionStringLength"]).decode('utf-8')
+                comp_info["ComponentVersionStringLength"]).split(b'\x00')[0].decode('utf-8')
+            if int(self.header_map.get("PackageHeaderFormatVersion", "0")) >= 3:
+                comp_info["ComponentOpaqueDataLength"] = int.from_bytes(
+                    self.fwpkg_fd.read(4), byteorder='little', signed=False)
+                if comp_info["ComponentOpaqueDataLength"] > 0:
+                    comp_info["ComponentOpaqueData"] = self.fwpkg_fd.read(
+                        comp_info["ComponentOpaqueDataLength"]).hex()
             self.component_img_info_list.append(comp_info)
         self.full_header["ComponentImageInformationArea"] = {
             "ComponentImageCount": component_image_count,
@@ -592,9 +631,11 @@ class PLDMUnpack:
                 parsing_valid = self.parse_header()
                 if parsing_valid:
                     parsing_valid = self.parse_device_id_records()
-                    if parsing_valid:
-                        parsing_valid = self.parse_component_img_info()
-                        self.get_pldm_header_checksum()
+                if parsing_valid and int(self.header_map.get("PackageHeaderFormatVersion", "0")) >= 4:
+                    parsing_valid = self.parse_downstream_device_identification_area()
+                if parsing_valid:
+                    parsing_valid = self.parse_component_img_info()
+                    self.get_pldm_header_checksum()
             return parsing_valid
         except IOError as e_io_error:
             log_message = f"Couldn't open or read given FW package ({e_io_error})"
@@ -727,12 +768,18 @@ class PLDMUnpack:
             with open(self.package, 'r+b') as self.fwpkg_fd:
                 parsing_valid = self.parse_header()
                 if parsing_valid:
-                    package_header_size = 36 +  self.header_map["PackageVersionStringLength"] # FIXME: Too much hard-coded magic numbers!
+                    package_header_size = 36 +  self.header_map["PackageVersionStringLength"]
                     parsing_valid = self.parse_device_id_records()
                     if parsing_valid:
+                        fmt_rev = int(self.header_map.get("PackageHeaderFormatVersion", "0"))
+                        # Skip DownstreamDeviceIdentificationArea for v1.3+
+                        downstream_area_size = 0
+                        if fmt_rev >= 4:
+                            downstream_area_size = 1  # 1 byte for DownstreamDeviceIDRecordCount (assuming 0 records)
+                        device_id_fixed_fields_size = 11 if fmt_rev < 4 else 15  # v1.3 adds 4-byte ReferenceManifestLength
                         device_id_record_start_index = package_header_size + 1 # 1 byte for DeviceIDRecordCount
                         for id_record_map in self.fd_id_record_list:
-                            record_descriptors_start_index = device_id_record_start_index + 11\
+                            record_descriptors_start_index = device_id_record_start_index + device_id_fixed_fields_size\
                                                             + math.ceil(self.header_map["ComponentBitmapBitLength"] / 8)\
                                                             + id_record_map["ComponentImageSetVersionStringLength"]
                             for j in range(id_record_map["DescriptorCount"]):
