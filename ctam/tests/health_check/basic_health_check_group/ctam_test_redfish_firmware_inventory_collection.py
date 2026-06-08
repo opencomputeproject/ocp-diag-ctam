@@ -52,11 +52,7 @@ class CTAMTestRedfishInteropValidatorFirmwareInventory(TestCase):
     test_id: str = "H5"
     score_weight: int = 10
     tags: List[str] = ["HCheck", "L1"]
-    #compliance_level: str ="L1"
-    compliance_level: Dict[str, str] = {
-    ">=1.0,<1.2": "L1",
-    ">=1.2": "L2"
-    }
+    compliance_level: str ="L1"
     spec_versions: Union[str, List[str]] = ">= 1.0"
 
     # exclude_tags: List[str] = ["NotCheck"]
