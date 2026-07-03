@@ -23,6 +23,8 @@ from tests.test_group import TestGroup
 from interfaces.functional_ifc import FunctionalIfc
 from test_hierarchy import TestHierarchy
 from packaging.version import Version, InvalidVersion
+from packaging.specifiers import SpecifierSet
+
 
 from prettytable import PrettyTable
 import threading, time
@@ -401,6 +403,10 @@ class TestRunner:
                         group_instance,
                         test_case_instances,
                     ) = self.test_hierarchy.instantiate_obj_for_testcase(test)
+
+                    for testcase in test_case_instances:
+                        self.normalize_testcase_metadata(testcase)
+                        
                     group_inc_tags = group_instance.tags
                     print("Group tags ", group_instance.tags)
                     # group_exc_tags = group_instance.exclude_tags
@@ -443,6 +449,8 @@ class TestRunner:
                         test_case_instances,
                     ) = self.test_hierarchy.instantiate_obj_for_testcase(test)
                     
+                    for testcase in test_case_instances:
+                        self.normalize_testcase_metadata(testcase)
                     group_inc_tags = group_instance.tags
                     # group_exc_tags = group_instance.exclude_tags
                     group_status, group_result = self._run_group_test_cases(group_instance, test_case_instances)
@@ -457,6 +465,10 @@ class TestRunner:
                         group_instance,
                         test_case_instances,
                     ) = self.test_hierarchy.instantiate_obj_for_group(group)
+
+                    for testcase in test_case_instances:
+                        self.normalize_testcase_metadata(testcase)
+
                     if self.progress_bar and self.console_log is False:
                         self.total_cases = len(test_case_instances)
                         progress_thread.start()
@@ -483,6 +495,9 @@ class TestRunner:
                         test_case_instances,
                     ) = self.test_hierarchy.instantiate_obj_for_group(group)
 
+                    for testcase in test_case_instances:
+                        self.normalize_testcase_metadata(testcase)
+                        
                     group_inc_tags = group_instance.tags
                     # group_exc_tags = group_instance.exclude_tags
 
@@ -548,6 +563,7 @@ class TestRunner:
         finally:
             if self.comp_tool_dut:
                 self.comp_tool_dut.clean_up()
+            
             self.post_proces_logs(self.writer.log_file)
             return status_code, exit_string
         
@@ -1000,6 +1016,8 @@ class TestRunner:
                 group_instance, test_case_instances = self.test_hierarchy.instantiate_obj_for_testcase(test_id)
                             
                 for test_instance in test_case_instances:
+                    self.normalize_testcase_metadata(test_instance)
+
                     if self.weighted_scores:
                         self.__compliance_level_score(testcase=test_instance)
 
@@ -1072,7 +1090,7 @@ class TestRunner:
         """
 
         compliance_level = test_instance.compliance_level if test_instance.compliance_level in self.weighted_scores else "L3"
-        available_testcases = self.test_hierarchy.get_compliance_test_cases()
+        available_testcases = self.test_hierarchy.get_compliance_test_cases(self.resolve_compliance_level)
         
         # Initialize the level if not present in report
         levels = test_report["compliance_level_weighted"]["levels"]
@@ -1106,7 +1124,7 @@ class TestRunner:
         """
         compliance_level = test_instance.compliance_level if test_instance.compliance_level in self.weighted_scores else "L3"
         domain_count = self.test_hierarchy.get_domains()
-        available_testcases = self.test_hierarchy.get_compliance_test_cases()
+        available_testcases = self.test_hierarchy.get_compliance_test_cases(self.resolve_compliance_level)
         
         # Initialize the level if not already present
         c_levels = test_report["compliance_level_normalized"]["levels"]
@@ -1126,7 +1144,7 @@ class TestRunner:
         #Update normalized compliance-level metrics
         normalized = c_levels[compliance_level]
         normalized["normalized_weight"] = self.normalized_scores[compliance_level]
-        normalized["testcases_available"] = self.test_hierarchy.get_compliance_test_cases()[compliance_level]
+        normalized["testcases_available"] = self.test_hierarchy.get_compliance_test_cases(self.resolve_compliance_level)[compliance_level]
         normalized["normalized_score"] = round(normalized["normalized_weight"] / normalized["testcases_available"], 2) if normalized["testcases_available"] != 0 else 0
         normalized["testcases_executed"] += 1
         normalized["testcases_passed"] += 1 if test_result == "PASS" else 0
@@ -1184,7 +1202,7 @@ class TestRunner:
                     "total_execution_time": 0
                 }
                       
-        available_testcases = self.test_hierarchy.get_compliance_test_cases()
+        available_testcases = self.test_hierarchy.get_compliance_test_cases(self.resolve_compliance_level)
         weighted_levels = test_report["compliance_level_weighted"]["levels"]
         normalized_levels = test_report["compliance_level_normalized"]["levels"]
         
@@ -1207,7 +1225,7 @@ class TestRunner:
             for comp_level, weight in self.normalized_scores.items():
                 # Add missing normalized level
                 if comp_level not in normalized_levels:
-                    available_normaized_testcases = self.test_hierarchy.get_compliance_test_cases()[comp_level]
+                    available_normaized_testcases = self.test_hierarchy.get_compliance_test_cases(self.resolve_compliance_level)[comp_level]
                     norm_score = round(weight / available_normaized_testcases, 2) if available_normaized_testcases else 0
                     normalized_levels[comp_level] = {
                         "normalized_weight": weight,
@@ -1724,4 +1742,51 @@ class TestRunner:
             print("=================================\n")
         else:
             print(f"File not found: {json_file_path}")
-        
+
+    def resolve_compliance_level(self, compliance_level):
+        """
+        Supports:
+            "L1"
+
+        and:
+
+            {
+                ">=1.0,<1.2": "L2",
+                ">=1.2": "L1"
+            }
+        """
+
+        # Simple static compliance
+        if isinstance(compliance_level, str):
+            return compliance_level
+
+        # Dynamic compliance mapping
+        if isinstance(compliance_level, dict):
+            if self.spec_version:
+                version = Version(self.spec_version)
+            elif self.test_runner_spec_version:
+                version = Version(self.test_runner_spec_version)
+            else:
+                version, _ = self.get_latest_spec_version()
+
+            for expr, level in compliance_level.items():
+                if version in SpecifierSet(expr):
+                    return level
+
+        return "L3"  
+
+    def normalize_testcase_metadata(self, testcase):
+
+        resolved_level = self.resolve_compliance_level(
+            testcase.compliance_level
+        )
+        testcase.compliance_level = resolved_level
+        # Remove stale compliance tags
+        testcase.tags = [
+            tag for tag in testcase.tags
+            if tag not in ["L0", "L1", "L2", "L3"]
+        ]
+
+        # Inject resolved compliance tag
+        testcase.tags.append(resolved_level)     
+            

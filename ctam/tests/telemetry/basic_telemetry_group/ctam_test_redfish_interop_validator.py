@@ -25,7 +25,7 @@ LICENSE file in the root directory of this source tree.
 :Dependencies: None
                     
 """
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Dict
 from tests.test_case import TestCase
 from test_hierarchy import TestHierarchy
 from interfaces.telemetry_ifc import TelemetryIfc
@@ -53,7 +53,11 @@ class CTAMTestRedfishInteropValidator(TestCase):
     test_id: str = "T97"
     score_weight: int = 10
     tags: List[str] = ["L0"]
-    compliance_level: str = "L0"
+    #compliance_level: str = "L0"
+    compliance_level: Dict[str, str] = {
+        ">=1.0,<1.2": "L0",
+        ">=1.2": "L3"
+        }
     spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: BasicTelemetryTestGroup):

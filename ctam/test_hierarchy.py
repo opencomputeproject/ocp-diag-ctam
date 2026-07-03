@@ -54,6 +54,11 @@ class TestHierarchy:
                 return node.id
             elif isinstance(node, ast.Str):  # for python versions < 3.8
                 return node.s
+            elif isinstance(node, ast.Dict):
+                return {
+                    self.eval_node(k): self.eval_node(v)
+                    for k, v in zip(node.keys, node.values)
+                }
             else:
                 raise ValueError(f"Unsupported node: {ast.dump(node)}")
 
@@ -361,7 +366,7 @@ class TestHierarchy:
                 domains[d_name] += len(group_info["test_cases"])
         return domains
     
-    def get_compliance_test_cases(self):
+    def get_compliance_test_cases(self, compliance_level_resolver=None):
         compliance_test_count = {}
         for group_name, group_info in self.test_groups.items():
             for testcase in group_info["test_cases"]:
@@ -370,6 +375,8 @@ class TestHierarchy:
 
                 if not c_data:  # If compliance_level is missing or empty,consider it as "L3"
                     c_data = "L3"
+                elif compliance_level_resolver:
+                    c_data = compliance_level_resolver(c_data)
                 
                 if c_data and c_data not in compliance_test_count:
                     compliance_test_count[c_data] = 1
