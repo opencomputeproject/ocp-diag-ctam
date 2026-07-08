@@ -1,4 +1,4 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -54,7 +54,7 @@ from tests.ras.basic_ras_test_group import (
 
 
 class CTAMTestCollectCrashdumpManager(TestCase):
-    """
+    r"""
     Post CollectDiagnisticData for '\redfish\v1\Managers\{Manager}\LogService\EventLog with DiagnosticDataType = Manager
 
     :param TestCase: super class for all test cases

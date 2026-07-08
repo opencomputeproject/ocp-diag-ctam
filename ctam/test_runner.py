@@ -42,8 +42,11 @@ from interfaces.comptool_dut import CompToolDut
 from utils.logger_utils import LoggingWriter, LogSanitizer, BuiltInLogSanitizers
 
 from version import __version__
-COUNTER = 0   
+COUNTER = 0
 
+class _NullActiveRun:
+    def add_log(self, *args, **kwargs):
+        pass
 
 class TestRunner:
     """
@@ -131,7 +134,9 @@ class TestRunner:
         self.redfish_response_messages = {}
         self.default_config_path = default_config_path
         self.show_spec_bindings = False
-        self.measurements = {}  
+        self.measurements = {}
+        self.writer = None
+        self.active_run = None
     
         if self.default_config_path:
             self._show_spec_bindings()
@@ -385,6 +390,11 @@ class TestRunner:
         :return: status_code, exit_string
         :rtype: int, str 
         """
+        exit_string = ""  # always defined
+        self._executed_any_test = False
+        if self.active_run is None:
+            self.active_run = _NullActiveRun()
+
         try:
             status_code = 0
             self.create_json_configuration()
@@ -559,12 +569,26 @@ class TestRunner:
                 "FailureReason": exception_details
                 }
             self.score_logger.write(json.dumps(msg))
-            status_code, exit_string =  1, f"Test failed due to execption: {repr(e)}"
+            status_code, exit_string =  1, f"Test failed due to execption: {repr(e)}" 
         finally:
             if self.comp_tool_dut:
                 self.comp_tool_dut.clean_up()
-            
-            self.post_proces_logs(self.writer.log_file)
+                
+            if self.writer:
+                self.post_proces_logs(self.writer.log_file)
+            if not self._executed_any_test:
+                log_msg = (
+                    "No runnable CTAM tests were executed for this "
+                    "platform; result is NA."
+                )
+                exit_string = "No applicable tests"
+                if self.active_run:
+                    self.active_run.add_log(
+                        severity=LogSeverity.INFO,
+                        message=log_msg
+                    )
+                else:
+                    print(f"INFO: {log_msg}")
             return status_code, exit_string
         
     def consolidate_run(self):
@@ -794,6 +818,7 @@ class TestRunner:
                         # Inject measurements into all test cases
                         test_instance.measurements = self.measurements
                         test_result, failure_reason = test_instance.run()
+                        self._executed_any_test = True
                         if (
                             test_result == TestResult.FAIL
                         ):  # if any test fails, the group fails
@@ -1474,6 +1499,9 @@ class TestRunner:
         :return: status_code, exit_string
         :rtype: int, str 
         """
+        status_code = -1
+        exit_string = ""
+
         try:
             self._start()
             status_code, exit_string = 0, "System discovery is done"
