@@ -262,8 +262,16 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
                 if image_type in self.NegativeTestImages:
                     if "TaskState" in JSONData and "TaskStatus" in JSONData:
-                        if (
+                        # For corrupt_component (F55/F56), corrupt (F23), and empty_metadata (F26):
+                        # HMC stages valid components and marks the corrupt/invalid one as failed
+                        # — task ends Completed (not Exception) with TaskStatus=Critical. Both
+                        # Completed and Exception are valid outcomes when TaskStatus=Critical.
+                        task_state_ok = (
                             JSONData["TaskState"] == "Exception"
+                            or (image_type in ("corrupt_component", "corrupt", "empty_metadata") and JSONData["TaskState"] == "Completed")
+                        )
+                        if (
+                            task_state_ok
                             and JSONData["TaskStatus"] == "Critical"
                         ):
                             msg = "Staging failed with as expected TaskState = {}, TaskStatus = {}".format(
@@ -629,9 +637,11 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
         for message in task_message_list:
             # Check if the component is not corrupted, but the severity is not OK
+            # Redfish uses "MessageSeverity"; fall back to "Severity" for older BMCs
+            severity = message.get("MessageSeverity") or message.get("Severity", "OK")
             if (not any(item in corrupted_component_list for item in message["MessageArgs"])) \
                 and "Update" in message["MessageId"] \
-                and message["Severity"] != "OK":
+                and severity != "OK":
                     NonCorruptCompStaging_Success = False
                     return
 
