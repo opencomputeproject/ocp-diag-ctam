@@ -529,10 +529,13 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
         if is_multipart:
             headers = {"Content-Type": "multipart/form-data"}
-            body = {
-                "UpdateFile": (BinPath, open(BinPath, "rb"), "application/octet-stream"),
-                "UpdateParameters" : ("Targets", json.dumps({"Targets": targets, "ForceUpdate": True if is_force_update else False}),'application/json')
-            }
+            update_params = {"ForceUpdate": True if is_force_update else False}
+            if targets:
+                update_params["Targets"] = targets
+            body = [
+                ("UpdateParameters", ("Targets", json.dumps(update_params), 'application/json')),
+                ("UpdateFile", (BinPath, open(BinPath, "rb"), "application/octet-stream")),
+            ]
             response = self.dut().run_request_command(uri=URI, mode="POST",files=body, body={})
             JSONData = response.json()
         elif self.dut().multipart_form_data:

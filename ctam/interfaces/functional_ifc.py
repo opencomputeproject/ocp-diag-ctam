@@ -855,7 +855,7 @@ class FunctionalIfc:
             JSONData = response.dict
             if self.dut().is_debug_mode():
                 self.test_run().add_log(LogSeverity.DEBUG,
-                    "Task Percentage_Completion = {}".format(JSONData["PercentComplete"])
+                    "Task Percentage_Completion = {}".format(JSONData.get("PercentComplete", "N/A"))
                 )
             time.sleep(30)
         if JSONData["TaskState"] == "Completed" and JSONData["TaskStatus"] == "OK":
