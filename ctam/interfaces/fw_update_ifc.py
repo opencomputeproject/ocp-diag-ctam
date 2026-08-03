@@ -123,7 +123,8 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     self.included_targets == []
                     or element["@odata.id"] in self.included_targets
                 ):
-                    if element["Id"] in self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("exclude_targets_list", []):
+                    _excl = self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("exclude_targets_list", [])
+                    if any(element["Id"] == e or element["Id"].startswith(e) for e in _excl):
                             msg = f"Skipping {element['Id']} as it is in the exclude list"
                             self.test_run().add_log(LogSeverity.DEBUG, msg)
                             continue
@@ -260,6 +261,30 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     json.dumps(JSONData, indent=4),
                 )
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
+                # If task went to Exception, check if ALL failing components are in exclude_targets_list.
+                # Some platforms (e.g. AMI BMC) cannot filter PLDM targets by chassis URI, so excluded
+                # components (e.g. EROT) may still be attempted and may fail. If every failure message
+                # names only an excluded component, treat staging as succeeded for the included components.
+                if not StageFWOOB_Status and image_type not in self.NegativeTestImages:
+                    exclude_list = self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("exclude_targets_list", [])
+                    if exclude_list and JSONData.get("TaskState") == "Exception":
+                        task_messages = JSONData.get("Messages", [])
+                        failure_msgs = [
+                            m.get("Message", "")
+                            for m in task_messages
+                            if "failed" in m.get("Message", "").lower() or "exception" in m.get("Message", "").lower()
+                        ]
+                        if failure_msgs:
+                            all_failures_excluded = all(
+                                any(exc in msg for exc in exclude_list)
+                                for msg in failure_msgs
+                                if "failed" in msg.lower()
+                            )
+                            if all_failures_excluded:
+                                msg = f"Task Exception but all failing components are in exclude_targets_list — treating staging as success."
+                                self.test_run().add_log(LogSeverity.WARNING, msg)
+                                StageFWOOB_Status = True
+
                 if image_type in self.NegativeTestImages:
                     if "TaskState" in JSONData and "TaskStatus" in JSONData:
                         # For corrupt_component (F55/F56), corrupt (F23), and empty_metadata (F26):
@@ -349,6 +374,9 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         msg = json.dumps(self.PostInstallDetails, indent=4)
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         exclude_targets_list = self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("exclude_targets_list", [])
+        def _is_excluded(element_id):
+            # Support both exact match and prefix match (for PLDM components with dynamic suffixes)
+            return any(element_id == exc or element_id.startswith(exc) for exc in exclude_targets_list)
         if self.dut().dut_config.get("CompareFirmwareInventoryCount",{}).get("value", True):
             # Check if all components are reporting
             Update_Verified = self.ctam_compare_active_components_count()
@@ -356,7 +384,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         # Verify version of components currently reporting in FW inventory
         for element in self.PostInstallDetails:
             try:
-                if element["Id"] in exclude_targets_list:
+                if _is_excluded(element["Id"]):
                     msg = f"Skipping {element['Id']} as it is in the exclude list"
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
                     continue
@@ -399,7 +427,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     msg += "Update Interrupted as Expected"
                 
                 else:
-                    if element["Id"] not in exclude_targets_list:
+                    if not _is_excluded(element["Id"]):
                         if element["Status"]["Health"] != "OK" or element["Status"]["State"]!="Enabled":
                             update_failed.append(element['SoftwareId'])
                             Update_Verified = False
