@@ -11,7 +11,9 @@ LICENSE file in the root directory of this source tree.
 
 import os
 import shutil
+import struct
 import uuid
+import zlib
 import math
 import random
 
@@ -655,13 +657,10 @@ class PLDMUnpack:
         :rtype:                             bool
         """
         corruption_status = False
-        with open(self.package, 'rb') as infile: # Need to resolve
-            fwpkg_content = infile.read()
         package_size = os.path.getsize(self.package)
         for index, info in enumerate(self.component_img_info_list):
             if component_id is not None and info["ComponentIdentifier"] != hex(int(component_id, 16)):
                 continue
-            # Lseek to the component from the PLDM fwpkg
             offset = info["ComponentLocationOffset"]
             size = info["ComponentSize"]
             if offset + size > package_size:
@@ -672,13 +671,19 @@ class PLDMUnpack:
             try:
                 with open(self.package, 'r+b') as self.fwpkg_fd:
                     self.fwpkg_fd.seek(offset)
-                    # Zero out metadata bytes
-                    # Save the bundle
                     self.fwpkg_fd.write(bytearray(metadata_size))
-                    return True # return success if first component is corrupted
+                corruption_status = True
+                break  # corrupt only the first matching component
             except IOError as e_io_error:
                 log_message = f"Couldn't open or read given FW package ({e_io_error})"
                 print(log_message)
+
+        # For PLDM v1.3 (format revision 4+): update the NVIDIA payload CRC32 after
+        # zeroing the metadata bytes so the HMC accepts the package at the package-level
+        # check and proceeds to per-component validation (which is what F26 tests).
+        if corruption_status:
+            self._update_nvidia_payload_checksum_v1_3()
+
         return corruption_status
 
     def corrupt_component_image_in_pkg(self, component_id=None, metadata_size=4096):
@@ -694,13 +699,10 @@ class PLDMUnpack:
         :rtype:                             bool
         """
         corruption_status = False
-        with open(self.package, 'rb') as infile: # Need to fix this
-            fwpkg_content = infile.read()
         package_size = os.path.getsize(self.package)
         for index, info in enumerate(self.component_img_info_list):
             if component_id is not None and info["ComponentIdentifier"] != hex(int(component_id, 16)):
                 continue
-            # Lseek to the component from the PLDM fwpkg
             offset = info["ComponentLocationOffset"]
             size = info["ComponentSize"]
             if offset + size > package_size:
@@ -710,13 +712,20 @@ class PLDMUnpack:
             print(f"Corrupting component: {self.component_img_info_list[index]}")
             try:
                 with open(self.package, 'r+b') as self.fwpkg_fd:
-                    self.fwpkg_fd.seek(offset+metadata_size)
-                    # Zero out image bytes and save the bundle
-                    self.fwpkg_fd.write(bytearray(math.floor(size/2))) # Corrupting half of the image
-                    return True # return success if first component is corrupted
+                    self.fwpkg_fd.seek(offset + metadata_size)
+                    self.fwpkg_fd.write(bytearray(math.floor(size / 2)))
+                corruption_status = True
+                break  # corrupt only the first matching component
             except IOError as e_io_error:
                 log_message = f"Couldn't open or read given FW package ({e_io_error})"
                 print(log_message)
+
+        # For PLDM v1.3 (format revision 4+): update the NVIDIA payload CRC32 stored in
+        # the PackageHeaderChecksum field so the HMC accepts the package at the package-level
+        # check and proceeds to per-component authentication (which is what F23 tests).
+        if corruption_status:
+            self._update_nvidia_payload_checksum_v1_3()
+
         return corruption_status
 
     def clear_component_image_in_pkg(self, component_id=None):
@@ -731,8 +740,6 @@ class PLDMUnpack:
         :rtype:                             bool
         """
         corruption_status = False
-        with open(self.package, 'rb') as infile: # Need to Fix this
-            fwpkg_content = infile.read()
         package_size = os.path.getsize(self.package)
         for index, info in enumerate(self.component_img_info_list):
             if component_id is not None and info["ComponentIdentifier"] != hex(int(component_id, 16)):
@@ -750,11 +757,57 @@ class PLDMUnpack:
                     self.fwpkg_fd.seek(offset)
                     # Zero out and save the bundle
                     self.fwpkg_fd.write(bytearray(size))
-                    return True # return success if first component is corrupted
+                corruption_status = True
+                break  # corrupt only the first matching component
             except IOError as e_io_error:
                 log_message = f"Couldn't open or read given FW package ({e_io_error})"
                 print(log_message)
+
+        # For PLDM v1.3 (format revision 4+): NVIDIA stores a CRC32 of all component
+        # image data in the PackageHeaderChecksum field. Zeroing a component image
+        # invalidates this checksum — update it so the HMC accepts the package at the
+        # package-level check and then fails at the per-component level (as F55 intends).
+        if corruption_status:
+            self._update_nvidia_payload_checksum_v1_3()
+
         return corruption_status
+
+    def _update_nvidia_payload_checksum_v1_3(self):
+        """
+        For PLDM v1.3 bundles (PackageHeaderFormatVersion == 4), NVIDIA repurposes
+        the PackageHeaderChecksum field (last 4 bytes of the header, at offset
+        PackageHeaderSize - 4) to hold a CRC32 of the entire component image payload:
+            CRC32( data[PackageHeaderSize : last_component_end] )
+
+        After modifying any component image bytes (e.g. zeroing for F55), this
+        checksum must be recalculated so the HMC passes the package-level check
+        and proceeds to per-component authentication — which is what F55 tests.
+
+        For format revisions < 4 (PLDM v1.1/v1.2) this field is a standard PLDM
+        header CRC and is not modified by CTAM's corruption tools.
+        """
+        fmt_rev = int(self.header_map.get("PackageHeaderFormatVersion", "0"))
+        if fmt_rev < 4:
+            return  # Not PLDM v1.3 — leave the standard header CRC untouched
+
+        header_size = self.header_map["PackageHeaderSize"]
+        checksum_offset = header_size - 4
+
+        last_comp_end = max(
+            c["ComponentLocationOffset"] + c["ComponentSize"]
+            for c in self.component_img_info_list
+        )
+
+        with open(self.package, 'rb') as f:
+            data = f.read()
+
+        payload_crc = zlib.crc32(data[header_size:last_comp_end]) & 0xFFFFFFFF
+
+        with open(self.package, 'r+b') as f:
+            f.seek(checksum_offset)
+            f.write(struct.pack('<I', payload_crc))
+
+        print(f"[v1.3] Updated PackageHeaderChecksum (payload CRC32) → 0x{payload_crc:08x}")
 
     def corrupt_device_record_uuid_in_pkg(self):
         """
