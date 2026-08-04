@@ -918,6 +918,7 @@ class PLDMUnpack:
                             desc["AdditionalDescriptorIdentifierData"])
                 descriptors.append(desc)
             device_records["RecordDescriptors"] = descriptors
+        return self.full_header
 
 def get_timestamp_str(timestamp):
     """
