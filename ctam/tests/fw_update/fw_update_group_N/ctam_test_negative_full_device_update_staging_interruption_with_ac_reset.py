@@ -1,4 +1,4 @@
-"""
+r"""
 Copyright (c) NVIDIA CORPORATION
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F24
 :Group Name:	fw_update
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	
     This test verifies the behavior of a full device firmware update staging process when interrupted by an AC power reset.
@@ -32,7 +33,7 @@ LICENSE file in the root directory of this source tree.
                                            Optional - <exclude_targets_list>, <HttpPushUriTargets>, <MultiPartFormData>, <IsMultiPart>
                             
         <dut_info.json>                   : Required - <CompareFirmwareInventoryCount>, <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
-                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>, <SingleShotPowerCycleTimeOut>
                             
         <package_info.json>               : Required - <Path>, <Package>, <JSON>
                                            Optional - <HasSignature>, <SignatureStructBytes>,
@@ -40,7 +41,7 @@ LICENSE file in the root directory of this source tree.
         <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
                                            Optional -  <LargeFWImageUpdate>
 """
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -67,6 +68,7 @@ class CTAMTestFullDeviceUpdateStagingInterruptionWithAcReset(TestCase):
     score_weight: int = 10
     tags: List[str] = ["Negative", "L2", "Single_Device"]
     compliance_level: str = "L2"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """
@@ -107,23 +109,23 @@ class CTAMTestFullDeviceUpdateStagingInterruptionWithAcReset(TestCase):
 
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
-            fwupd_status, status_msg, fwupd_task_id = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup", 
+            fwupd_status, status_msg, fwupd_task_id, _ = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup", 
                                                                                  wait_for_stage_completion=False)
-            failure_reason += " " + status_msg
+            failure_reason = status_msg
             if fwupd_status:
                 step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
             else:
                 step2.add_log(
                     LogSeverity.ERROR, f"{self.test_id} : FW Update Stage Failed"
                 )
-                failure_reason += " " + "FW Update Stage Failed"
+                failure_reason = "FW Update Stage Failed"
                 result = False
                     
         if result:
             step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
             with step3.scope():
-                status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
-                failure_reason += status_msg
+                status, status_msg, _ = self.group.fw_update_ifc.ctam_activate_ac()
+                failure_reason = status_msg
                 if status:
                     step3.add_log(
                         LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
@@ -133,14 +135,14 @@ class CTAMTestFullDeviceUpdateStagingInterruptionWithAcReset(TestCase):
                         LogSeverity.ERROR,
                         f"{self.test_id} : FW Update Activation Failed",
                     )
-                    failure_reason += " " + "FW Update Activation Failed"
+                    failure_reason = "FW Update Activation Failed"
                     result = False
 
         if result:
             step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")
             with step4.scope():
                 status, status_msg = self.group.fw_update_ifc.ctam_fw_update_verify(version_check=False)
-                failure_reason += " " + status_msg
+                failure_reason = status_msg
                 if status:
                     step4.add_log(
                         LogSeverity.INFO,
@@ -151,13 +153,14 @@ class CTAMTestFullDeviceUpdateStagingInterruptionWithAcReset(TestCase):
                         LogSeverity.ERROR,
                         f"{self.test_id} : Update Verification Failed",
                     )
-                    failure_reason += " " + "Update Verification Failed"
+                    failure_reason = f"Update Verification Failed : {status_msg}"
                     result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()
         self.result = TestResult.PASS if result else TestResult.FAIL
         if self.result == TestResult.PASS:
             self.score = self.score_weight
+            failure_reason = ""
 
         # call super last to log result and score
         super().run()

@@ -1,4 +1,4 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F25
 :Group Name:	fw_update
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	This test case focuses on the scenario where a large image transfer is initiated for
 				a firmware update. The expectation is for the staging process to fail when this is attempted.
@@ -29,7 +30,7 @@ LICENSE file in the root directory of this source tree.
                                            Optional - <exclude_targets_list>, <HttpPushUriTargets>, <MultiPartFormData>, <IsMultiPart>
                             
         <dut_info.json>                   : Required - <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
-                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>, <SingleShotPowerCycleTimeOut>
                             
         <package_info.json>               : Required - <Path>, <Package>, <JSON>
                                            Optional - <HasSignature>, <SignatureStructBytes>
@@ -37,7 +38,7 @@ LICENSE file in the root directory of this source tree.
         <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
                                            Optional -  <LargeFWImageUpdate>
 """
-from typing import Optional, List
+from typing import Optional, List, Union, Dict
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -62,7 +63,12 @@ class CTAMTestNegativeLargeImageUpdate(TestCase):
     test_id: str = "F25"
     score_weight: int = 10
     tags: List[str] = ["Negative", "L2"]
-    compliance_level: str = "L2"
+    # compliance_level: str = "L2"
+    compliance_level: Dict[str, str] = {
+    ">=1.0,<1.2": "L2",
+    ">=1.2": "L3"
+    }
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """
@@ -101,7 +107,7 @@ class CTAMTestNegativeLargeImageUpdate(TestCase):
 
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
-            status, status_msg, task_id = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="large")
+            status, status_msg, task_id, _ = self.group.fw_update_ifc.ctam_stage_fw(partial=1, image_type="large")
             if status:
                 step2.add_log(
                     LogSeverity.INFO,
@@ -130,7 +136,7 @@ class CTAMTestNegativeLargeImageUpdate(TestCase):
         # add custom teardown here
         step1 = self.test_run().add_step(f"{self.__class__.__name__}  teardown()...")
         with step1.scope():
-            if self.group.fw_update_ifc.ctam_activate_ac(gpu_check=False, fwupd_hyst_wait=False):
+            if self.group.fw_update_ifc.ctam_activate_ac():
                 msg = f"{self.test_id} : Teardown : AC Cycle Passed"
                 self.test_run().add_log(LogSeverity.DEBUG, msg)  
             else:

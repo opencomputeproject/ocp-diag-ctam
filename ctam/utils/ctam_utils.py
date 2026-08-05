@@ -101,7 +101,7 @@ class GitUtils():
             return False
 
 
-    def validate_redfish_service(self, file_name, connection_url, user_name, user_pass,
+    def validate_redfish_service(self, file_name, connection_url, user_name, user_pass, auth_type,
                                   log_path, schema_directory, depth, service_uri, *args, **kwargs):
         """_summary_
         This method helps to run the Service validator command,
@@ -112,6 +112,7 @@ class GitUtils():
             connection_url (str): need top give the protocol, ip and port for running the service validator
             user_name (str): Username for the system ip
             user_pass (str): Password for the system ip
+            auth_type (str): The authentication type for running the service validator. It can be Basic or Session based
             log_path (str): The path where we need to store the logs for service validator
             schema_directory (str): The schema file directory.
             depth (str): Need to give depth for running single or across the whole redfish uri's as Tree
@@ -126,27 +127,33 @@ class GitUtils():
         file_name = os.path.join(self.repo_path, file_name)
         schema_directory = os.path.join(self.repo_path, "SchemaFiles")
         service_command = "python {file_name}.py --ip {ip} \
-                -u {user} -p {pwd} --logdir {log_dir} \
+                -u {user} -p {pwd}  --authtype {auth_type} --logdir {log_dir} \
                 --schema_directory {schema_directory} \
                     --payload {depth} {uri}".format(
                         file_name=file_name,
                         ip=connection_url,
                         user=user_name,
                         pwd=user_pass,
+                        auth_type=auth_type,
                         log_dir=log_path,
                         schema_directory=schema_directory,
                         depth=depth,
                         uri=service_uri
                     )
-                    
+
         status, result = self.__class__.ctam_run_dmtf_command(service_command)
         if not status:
             return status, result
+
         result = ''.join(result).strip()
         data = result.replace("\r", "").split("\n")[-1]
-        s_idx = result.index("Elapsed time:")
+        match = re.search(r"Summary\s*[-:]", result)
+        s_idx = match.start() if match else -1
+        if s_idx < 0:
+            return False, result
+
         data = result[s_idx:]
-        res = re.findall(r"pass:\s+(\d+)", data)
+        res = re.findall(r"pass:\s*(\d+)", data, re.IGNORECASE)
         if res and res[0].isdigit() and int(res[0]) > 0:
             return True, "PASS"
         return False, "FAIL"
@@ -213,7 +220,7 @@ class GitUtils():
         """
         try:
             command = repr(command)[1:-1]
-            with subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) as process:
+            with subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8') as process:
             # Set up a progress bar; assume you know the number of iterations (like 4 for 4 pings)
             
                 def read_stream(stream, buffer):
@@ -250,6 +257,12 @@ class GitUtils():
             pbar.finish()
             stdout_thread.join()
             stderr_thread.join()
+
+        # Filter out warning lines from stderr
+        stderr_lines = [
+            line for line in stderr_lines
+            if "Warning" not in line and "warnings.warn" not in line
+        ]
 
         if stderr_lines:
             print(stderr_lines)

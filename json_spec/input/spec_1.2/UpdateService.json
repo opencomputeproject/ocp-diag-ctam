@@ -1,0 +1,61 @@
+{
+  "SchemaDefinition": "RedfishInteroperabilityProfile.v1_6_0",
+  "ProfileName": "OCPGPUManagement",
+  "ProfileVersion": "1.0.0",
+  "Purpose": "Specifies the OCP baseline hardware management requirements for the Redfish interface on GPU platforms.",
+  "OwningEntity": "Open Compute Project",
+  "ContributedBy": "Google, Meta, Microsoft, NVidia, AMD",
+  "License": "Creative Commons Attribution-ShareAlike 4.0 International License",
+  "ContactInfo": "",
+  "Protocol": {
+    "MinVersion": "1.0"
+  },
+  "Resources": {
+    "UpdateService": {
+      "MinVersion": "1.0.0",
+      "ReadRequirement": "Mandatory",
+      "PropertyRequirements": {
+        "Id": {
+          "ReadRequirement": "Mandatory",
+          "Purpose": "Placeholder for Purpose Comment to be Added"
+        },
+        "Name": {
+          "ReadRequirement": "Mandatory",
+          "Purpose": "Placeholder for Purpose Comment to be Added"
+        },
+        "ServiceEnabled": {
+          "ReadRequirement": "Mandatory",
+          "Purpose": "Placeholder for Purpose Comment to be Added"
+        },
+        "FirmwareInventory": {
+          "ReadRequirement": "Mandatory",
+          "Purpose": "Placeholder for Purpose Comment to be Added"
+        },
+        "SoftwareInventory": {
+          "ReadRequirement": "Mandatory",
+          "Purpose": "Placeholder for Purpose Comment to be Added"
+        },
+        "MultipartHttpPushUri": {
+          "ReadRequirement": "Mandatory",
+          "Purpose": "Placeholder for Purpose Comment to be Added"
+        },
+        "MaxImageSizeBytes": {
+          "ReadRequirement": "Mandatory",
+          "Purpose": "Placeholder for Purpose Comment to be Added"
+        }
+      }
+    }
+  },
+  "Registries": {
+    "Base": {
+      "MinVersion": "1.0.0",
+      "Repository": "redfish.dmtf.org/registries",
+      "Messages": {
+        "Success": {},
+        "GeneralError": {},
+        "Created": {},
+        "PropertyDuplicate": {}
+      }
+    }
+  }
+}

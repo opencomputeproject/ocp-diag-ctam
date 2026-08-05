@@ -1,4 +1,4 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		T0
 :Group Name:	Telemetry
 :Score Weight:	10
+:Spec Versions:  ">= 1.0"   
 
 :Description:	This testcase will clone the RedfishServiceValidator repository and It will validate all of the available URIs under redfish.
 
@@ -25,9 +26,10 @@ LICENSE file in the root directory of this source tree.
 :Dependencies: None
 
 """
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 import os
+import json
 from ocptv.output import (
     DiagnosisType,
     LogSeverity,
@@ -47,11 +49,12 @@ class CTAMTestServiceValidator(TestCase):
     :type TestCase:
     """
 
-    test_name: str = "CTAM Test Service Validator"
+    test_name: str = "CTAM Test Redfish Service Validator"
     test_id: str = "T0"
     score_weight: int = 10
     tags: List[str] = ["L2"]
     compliance_level: str = "L2"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: BasicTelemetryTestGroup):
         """
@@ -78,17 +81,26 @@ class CTAMTestServiceValidator(TestCase):
         """
         failure_reason = ""
         result = True
+
+        service_validator_info = (
+            self.group.telemetry_ifc.get_service_validator_info()
+            if self.group and self.group.telemetry_ifc
+            else {}
+        )
+        branch_name = service_validator_info.get("branch_name", None)
+        auth_type = service_validator_info.get("auth_type", "Basic")
+
         git = GitUtils()
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         repo_path = "RedfishServiceValidator"
-        
+
         with step1.scope():
             step1.add_log(LogSeverity.INFO, f"Cloning repo for Redfish Service Validator.")
             result = git.clone_repo(repo_url="https://github.com/DMTF/Redfish-Service-Validator.git",
-                                  repo_path="RedfishServiceValidator")
+                                  repo_path="RedfishServiceValidator", branch_name=branch_name)
             if not result:
                 step1.add_log(LogSeverity.ERROR, f"Cloning repo for Redfish Service Validator failed.")
-                failure_reason += "Cloning repo for Redfish Service Validator failed. "
+                failure_reason += "Cloning repo failed. "
             step1.add_log(LogSeverity.INFO, f"Cloning repo for Redfish Service Validator successful.")
         
         if result:
@@ -103,14 +115,17 @@ class CTAMTestServiceValidator(TestCase):
                 
                 step2.add_log(LogSeverity.INFO, f"Running Redfish Service command.")
                 result, msg = git.validate_redfish_service(file_name=file_name, connection_url=connection_url,
-                                                       user_name=self.dut().user_name, user_pass=self.dut().user_pass,
+                                                        user_name=self.dut().user_name, user_pass=self.dut().user_pass,
+                                                        auth_type=auth_type,
                                                        log_path=self.dut().logger_path, schema_directory=schema_directory,
                                                        depth="Single",
                                                        service_uri="/redfish/v1")
                 if not result:
-                    step2.add_log(LogSeverity.ERROR, f"Something went wrong while running redfish command. Please see error msg {msg}.")
-                    failure_reason += f"Something went wrong while running redfish command. Please see error msg {msg}."
-                step2.add_log(LogSeverity.INFO, f"Redfish Service Command ran successfully and validated.")
+                    step2.add_log(LogSeverity.ERROR, f"Something went wrong while running redfish command. "
+                                  f"Please see error msg {msg}. Try once with branch name '2.5.1'")
+                    failure_reason += "Error occurred running Redfish command.Try on branch '2.5.1'."
+                else:
+                    step2.add_log(LogSeverity.INFO, f"Redfish Service Command ran successfully and validated.")
         
         step3 = self.test_run().add_step(f"{self.__class__.__name__} run(), step3")  # type: ignore
         with step3.scope():

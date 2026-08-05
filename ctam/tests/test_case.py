@@ -35,7 +35,8 @@ class TestCase(ABC):
     total_compliance_score = 0  # accumulative
     max_compliance_score = 0
     total_execution_time = 0 # seconds
-
+    test_ids_set = set()
+    test_results_summary = {}
     @staticmethod
     def SetUpAssociations(testrun: tv.TestRun, dut: CompToolDut):
         """
@@ -129,6 +130,17 @@ class TestCase(ABC):
         """
         step1 = self.test_run().add_step("TestCase.teardown()...")
         with step1.scope():
-            if self.result == TestResult.PASS:
-                TestCase.total_compliance_score += self.score
-            TestCase.max_compliance_score += self.score_weight
+            if self.test_id not in self.test_ids_set:
+                TestCase.max_compliance_score += self.score_weight
+                self.test_ids_set.add(self.test_id)
+
+            if self.test_id not in self.test_results_summary:
+                self.test_results_summary[self.test_id] = set()
+                
+             # Add current score to the set (avoids duplicates)
+            self.test_results_summary[self.test_id].add(self.score)
+
+            # Recalculate total_compliance_score using the minimum score from each test_id set
+            TestCase.total_compliance_score = sum(
+                min(scores) for scores in self.test_results_summary.values()
+            )

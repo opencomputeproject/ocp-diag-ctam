@@ -1,3 +1,40 @@
+June 27, 2025
+==============
+
+Version: 1.1.2
+  - Added the following micro compliance flows to the firmware update group.
+    - ctam_test_full_device_update_staging_only (F2 testcase)
+      - Update all devices - stage only. No precheck, no postcheck.
+    - ctam_test_full_device_update_precheck_only (F3 testcase)
+      - No staging needed. Only precheck flow verification - expect SoftwareInventory
+	to match against new firmware
+    - ctam_test_full_device_update_nocheck (F5 testcase)
+      - Update all devices - stage followed by activate. No precheck and no postcheck.
+
+June 09, 2025
+==============
+
+Version: 1.1.1
+  - Test Score Summary JSON File Creation
+    - Added logic to retain the most relevant result per TestID (preferring FAIL and higher execution time) before generating TestScore_Summary.json file.
+    - Added functionality to generate a new TestScore_Summary.json file consolidating all test results and score calculations for better tracking and reporting.
+
+  - Report Generation Logic Update
+    - Modified report generation logic to depend solely on the TestScore_Summary.json file.
+    - Added a generic method to print tables for future reuse across reports.
+
+  - Enhanced consolidation feature logic to integrate with TestScore_Summary.json.
+  - Added functionality to handle missing compliance levels and domains.
+
+  - Modularized Time Calculations
+    - Refactored time-related logic for better readability and reusability.
+    - Added helper methods to convert seconds to formatted time strings.
+
+  - Bug Fixes
+    - Fixed bugs around test score calculation and test report generation.
+    - Fixed bug in F56 testcase when the corrupted-pkg JSON file is not provided in the package_info.json
+
+
 March 24, 2025
 ==============
 
