@@ -388,6 +388,10 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     msg = f"Skipping {element['Id']} as it is in the exclude list"
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
                     continue
+                if element.get("Status", {}).get("State") == "Absent" or "SoftwareId" not in element:
+                    msg = f"Skipping {element['Id']} — State: Absent or no SoftwareId (hardware not present)"
+                    self.test_run().add_log(LogSeverity.DEBUG, msg)
+                    continue
                 negative_case = (
                     image_type == "negate" 
                     or str(element["Updateable"]).lower() == "false" # Note, this may mean empty SoftwareId. So this condition needs to come before the next one
