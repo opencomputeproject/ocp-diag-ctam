@@ -130,7 +130,10 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                             continue
                     msg = f"Pre Install Details: {element['Id']} : {element.get('SoftwareId', None)} : {element.get('Version', 'NA')} : "
                     if str(element["Updateable"]) == "True":
-
+                        if "SoftwareId" not in element:
+                            msg += "No SoftwareId — skipping."
+                            self.test_run().add_log(LogSeverity.DEBUG, msg)
+                            continue
                         SoftwareId = str(hex(int(element["SoftwareId"], 16)))
                         if SoftwareId in BundleComponentIdsAndVersions.keys():
 
