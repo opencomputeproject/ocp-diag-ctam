@@ -130,10 +130,6 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                             continue
                     msg = f"Pre Install Details: {element['Id']} : {element.get('SoftwareId', None)} : {element.get('Version', 'NA')} : "
                     if str(element["Updateable"]) == "True":
-                        if "SoftwareId" not in element:
-                            msg += "No SoftwareId — skipping."
-                            self.test_run().add_log(LogSeverity.DEBUG, msg)
-                            continue
                         SoftwareId = str(hex(int(element["SoftwareId"], 16)))
                         if SoftwareId in BundleComponentIdsAndVersions.keys():
 
@@ -386,10 +382,6 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             try:
                 if _is_excluded(element["Id"]):
                     msg = f"Skipping {element['Id']} as it is in the exclude list"
-                    self.test_run().add_log(LogSeverity.DEBUG, msg)
-                    continue
-                if element.get("Status", {}).get("State") == "Absent" or "SoftwareId" not in element:
-                    msg = f"Skipping {element['Id']} — State: Absent or no SoftwareId (hardware not present)"
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
                     continue
                 negative_case = (
