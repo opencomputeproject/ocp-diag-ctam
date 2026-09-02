@@ -89,7 +89,7 @@ class SSHTunnelWithLibrary(SSHTunnel):
 class SSHTunnelWithSshpass(SSHTunnel):
 
     def create_tunnel(self, local_port, remote_host, remote_port, ssh_host, ssh_port, ssh_username, ssh_password):
-        ssh_cmd = "sshpass -p {ssh_password} ssh -4 -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -fNT -L\
+        ssh_cmd = "sshpass -p {ssh_password} ssh -4 -o StrictHostKeyChecking=no -fNT -L\
                 {binded_port}:{amc_ip}:{remote_port} {ssh_username}@{bmc_ip} -p {ssh_port}".format(
                     ssh_password = ssh_password,
                     binded_port = local_port,
