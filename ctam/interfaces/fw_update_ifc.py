@@ -290,16 +290,13 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
                 if image_type in self.NegativeTestImages:
                     if "TaskState" in JSONData and "TaskStatus" in JSONData:
-                        # For corrupt_component (F55/F56), corrupt (F23), and empty_metadata (F26):
-                        # HMC stages valid components and marks the corrupt/invalid one as failed
-                        # — task ends Completed (not Exception) with TaskStatus=Critical. Both
-                        # Completed and Exception are valid outcomes when TaskStatus=Critical.
-                        task_state_ok = (
-                            JSONData["TaskState"] == "Exception"
-                            or (image_type in ("corrupt_component", "corrupt", "empty_metadata") and JSONData["TaskState"] == "Completed")
-                        )
+                        # Per OCP GPU FW Update Spec v1.1 §4.4.3 (Failure during Asynchronous
+                        # Operation): for a multi-component bundle where one or more components
+                        # fail, "the task will return TaskState=Exception and TaskStatus=Critical."
+                        # CTAM enforces the spec-compliant terminal state; a HMC ending Completed
+                        # (not Exception) with Critical is a §4.4.3 deviation and must fail here.
                         if (
-                            task_state_ok
+                            JSONData["TaskState"] == "Exception"
                             and JSONData["TaskStatus"] == "Critical"
                         ):
                             msg = "Staging failed with as expected TaskState = {}, TaskStatus = {}".format(
