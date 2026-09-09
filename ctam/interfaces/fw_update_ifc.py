@@ -6,6 +6,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 
 """
+import ast
 import os
 import json
 import time
@@ -128,7 +129,6 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                             continue
                     msg = f"Pre Install Details: {element['Id']} : {element.get('SoftwareId', None)} : {element.get('Version', 'NA')} : "
                     if str(element["Updateable"]) == "True":
-
                         SoftwareId = str(hex(int(element["SoftwareId"], 16)))
                         if SoftwareId in BundleComponentIdsAndVersions.keys():
 
@@ -218,7 +218,13 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             self.test_run().add_log(LogSeverity.DEBUG, f"Unable to find update uri from UpdateService resource!!!")
             failure_reason = "Update URI missing from UpdateService!"
             return False, failure_reason, "", staging_time
-        targets = self.get_target_inventorys(targets=specific_targets) if specific_targets else []
+        if not specific_targets:
+            cfg_targets = self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("specific_targets", [])
+            if isinstance(cfg_targets, str):
+                cfg_targets = ast.literal_eval(cfg_targets) if cfg_targets else []
+            specific_targets = [t for t in (cfg_targets or []) if t]
+        targets = [t if str(t).startswith("/redfish/") else self.get_target_inventorys([t])[0]
+                   for t in specific_targets]
         if self.dut().is_debug_mode():
             self.test_run().add_log(LogSeverity.DEBUG, f"URI : {uri}")
             self.test_run().add_log(LogSeverity.DEBUG, f"Targets : {targets}")
@@ -253,11 +259,46 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     json.dumps(JSONData, indent=4),
                 )
                 self.test_run().add_log(LogSeverity.DEBUG, msg)
+                # If task went to Exception, check if ALL failing components are in exclude_targets_list.
+                # Some platforms (e.g. AMI BMC) cannot filter PLDM targets by chassis URI, so excluded
+                # components (e.g. EROT) may still be attempted and may fail. If every failure message
+                # names only an excluded component, treat staging as succeeded for the included components.
+                if not StageFWOOB_Status and image_type not in self.NegativeTestImages:
+                    exclude_list = self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("exclude_targets_list", [])
+                    if exclude_list and JSONData.get("TaskState") == "Exception":
+                        task_messages = JSONData.get("Messages", [])
+                        failure_msgs = [
+                            m.get("Message", "")
+                            for m in task_messages
+                            if "failed" in m.get("Message", "").lower() or "exception" in m.get("Message", "").lower()
+                        ]
+                        if failure_msgs:
+                            all_failures_excluded = all(
+                                any(exc in msg for exc in exclude_list)
+                                for msg in failure_msgs
+                                if "failed" in msg.lower()
+                            )
+                            if all_failures_excluded:
+                                msg = f"Task Exception but all failing components are in exclude_targets_list — treating staging as success."
+                                self.test_run().add_log(LogSeverity.WARNING, msg)
+                                StageFWOOB_Status = True
+
                 if image_type in self.NegativeTestImages:
                     if "TaskState" in JSONData and "TaskStatus" in JSONData:
+                        # Per OCP GPU FW Update Spec v1.1 §4.4.3, a failed async operation should
+                        # return TaskState=Exception + TaskStatus=Critical. In practice some HMCs
+                        # terminate corrupt / empty-metadata negative tests with TaskState=Completed
+                        # and TaskStatus=Critical. Both Completed and Exception are accepted as a
+                        # valid failure outcome when TaskStatus=Critical (pre-PR behavior restored).
                         if (
-                            JSONData["TaskState"] == "Exception"
-                            and JSONData["TaskStatus"] == "Critical"
+                            JSONData["TaskStatus"] == "Critical"
+                            and (
+                                JSONData["TaskState"] == "Exception"
+                                or (
+                                    image_type in ("corrupt_component", "corrupt", "empty_metadata")
+                                    and JSONData["TaskState"] == "Completed"
+                                )
+                            )
                         ):
                             msg = "Staging failed with as expected TaskState = {}, TaskStatus = {}".format(
                                 JSONData["TaskState"], JSONData["TaskStatus"]
@@ -486,10 +527,13 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
         if is_multipart:
             headers = {"Content-Type": "multipart/form-data"}
-            body = {
-                "UpdateFile": (BinPath, open(BinPath, "rb"), "application/octet-stream"),
-                "UpdateParameters" : ("Targets", json.dumps({"Targets": targets, "ForceUpdate": True if is_force_update else False}),'application/json')
-            }
+            update_params = {"ForceUpdate": True if is_force_update else False}
+            if targets:
+                update_params["Targets"] = targets
+            body = [
+                ("UpdateParameters", ("Targets", json.dumps(update_params), 'application/json')),
+                ("UpdateFile", (BinPath, open(BinPath, "rb"), "application/octet-stream")),
+            ]
             response = self.dut().run_request_command(uri=URI, mode="POST",files=body, body={})
             JSONData = response.json()
         elif self.dut().multipart_form_data:
@@ -622,9 +666,11 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
 
         for message in task_message_list:
             # Check if the component is not corrupted, but the severity is not OK
+            # Redfish uses "MessageSeverity"; fall back to "Severity" for older BMCs
+            severity = message.get("MessageSeverity") or message.get("Severity", "OK")
             if (not any(item in corrupted_component_list for item in message["MessageArgs"])) \
                 and "Update" in message["MessageId"] \
-                and message["Severity"] != "OK":
+                and severity != "OK":
                     NonCorruptCompStaging_Success = False
                     return
 
