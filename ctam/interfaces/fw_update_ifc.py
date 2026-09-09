@@ -123,8 +123,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     self.included_targets == []
                     or element["@odata.id"] in self.included_targets
                 ):
-                    _excl = self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("exclude_targets_list", [])
-                    if any(element["Id"] == e or element["Id"].startswith(e) for e in _excl):
+                    if element["Id"] in self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("exclude_targets_list", []):
                             msg = f"Skipping {element['Id']} as it is in the exclude list"
                             self.test_run().add_log(LogSeverity.DEBUG, msg)
                             continue
@@ -376,9 +375,6 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         msg = json.dumps(self.PostInstallDetails, indent=4)
         self.test_run().add_log(LogSeverity.DEBUG, msg)
         exclude_targets_list = self.dut().redfish_uri_config.get("GPU_FWUpdate", {}).get("exclude_targets_list", [])
-        def _is_excluded(element_id):
-            # Support both exact match and prefix match (for PLDM components with dynamic suffixes)
-            return any(element_id == exc or element_id.startswith(exc) for exc in exclude_targets_list)
         if self.dut().dut_config.get("CompareFirmwareInventoryCount",{}).get("value", True):
             # Check if all components are reporting
             Update_Verified = self.ctam_compare_active_components_count()
@@ -386,7 +382,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         # Verify version of components currently reporting in FW inventory
         for element in self.PostInstallDetails:
             try:
-                if _is_excluded(element["Id"]):
+                if element["Id"] in exclude_targets_list:
                     msg = f"Skipping {element['Id']} as it is in the exclude list"
                     self.test_run().add_log(LogSeverity.DEBUG, msg)
                     continue
@@ -429,7 +425,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                     msg += "Update Interrupted as Expected"
                 
                 else:
-                    if not _is_excluded(element["Id"]):
+                    if element["Id"] not in exclude_targets_list:
                         if element["Status"]["Health"] != "OK" or element["Status"]["State"]!="Enabled":
                             update_failed.append(element['SoftwareId'])
                             Update_Verified = False
