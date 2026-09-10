@@ -860,6 +860,14 @@ class FunctionalIfc:
             time.sleep(30)
         if JSONData["TaskState"] == "Completed" and JSONData["TaskStatus"] == "OK":
             Task_Completed = True
+        elif JSONData.get("PercentComplete") == 100:
+            messages = JSONData.get("Messages", [])
+            has_await_activate = any("AwaitToActivate" in m.get("MessageId", "") for m in messages)
+            has_transfer_failed = any("TransferFailed" in m.get("MessageId", "") for m in messages)
+            if has_await_activate and not has_transfer_failed:
+                Task_Completed = True
+            else:
+                Task_Completed = False
         else:
             Task_Completed = False
 

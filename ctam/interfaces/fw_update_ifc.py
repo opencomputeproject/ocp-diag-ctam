@@ -485,12 +485,11 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         JSONData = {}
 
         if is_multipart:
-            headers = {"Content-Type": "multipart/form-data"}
             body = {
-                "UpdateFile": (BinPath, open(BinPath, "rb"), "application/octet-stream"),
-                "UpdateParameters" : ("Targets", json.dumps({"Targets": targets, "ForceUpdate": True if is_force_update else False}),'application/json')
+                "UpdateParameters": (None, json.dumps({"Targets": targets, "ForceUpdate": True if is_force_update else False}), 'application/json'),
+                "UpdateFile": (os.path.basename(BinPath), open(BinPath, "rb"), "application/octet-stream")
             }
-            response = self.dut().run_request_command(uri=URI, mode="POST",files=body, body={})
+            response = self.dut().run_request_command(uri=URI, mode="POST", files=body, body=None, headers=None)
             JSONData = response.json()
         elif self.dut().multipart_form_data:
             # Unstructured HTTP push update
@@ -727,12 +726,16 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
             with open(PLDMPkgJson_file, "r") as f:
                 PLDMPkgJson = json.load(f)
 
-        jsonmultivaluehunt(PLDMPkgJson, "ComponentIdentifier",
-                            "ComponentVersionString", ComponentIdsAndVersions)
+        #Using jsonmultivaluehunt to get the multiple values by passing two json keys
+        jsonmultivaluehunt(PLDMPkgJson, "ComponentIdentifier", "ComponentVersionString", ComponentIdsAndVersions)
 
-        ComponentIdsAndVersions = {
-            str(hex(int(key, 16))): value
-            for key, value in ComponentIdsAndVersions.items()
-        }
+        def _to_hex_key(k):
+            if isinstance(k, int):
+                return hex(k)
+            try:
+                return hex(int(str(k), 16 if str(k).startswith(("0x", "0X")) else 10))
+            except ValueError:
+                return str(k)
 
+        ComponentIdsAndVersions = {_to_hex_key(key): value for key, value in ComponentIdsAndVersions.items()}
         return ComponentIdsAndVersions
