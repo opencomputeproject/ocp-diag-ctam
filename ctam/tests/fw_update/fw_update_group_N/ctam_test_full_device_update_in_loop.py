@@ -1,4 +1,4 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 Copyright (c) NVIDIA CORPORATION
 This source code is licensed under the MIT license found in the
@@ -8,6 +8,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		F8
 :Group Name:	fw_update
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	This test case performs a full firmware update in a loop to ensure stability and verify that ongoing rollbacks are not affected by subsequent updates.
                 The test stages the firmware update, activates it, and verifies the update in a loop.
@@ -26,7 +27,7 @@ LICENSE file in the root directory of this source tree.
                                            Optional - <exclude_targets_list>, <HttpPushUriTargets>, <IsMultiPart>, <MultiPartFormData>
                             
         <dut_info.json>                   : Required - <CompareFirmwareInventoryCount>, <FwActivationTimeMax>, <FwStagingTimeMax>, <PowerOffWaitTime>, <PowerOnWaitTime>, <IdleWaitTimeAfterFirmwareUpdate>, <PowerOffCommand>, <PowerOnCommand>
-                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>
+                                           Optional - <SingleShotPowerCycle>, <SingleShotPowerCycleCommand>, <SingleShotPowerCycleTimeOut>
 
         <package_info.json>               : Required - <Path>, <Package>, <JSON>
                                            Optional - <CorruptComponentIdentifier>, <HasSignature>, <SignatureStructBytes>, <MetadataSizeBytes>
@@ -34,7 +35,7 @@ LICENSE file in the root directory of this source tree.
         <redfish_response_messages.json>  : Required - <UpdateProgress_Message>
                                            Optional -  <LargeFWImageUpdate>
 """
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -60,6 +61,7 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
     score_weight: int = 10
     tags: List[str] = ["L1"]
     compliance_level: str = "L1"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     def __init__(self, group: FWUpdateTestGroupN):
         """
@@ -83,6 +85,12 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
     def run(self) -> TestResult:
         """
         actual test verification
+
+        :Description: This method runs the test case which stages the firmware update, activates it, and verifies the update in a loop.
+                      It ensures that the firmware update process is stable and that ongoing rollbacks are not affected by subsequent updates.
+
+        :PASS Criteria: The test passes if all firmware updates complete successfully without errors in the loop.
+        :FAIL Criteria: The test fails if any firmware update encounters an error in the loop.
         """
         failure_reason = ""
         result = True
@@ -92,7 +100,7 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
             status, status_msg = self.group.fw_update_ifc.ctam_fw_update_precheck(
                 image_type="backup"
             )
-            failure_reason += status_msg
+            failure_reason = status_msg
             if not status:
                 step1.add_log(LogSeverity.INFO, f"[{self.test_id}] : FW Update Capable")
             else:
@@ -103,17 +111,17 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
         step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
         with step2.scope():
 
-            status, status_msg, task_id =self.group.fw_update_ifc.ctam_stage_fw(
+            status, status_msg, task_id, _ =self.group.fw_update_ifc.ctam_stage_fw(
                 wait_for_stage_completion=False
             )
-            failure_reason += " " + status_msg
+            failure_reason = status_msg
             if status:
                 step2.add_log(LogSeverity.INFO, f"{self.test_id} : FW Update Staged")
             else:
                 step2.add_log(
                     LogSeverity.ERROR, f"{self.test_id} : FW Update Stage Failed"
                 )
-                failure_reason += " " + "FW Update Stage Failed"
+                failure_reason = "FW Update Stage Failed"
                 result = False
         
         unexpected_error = False
@@ -123,8 +131,8 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
                 keep_disturbing = True
                 disturb_count = 1
                 while keep_disturbing:
-                    status, msg, _ = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup")
-                    failure_reason += " " + msg
+                    status, msg, _, _ = self.group.fw_update_ifc.ctam_stage_fw(image_type="backup")
+                    failure_reason = msg
                     if status:
                         keep_disturbing = False
                         step3.add_log(
@@ -142,7 +150,7 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
                             LogSeverity.ERROR,
                             f"{self.test_id} : FW Update Disturb Failed, but with incorrect message.",
                         )
-                        failure_reason += " " + "FW Update Disturb Failed, but with incorrect message."
+                        failure_reason = "FW Update Disturb incorrect message."
                         keep_disturbing = False
                         unexpected_error = True
 
@@ -152,21 +160,21 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
                         LogSeverity.ERROR,
                         f"{self.test_id} : FW Update Disturb was successful in first shot - Not Expected",
                     )
-                    failure_reason += " " + f"{self.test_id} : FW Update Disturb was successful in first shot - Not Expected"
+                    failure_reason = "FW Update Disturb unexpectedly successful"
                 if unexpected_error and task_id:
                     step3.add_log(
                         LogSeverity.ERROR,
                         f"{self.test_id} : FW Update Failed with Unexpected error - Waiting for pervious FW staging to be completed",
                     )
-                    failure_reason += " " + f"{self.test_id} : FW Update Failed with Unexpected error - Waiting for pervious FW staging to be completed"
+                    failure_reason = "Waiting for previous FW staging"
                     status, json_data = self.group.fw_update_ifc.ctam_monitor_task(TaskID=task_id)
                 
 
         if result or unexpected_error:
             step4 = self.test_run().add_step(f"{self.__class__.__name__} run(), step4")  # type: ignore
             with step4.scope():
-                status, status_msg = self.group.fw_update_ifc.ctam_activate_ac()
-                failure_reason += " " + status_msg
+                status, status_msg, _ = self.group.fw_update_ifc.ctam_activate_ac()
+                failure_reason = status_msg
                 if status:
                     step4.add_log(
                         LogSeverity.INFO, f"{self.test_id} : FW Update Activate"
@@ -176,14 +184,14 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
                         LogSeverity.ERROR,
                         f"{self.test_id} : FW Update Activation Failed",
                     )
-                    failure_reason += " " + "FW Update Activation Failed"
+                    failure_reason = "FW Update Activation Failed"
                     result = False
 
         if result or unexpected_error:
             step5 = self.test_run().add_step(f"{self.__class__.__name__} run(), step5")
             with step5.scope():
                 status, status_msg = self.group.fw_update_ifc.ctam_fw_update_verify(image_type="backup")
-                failure_reason += " " + status_msg
+                failure_reason = status_msg
                 if status:
                     step5.add_log(
                         LogSeverity.INFO,
@@ -194,7 +202,7 @@ class CTAMTestFullDeviceUpdateInLoop(TestCase):
                         LogSeverity.ERROR,
                         f"{self.test_id} : Update Verification Failed",
                     )
-                    failure_reason += " " + "Update Verification Failed"
+                    failure_reason = "Update Verification Failed"
                     result = False
 
         # ensure setting of self.result and self.score prior to calling super().run()

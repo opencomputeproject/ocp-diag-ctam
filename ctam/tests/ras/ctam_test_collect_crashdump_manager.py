@@ -1,4 +1,4 @@
-"""
+r"""
 Copyright (c) Microsoft Corporation
 This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Test ID:		R2
 :Group Name:	ras
 :Score Weight:	10
+:Spec Versions: ">= 1.0"
 
 :Description:	
 This test verifies the functionality of collecting crashdump diagnostic data for a specific manager in the system. It performs the following steps:
@@ -38,7 +39,7 @@ FAIL Criteria:
         <redfish_uri_config.json>         : Required - <TaskServiceURI>
 
 """
-from typing import Optional, List
+from typing import Optional, List, Union
 from tests.test_case import TestCase
 from ocptv.output import (
     DiagnosisType,
@@ -53,7 +54,7 @@ from tests.ras.basic_ras_test_group import (
 
 
 class CTAMTestCollectCrashdumpManager(TestCase):
-    """
+    r"""
     Post CollectDiagnisticData for '\redfish\v1\Managers\{Manager}\LogService\EventLog with DiagnosticDataType = Manager
 
     :param TestCase: super class for all test cases
@@ -65,6 +66,7 @@ class CTAMTestCollectCrashdumpManager(TestCase):
     score_weight: int = 10
     tags: List[str] = ["L3"]
     compliance_level: str = "L3"
+    spec_versions: Union[str, List[str]] = ">= 1.0"
 
     # exclude_tags: List[str] = ["NotCheck"]
 

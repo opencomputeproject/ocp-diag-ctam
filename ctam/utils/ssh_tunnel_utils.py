@@ -81,7 +81,7 @@ class SSHTunnelWithLibrary(SSHTunnel):
         :rtype: None
         """
         if self.ssh_tunnel:
-            self.ssh_tunnel.close()
+            self.ssh_tunnel.stop(force=True)
             self.test_info_logger.log("SSH tunnel is killed successfully!")
             self.binded_port = None
 
