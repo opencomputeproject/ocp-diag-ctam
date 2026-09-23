@@ -776,8 +776,16 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
         jsonmultivaluehunt(PLDMPkgJson, "ComponentIdentifier",
                             "ComponentVersionString", ComponentIdsAndVersions)
 
+        def _to_hex_key(k):
+            if isinstance(k, int):
+                return hex(k)
+            try:
+                return hex(int(str(k), 16 if str(k).startswith(("0x", "0X")) else 10))
+            except ValueError:
+                return str(k)
+
         ComponentIdsAndVersions = {
-            str(hex(int(key, 16))): value
+            _to_hex_key(key): value
             for key, value in ComponentIdsAndVersions.items()
         }
 
