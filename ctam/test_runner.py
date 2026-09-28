@@ -397,6 +397,8 @@ class TestRunner:
 
         try:
             status_code = 0
+            exit_string = "Test execution failed"
+            gtotal = 0
             self.create_json_configuration()
             if self.progress_bar:
                 progress_thread = threading.Thread(target=self.display_progress_bar)
@@ -413,10 +415,13 @@ class TestRunner:
                         group_instance,
                         test_case_instances,
                     ) = self.test_hierarchy.instantiate_obj_for_testcase(test)
+                    if group_instance is None:
+                        print(f"Test case {test} not found, skipping.", flush=True)
+                        continue
 
                     for testcase in test_case_instances:
                         self.normalize_testcase_metadata(testcase)
-                        
+
                     group_inc_tags = group_instance.tags
                     print("Group tags ", group_instance.tags)
                     # group_exc_tags = group_instance.exclude_tags
@@ -458,9 +463,13 @@ class TestRunner:
                         group_instance,
                         test_case_instances,
                     ) = self.test_hierarchy.instantiate_obj_for_testcase(test)
-                    
+                    if group_instance is None:
+                        print(f"Test case {test} not found, skipping.", flush=True)
+                        continue
+
                     for testcase in test_case_instances:
                         self.normalize_testcase_metadata(testcase)
+
                     group_inc_tags = group_instance.tags
                     # group_exc_tags = group_instance.exclude_tags
                     group_status, group_result = self._run_group_test_cases(group_instance, test_case_instances)
@@ -557,24 +566,25 @@ class TestRunner:
             status_code, exit_string =  1, "Test interrupted by user (KeyboardInterrupt)"
         except Exception as e:
             exception_details = traceback.format_exc()
-            self.active_run.add_log(
-                severity=LogSeverity.FATAL, message=exception_details
-            )
-            msg = {
-                "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
-                "TotalExecutionTime": str(timedelta(seconds=TestCase.total_execution_time)),
-                "TotalScore": TestCase.total_compliance_score,
-                "MaxComplianceScore": TestCase.max_compliance_score,
-                "Grade": "{}%".format(gtotal),
-                "FailureReason": exception_details
-                }
-            self.score_logger.write(json.dumps(msg))
-            status_code, exit_string =  1, f"Test failed due to execption: {repr(e)}" 
+            if hasattr(self, 'active_run'):
+                self.active_run.add_log(
+                    severity=LogSeverity.FATAL, message=exception_details
+                )
+            if hasattr(self, 'score_logger'):
+                msg = {
+                    "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+                    "TotalExecutionTime": str(timedelta(seconds=TestCase.total_execution_time)),
+                    "TotalScore": TestCase.total_compliance_score,
+                    "MaxComplianceScore": TestCase.max_compliance_score,
+                    "Grade": "{}%".format(gtotal),
+                    "FailureReason": exception_details
+                    }
+                self.score_logger.write(json.dumps(msg))
+            status_code, exit_string = 1, f"Test failed due to execption: {repr(e)}"
         finally:
             if self.comp_tool_dut:
                 self.comp_tool_dut.clean_up()
-                
-            if self.writer:
+            if hasattr(self, 'writer'):
                 self.post_proces_logs(self.writer.log_file)
             if not self._executed_any_test:
                 log_msg = (
@@ -582,13 +592,11 @@ class TestRunner:
                     "platform; result is NA."
                 )
                 exit_string = "No applicable tests"
-                if self.active_run:
-                    self.active_run.add_log(
-                        severity=LogSeverity.INFO,
-                        message=log_msg
-                    )
+                if hasattr(self, 'active_run') and self.active_run:
+                    self.active_run.add_log(severity=LogSeverity.INFO, message=log_msg)
                 else:
                     print(f"INFO: {log_msg}")
+
             return status_code, exit_string
         
     def consolidate_run(self):
@@ -1133,8 +1141,8 @@ class TestRunner:
             
         # Update compliance-level metrics
         compliance = levels[compliance_level]
-        compliance["level_weight"] = self.weighted_scores[compliance_level]
-        compliance["testcases_available"] = available_testcases[compliance_level]
+        compliance["level_weight"] = self.weighted_scores.get(compliance_level, 0)
+        compliance["testcases_available"] = available_testcases.get(compliance_level, 0)
         compliance["testcases_executed"] += 1
         compliance["testcases_passed"] += 1 if test_result == "PASS" else 0
         compliance["total_weight"] += test_instance.score_weight
@@ -1168,8 +1176,9 @@ class TestRunner:
         
         #Update normalized compliance-level metrics
         normalized = c_levels[compliance_level]
-        normalized["normalized_weight"] = self.normalized_scores[compliance_level]
-        normalized["testcases_available"] = self.test_hierarchy.get_compliance_test_cases(self.resolve_compliance_level)[compliance_level]
+        normalized["normalized_weight"] = self.normalized_scores.get(compliance_level, 0)
+        normalized["testcases_available"] = self.test_hierarchy.get_compliance_test_cases(self.resolve_compliance_level).get(compliance_level, 0)
+
         normalized["normalized_score"] = round(normalized["normalized_weight"] / normalized["testcases_available"], 2) if normalized["testcases_available"] != 0 else 0
         normalized["testcases_executed"] += 1
         normalized["testcases_passed"] += 1 if test_result == "PASS" else 0
@@ -1195,7 +1204,7 @@ class TestRunner:
         overall_compliance["testcases_passed"] = self.t_pass
         
         # Calculate total weighted score
-        total_sum = sum(available_testcases[compliance_level] * self.weighted_scores[compliance_level] for compliance_level in available_testcases)
+        total_sum = sum(available_testcases.get(compliance_level, 0) * self.weighted_scores.get(compliance_level, 0) for compliance_level in available_testcases)
         overall_compliance["Overall_Compliance_Level_Weighted_Grade"] = round((self.score_max / total_sum) * 100, 2) if total_sum != 0 else 0
      
     def test_result_summary(self, test_report, test_score_data):
@@ -1235,7 +1244,8 @@ class TestRunner:
             for comp_level, weight in self.weighted_scores.items():
                 # Add missing weighted level
                 if comp_level not in weighted_levels:
-                    num_available = available_testcases[comp_level]
+                    # Use .get() — weighted_score keys like "Others" may not map to any test case
+                    num_available = available_testcases.get(comp_level, 0)
                     weighted_levels[comp_level] = {
                         "level_weight": weight,
                         "testcases_available": num_available,
@@ -1250,7 +1260,8 @@ class TestRunner:
             for comp_level, weight in self.normalized_scores.items():
                 # Add missing normalized level
                 if comp_level not in normalized_levels:
-                    available_normaized_testcases = self.test_hierarchy.get_compliance_test_cases(self.resolve_compliance_level)[comp_level]
+                    available_normaized_testcases = self.test_hierarchy.get_compliance_test_cases(self.resolve_compliance_level).get(comp_level, 0)
+
                     norm_score = round(weight / available_normaized_testcases, 2) if available_normaized_testcases else 0
                     normalized_levels[comp_level] = {
                         "normalized_weight": weight,

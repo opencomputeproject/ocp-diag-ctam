@@ -9,7 +9,7 @@
     "console_log": true,
     "progress_bar":  false,
     "service_validator": {
-        "branch_name": "",
+        "branch_name": "2.5.1",
         "auth_type": "Basic"
     },
     "include_tags": [],

@@ -150,7 +150,7 @@ class GitUtils():
         match = re.search(r"Summary\s*[-:]", result)
         s_idx = match.start() if match else -1
         if s_idx < 0:
-            return False, result
+            return False, f"FAIL - 'Summary' marker not found in Redfish-Service-Validator output. Last line: {data[:200]}"
 
         data = result[s_idx:]
         res = re.findall(r"pass:\s*(\d+)", data, re.IGNORECASE)
