@@ -687,12 +687,14 @@ class FunctionalIfc:
         activation_time = 0
         FwActivationTimeMax = self.dut().dut_config["FwActivationTimeMax"]["value"]
 
+        if gpu_check:
+            ActivationStartTime = time.time()
+        
         if not self.NodeACReset():  # NodeACReset declaration pending
             failure_reason = "Error while running power cycle"
             return ActivationStatus, failure_reason, activation_time 
         
         if gpu_check:
-            ActivationStartTime = time.time()
             try:
                 resp = self.IsGPUReachable()   # If GPU response is {} or None 
                 if not resp:  
