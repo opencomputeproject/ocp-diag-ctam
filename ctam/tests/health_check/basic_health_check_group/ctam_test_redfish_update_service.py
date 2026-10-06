@@ -88,8 +88,9 @@ class CTAMTestRedfishUpdateService(TestCase):
         #cloning Redfish Interop Validator under temp folder which will be deleted after completion of test case.
         step1 = self.test_run().add_step(f"{self.__class__.__name__} run(), step1")  # type: ignore
         with step1.scope():
-            result = self.git_utils.clone_repo(repo_url="https://github.com/microsoft/Redfish-Interop-Validator.git",
-                                  repo_path="Redfish-Interop-Validator")
+            result = self.git_utils.clone_repo(repo_url="https://github.com/opencomputeproject/ocp-diag-ctam-redfish_interop_validator.git",
+                                               repo_path="Redfish-Interop-Validator")
+            
 
         if result:
             step2 = self.test_run().add_step(f"{self.__class__.__name__} run(), step2")  # type: ignore
