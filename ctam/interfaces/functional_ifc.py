@@ -109,6 +109,7 @@ class FunctionalIfc:
                     for element in JSONData["Members"]:
                         if str(element["Updateable"]) == "True":
                             corrupt_component_id = element["SoftwareId"]
+                            break
             msg = f"{MyName} returned component ID to be corrupted: {corrupt_component_id}"
             self.test_run().add_log(LogSeverity.DEBUG, msg)
         return corrupt_component_id
@@ -162,12 +163,21 @@ class FunctionalIfc:
                     package_config.get("GPU_FW_IMAGE_INVALID_SIGNED", {}).get("Package", ""),
                 )
             else:
+                if corrupted_component_id is None:
+                    corrupted_component_id = self.ctam_get_component_to_be_corrupted(
+                        VendorProvidedBundle=False
+                    )
+                msg = f"Corrupted component ID: {corrupted_component_id}"
+                self.test_run().add_log(LogSeverity.DEBUG, msg)
                 golden_fwpkg_path = os.path.join(
                     cwd,
                     package_config.get("GPU_FW_IMAGE", {}).get("Path", ""),
                     package_config.get("GPU_FW_IMAGE", {}).get("Package", ""),
                 )
-                return FwpkgSignature.invalidate_signature_in_pkg(golden_fwpkg_path)
+                metadata_size = package_config.get("GPU_FW_IMAGE_CORRUPT_COMPONENT", {}).get("MetadataSizeBytes", 4096)
+                return FwpkgSignature.invalidate_signature_in_pkg(
+                    golden_fwpkg_path, corrupted_component_id, metadata_size
+                )
 
         elif image_type == "invalid_pkg_uuid":
             golden_fwpkg_path = os.path.join(
