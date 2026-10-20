@@ -295,7 +295,7 @@ class FWUpdateIfc(FunctionalIfc, metaclass=Meta):
                             and (
                                 JSONData["TaskState"] == "Exception"
                                 or (
-                                    image_type in ("corrupt_component", "corrupt", "empty_metadata")
+                                    image_type in ("corrupt_component", "corrupt", "empty_metadata", "invalid_sign")
                                     and JSONData["TaskState"] == "Completed"
                                 )
                             )
