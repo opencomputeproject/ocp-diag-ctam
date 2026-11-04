@@ -265,6 +265,20 @@ Test runner knobs can be modified in `test_runner.json` to enable different logg
     
   * The `sshtunnel` library in Python is a handy tool for creating SSH tunnels, allowing you to programmatically set up and manage SSH    port forwarding. It can be used to establish both local and remote port forwarding
 
+## 🖥️ Host Connection
+
+Most tests talk to the device under test only through Redfish. Tests that act in-band also need to run commands on the host OS of the system under test, i.e. the OS running on the host CPU. Configure the host in `dut_info.json`:
+
+| Property            | Definition |
+| :---                | :---       |
+| `HostIPAddress`     | IP address or hostname of the host OS. The built-in SSH client uses the `.netrc` credentials for this address.
+| `HostPort`          | SSH port of the host OS (default 22).
+| `HostSSHKeyFile`    | Optional private key file for the built-in SSH client.
+| `HostCommandPrefix` | Optional local command that runs a host command given as its last argument, used instead of the built-in SSH client, e.g. `ssh -o BatchMode=yes root@myhost`. Use it for jump hosts, SSH certificates, `sshpass` or any other wrapper.
+| `HostBootWaitTime`  | Maximum time in seconds to wait for the host OS to come back after a reboot (default 900).
+
+Host commands are logged with the Redfish commands of each test in `RedfishCommandDetails`. A host command that starts a background process must redirect all of the process's standard streams (e.g. `nohup cmd </dev/null >/dev/null 2>&1 &`), or the command waits for the process to exit.
+
 ## Why Consolidation is Needed
 
 In many testing environments, it may not be possible or practical to execute all test cases in a single continuous run. This can happen due to:
