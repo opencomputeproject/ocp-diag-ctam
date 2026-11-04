@@ -279,6 +279,38 @@ Most tests talk to the device under test only through Redfish. Tests that act in
 
 Host commands are logged with the Redfish commands of each test in `RedfishCommandDetails`. A host command that starts a background process must redirect all of the process's standard streams (e.g. `nohup cmd </dev/null >/dev/null 2>&1 &`), or the command waits for the process to exit.
 
+### Host Perturbations
+
+F91 (CTAM Test Full Device Update With Host Perturbation During Staging) checks that the host OS cannot disrupt an out-of-band firmware update. It stages a full device update while it perturbs the host OS with the commands in `HostPerturbations`, then activates the update and verifies the firmware inventory. Each entry has:
+
+| Key                | Definition |
+| :---               | :---       |
+| `Name`             | Name used in the logs (required, unique).
+| `Command`          | Command run on the host while staging is in progress.
+| `StartCommand`     | Command run once before staging starts, e.g. to start a background load, and again after the host comes back from a reboot.
+| `StopCommand`      | Command run once after staging ends, e.g. to stop the background load.
+| `IntervalSeconds`  | Minimum time between two runs of `Command` (default 0).
+| `MaxCount`         | Maximum number of runs of `Command` (default 0, no limit).
+| `ExpectDisconnect` | `Command` takes the host down, e.g. a reboot (default false). Other host commands wait until the host is back.
+| `TimeoutSeconds`   | Timeout of each command, and how long an `ExpectDisconnect` command has to take the host down (default 120).
+
+Each time the test polls the staging task and finds it still running, it runs the `Command` of the next due perturbation, in list order, so put perturbations that take the host down last. A command takes effect if it exits 0 or, with `ExpectDisconnect`, if the host goes down. Commands that fail are logged but do not fail the test. The test fails if staging fails, if no perturbation takes effect while staging is in progress, or if the host does not come back within `HostBootWaitTime`.
+
+Example for NVIDIA GPUs on a Linux host:
+
+```json
+"HostPerturbations": {
+    "description": "Host OS perturbations run while FW staging is in progress (F91)",
+    "type": "list",
+    "value": [
+        {"Name": "InbandQueries", "Command": "for i in $(seq 20); do nvidia-smi -q > /dev/null; done"},
+        {"Name": "GPUReset", "Command": "nvidia-smi -r"},
+        {"Name": "DriverReload", "Command": "modprobe -r nvidia_drm nvidia_modeset nvidia_uvm nvidia && modprobe nvidia"},
+        {"Name": "HostReboot", "Command": "systemctl reboot", "MaxCount": 1, "ExpectDisconnect": true, "TimeoutSeconds": 300}
+    ]
+}
+```
+
 ## Why Consolidation is Needed
 
 In many testing environments, it may not be possible or practical to execute all test cases in a single continuous run. This can happen due to:
