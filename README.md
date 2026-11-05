@@ -296,7 +296,7 @@ F91 (CTAM Test Full Device Update With Host Perturbation During Staging) checks 
 
 Each time the test polls the staging task and finds it still running, it runs the `Command` of the next due perturbation, in list order, so put perturbations that take the host down last. A command takes effect if it exits 0 or, with `ExpectDisconnect`, if the host goes down. Commands that fail are logged but do not fail the test. The test fails if staging fails, if no perturbation takes effect while staging is in progress, or if the host does not come back within `HostBootWaitTime`.
 
-Example for NVIDIA GPUs on a Linux host:
+Example for NVIDIA GPUs on a Linux host. GPU resets and driver unloads fail while a process holds the GPUs, so the example stops the persistence daemon around them:
 
 ```json
 "HostPerturbations": {
@@ -304,9 +304,9 @@ Example for NVIDIA GPUs on a Linux host:
     "type": "list",
     "value": [
         {"Name": "InbandQueries", "Command": "for i in $(seq 20); do nvidia-smi -q > /dev/null; done"},
-        {"Name": "GPUReset", "Command": "nvidia-smi -r"},
-        {"Name": "DriverReload", "Command": "modprobe -r nvidia_drm nvidia_modeset nvidia_uvm nvidia && modprobe nvidia"},
-        {"Name": "HostReboot", "Command": "systemctl reboot", "MaxCount": 1, "ExpectDisconnect": true, "TimeoutSeconds": 300}
+        {"Name": "GPUReset", "Command": "systemctl stop nvidia-persistenced; nvidia-smi -r; rc=$?; systemctl start nvidia-persistenced; exit $rc", "TimeoutSeconds": 300},
+        {"Name": "DriverReload", "Command": "systemctl stop nvidia-persistenced; modprobe -r nvidia_uvm nvidia && modprobe nvidia && modprobe nvidia_uvm; rc=$?; systemctl start nvidia-persistenced; exit $rc", "TimeoutSeconds": 300},
+        {"Name": "HostReboot", "Command": "systemctl reboot", "MaxCount": 1, "ExpectDisconnect": true, "TimeoutSeconds": 600}
     ]
 }
 ```
