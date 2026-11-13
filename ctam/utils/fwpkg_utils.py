@@ -271,21 +271,48 @@ class FwpkgSignature:
         return corrupted_package_path
 
     @staticmethod
-    def invalidate_signature_in_pkg(golden_fwpkg_path):
+    def invalidate_signature_in_pkg(golden_fwpkg_path, component_id=None, metadata_size=4096):
         """
-        :Description:                       Corrupts the magic number in the FW package,
-                                            which is present at 14th byte from the start of signature header.
+        :Description:                       Corrupts the signature in the FW package.
+                                            For PLDM v1.0-v1.2 packages, corrupts the 4-byte magic number at the start
+                                            of the 1024-byte trailing signature structure.
+                                            For PLDM v1.3 (format revision 4+) packages where pldmd validates the outer
+                                            payload CRC32 in the header and delegates cryptographic signature verification
+                                            to per-component endpoints, also corrupts the component metadata/signature
+                                            header and updates the PLDM v1.3 payload checksum.
 
-        :param str golden_fwpkg_path:	    Path to golden firmware package
+        :param str golden_fwpkg_path:       Path to golden firmware package
+        :param int component_id:            ComponentIdentifier of the component image to be corrupted (PLDM v1.3). Default is None.
+        :param int metadata_size:           Metadata size in bytes (PLDM v1.3). Default is 4096 bytes.
 
         :returns:                           Path to corrupted package. None if corruption fails.
         :rtype:                             str
         """
         corrupted_package_path = copy_fwpkg(golden_fwpkg_path)
         try:
-            with open(corrupted_package_path, 'r+b') as file:
-                file.seek(-FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES, os.SEEK_END)
-                file.write(bytearray(4)) # 4 bytes long Magic
+            pldm_parser = PLDMUnpack(corrupted_package_path)
+            if (
+                pldm_parser.parse_pldm_package()
+                and int(pldm_parser.header_map.get("PackageHeaderFormatVersion", "0")) >= 4
+            ):
+                package_size = os.path.getsize(corrupted_package_path)
+                last_comp_end = max(
+                    (c["ComponentLocationOffset"] + c["ComponentSize"] for c in pldm_parser.component_img_info_list),
+                    default=0,
+                )
+                if package_size >= last_comp_end + FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES:
+                    with open(corrupted_package_path, "r+b") as file:
+                        file.seek(-FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES, os.SEEK_END)
+                        file.write(bytearray(4))  # 4 bytes long Magic
+                corrupted = pldm_parser.corrupt_component_metadata_in_pkg(component_id, metadata_size)
+                if not corrupted and component_id is not None:
+                    corrupted = pldm_parser.corrupt_component_metadata_in_pkg(None, metadata_size)
+                if not corrupted:
+                    raise RuntimeError("Failed to corrupt component signature metadata in PLDM v1.3 package")
+            else:
+                with open(corrupted_package_path, "r+b") as file:
+                    file.seek(-FwpkgSignature.PKG_SIGNATURE_STRUCT_BYTES, os.SEEK_END)
+                    file.write(bytearray(4))  # 4 bytes long Magic
         except Exception as e:
             print(f"Error in corrupting the package: {e}")
             # delete the package
