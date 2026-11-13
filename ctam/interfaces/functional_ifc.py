@@ -542,10 +542,15 @@ class FunctionalIfc:
         """
         :Description:       It will Reset the node.
 
-        :returns:           True if power cycle succeeds, False otherwise
-        :rtype:             bool
+        :returns:           (status, power_on_start_time): status is True if the power cycle succeeds,
+                            False otherwise. power_on_start_time is the time.time() value taken just
+                            before the command that restores power (the single-shot power cycle command,
+                            or PowerOnCommand), or None on failure. Activation is timed from this point,
+                            so the power-off command and PowerOffWaitTime are not counted.
+        :rtype:             Tuple[bool, float | None]
         """
         MyName = __name__ + "." + self.NodeACReset.__qualname__
+        power_on_start_time = None
         single_shot_power_cycle = self.dut().dut_config.get("SingleShotPowerCycle", {}).get("value", "")
         single_shot_power_cycle_triggered = False
         if single_shot_power_cycle:
@@ -554,13 +559,15 @@ class FunctionalIfc:
             time_out = self.dut().dut_config.get("SingleShotPowerCycleTimeOut", {}).get("value", 30)
             if not single_shot_power_command:
                 self.test_run().add_log(LogSeverity.INFO, "Please provide single command for power off and power on in dut config!")
-                return False
+                return False, None
             # execute single shot power cycle
             self.test_run().add_log(LogSeverity.INFO, json.dumps(single_shot_power_command, indent=4))
             arguments = shlex.split(single_shot_power_command)
             cwd_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
             cwd_path = None if cwd_path == "/tmp" else cwd_path
 
+            # The single command powers off and on, so the reset starts while it runs.
+            power_on_start_time = time.time()
             try:
                 subprocess.check_output(arguments, cwd=cwd_path,timeout=time_out, stderr=subprocess.STDOUT)
             except subprocess.TimeoutExpired:
@@ -572,13 +579,13 @@ class FunctionalIfc:
                     self.test_run().add_log(LogSeverity.INFO, "Power cycle triggered (connection reset expected)")
                 else:
                     self.test_run().add_log(LogSeverity.ERROR, f"Power cycle failed with return code {e.returncode}: {e.output}")
-                    return False
+                    return False, None
 
             except Exception as e:
                 self.test_run().add_log(LogSeverity.ERROR, f"Unexpected error during power cycle | "
                                         f"Exception: {type(e).__name__} | "
                                         f"Message: {e}")
-                return False
+                return False, None
 
             time.sleep(self.dut().dut_config.get("PowerOnWaitTime", {}).get("value", 300))
             self.test_run().add_log(LogSeverity.INFO, "Power ON wait time done")
@@ -590,7 +597,7 @@ class FunctionalIfc:
             power_on_command = self.dut().dut_config.get("PowerOnCommand", {}).get("value", "")
             if not power_off_command or not power_on_command:
                 self.test_run().add_log(LogSeverity.INFO, "Please provide both power on and power off command in dut config!")
-                return False
+                return False, None
             # execute power off
             self.test_run().add_log(LogSeverity.INFO, json.dumps(power_off_command, indent=4))
             arguments = shlex.split(power_off_command)
@@ -602,10 +609,11 @@ class FunctionalIfc:
             # execute power on
             self.test_run().add_log(LogSeverity.INFO, json.dumps(power_on_command, indent=4))
             arguments = shlex.split(power_on_command)
+            power_on_start_time = time.time()
             subprocess.check_output(arguments, cwd=cwd_path)
             time.sleep(self.dut().dut_config.get("PowerOnWaitTime", {}).get("value", 300))
             self.test_run().add_log(LogSeverity.INFO, "Power ON wait time done")
-        return True
+        return True, power_on_start_time
 
     def IsGPUReachable(self):
         """
@@ -687,12 +695,14 @@ class FunctionalIfc:
         activation_time = 0
         FwActivationTimeMax = self.dut().dut_config["FwActivationTimeMax"]["value"]
 
-        if not self.NodeACReset():  # NodeACReset declaration pending
+        reset_status, power_on_start_time = self.NodeACReset()
+        if not reset_status:
             failure_reason = "Error while running power cycle"
             return ActivationStatus, failure_reason, activation_time 
         
         if gpu_check:
-            ActivationStartTime = time.time()
+            # Activation is timed from the command that restores power, excluding power-off time.
+            ActivationStartTime = power_on_start_time
             try:
                 resp = self.IsGPUReachable()   # If GPU response is {} or None 
                 if not resp:  

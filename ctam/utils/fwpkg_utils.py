@@ -807,7 +807,7 @@ class PLDMUnpack:
             f.seek(checksum_offset)
             f.write(struct.pack('<I', payload_crc))
 
-        print(f"[v1.3] Updated PackageHeaderChecksum (payload CRC32) → 0x{payload_crc:08x}")
+        print(f"[v1.3] Updated PackageHeaderChecksum (payload CRC32) => 0x{payload_crc:08x}")
 
     def corrupt_device_record_uuid_in_pkg(self):
         """
