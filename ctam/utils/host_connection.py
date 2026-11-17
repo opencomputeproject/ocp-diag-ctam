@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 :Description: Runs commands on the host OS of the system under test.
 """
 
+import logging
 import shlex
 import subprocess
 import time
@@ -15,6 +16,12 @@ from typing import Optional
 
 # A no-op accepted by POSIX shells, cmd.exe and PowerShell.
 _NO_OP_COMMAND = "exit 0"
+
+# Log channel of the built-in SSH client. paramiko logs failed connections, e.g. while the host reboots,
+# with tracebacks from its own thread. They are already returned in HostCommandResult.error, so the
+# NullHandler keeps them off the console unless logging is configured to show them.
+_SSH_LOG_CHANNEL = "paramiko.transport.host_connection"
+logging.getLogger(_SSH_LOG_CHANNEL).addHandler(logging.NullHandler())
 
 
 def _text(output) -> str:
@@ -228,6 +235,7 @@ class HostConnection:
         if credentials:
             username, _, password = credentials
         client = paramiko.SSHClient()
+        client.set_log_channel(_SSH_LOG_CHANNEL)
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         client.connect(
             self.ip_address,
