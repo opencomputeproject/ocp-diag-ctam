@@ -23,7 +23,11 @@ from ocptv.output import Metadata
 from ocptv.output import Dut
 
 from interfaces.uri_builder import UriBuilder
+from utils.host_connection import HostConnection
 from utils.ssh_tunnel_utils import SSHTunnelWithLibrary, SSHTunnelWithSshpass
+
+# Characters of host command output kept in the command log.
+_HOST_OUTPUT_LOG_LIMIT = 2000
 
 
 
@@ -119,6 +123,8 @@ class CompToolDut(Dut):
             self.ssh_tunnel = SSHTunnelWithSshpass(self.test_info_logger)
         else:
             self.ssh_tunnel = SSHTunnelWithLibrary(self.test_info_logger)
+        # Host OS of the system under test, for tests that act in-band. Connects on first use.
+        self.host = HostConnection(config["properties"], self.net_rc)
     
     def get_cwd(self):
         cwd = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -393,6 +399,38 @@ class CompToolDut(Dut):
             self.logger.write(json.dumps(msg))
             return response
 
+    def run_host_command(self, command, timeout=60):
+        """
+        Runs a command on the host OS of the system under test (see HostConnection) and logs it
+        with the Redfish commands of the current test.
+
+        :param command: Command line for the host's shell
+        :type command: str
+        :param timeout: Seconds to wait for the command
+        :type timeout: int
+
+        :return: Outcome of the command; never raises
+        :rtype: HostCommandResult
+        """
+        start_time = time.time()
+        caller = inspect.getframeinfo(inspect.currentframe().f_back)
+        result = self.host.run(command, timeout=timeout)
+        msg = {
+            "TimeStamp": datetime.now().strftime("%m-%d-%YT%H:%M:%S"),
+            "TestName": self.current_test_name,
+            "HostCommand": command,
+            "Path": caller.filename,
+            "LineNo": caller.lineno,
+            "ResponseTime": "{:.3f}S".format(time.time() - start_time),
+            "ReturnCode": result.rc,
+            "Stdout": result.stdout[-_HOST_OUTPUT_LOG_LIMIT:],
+            "Stderr": result.stderr[-_HOST_OUTPUT_LOG_LIMIT:],
+        }
+        if result.error:
+            msg["Error"] = result.error
+        self.logger.write(json.dumps(msg))
+        return result
+
     def check_uri_response(self, uri, response):
         if not self.test_uri_response_check:
             msg = {"Message":"FATAL: Please provide the file name in test runner config"}
@@ -450,6 +488,7 @@ class CompToolDut(Dut):
         return self._console_log
     
     def clean_up(self):
+        self.host.close()
         if self.binded_port:
             self.ssh_tunnel.kill_ssh_tunnel()
         if self.redfish_auth and self.redfish_ifc:

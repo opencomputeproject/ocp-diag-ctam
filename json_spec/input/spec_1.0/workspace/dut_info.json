@@ -103,7 +103,37 @@
                         "description": "TimeOut duration in seconds for single command power cycle operation",
                         "type": "int",
                         "value": 30
-                }
+                },
+		"HostIPAddress": {
+			"description": "IP address or hostname of the host OS of the system under test, for tests that act on the host. The built-in SSH client uses the .netrc credentials for this address",
+			"type": "string",
+			"value": ""
+		},
+		"HostPort": {
+			"description": "SSH port of the host OS",
+			"type": "int",
+			"value": 22
+		},
+		"HostSSHKeyFile": {
+			"description": "Optional private key file for the built-in SSH client",
+			"type": "string",
+			"value": ""
+		},
+		"HostCommandPrefix": {
+			"description": "Optional local command that runs a host command given as its last argument, used instead of the built-in SSH client (e.g. ssh -o BatchMode=yes root@myhost)",
+			"type": "string",
+			"value": ""
+		},
+		"HostBootWaitTime": {
+			"description": "Maximum time (in seconds) to wait for the host OS to come back after a reboot",
+			"type": "int",
+			"value": 900
+		},
+		"HostPerturbations": {
+			"description": "Host OS perturbations run while FW staging is in progress (F91). See Host Perturbations in the README",
+			"type": "list",
+			"value": []
+		}
 	},
 	"required": [
 		"ConnectionTo",

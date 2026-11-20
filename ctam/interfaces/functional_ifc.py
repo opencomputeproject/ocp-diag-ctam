@@ -827,10 +827,15 @@ class FunctionalIfc:
             self.test_run().add_log(LogSeverity.FATAL, "No entries found: {}".format(check_response.dict))
             return None
 
-    def ctam_monitor_task(self, TaskID=""):
+    def ctam_monitor_task(self, TaskID="", on_poll=None, poll_interval=30, max_poll_errors=5):
         """
         :Description:       CTAM Monitor a Task
         :param TaskID       Task ID of TaskService/Tasks (for accelerator management) to monitor
+        :param on_poll      Optional callable, called with the task JSON after each poll that finds the
+                            task still running, e.g. to act on the system while the task is in progress
+        :param poll_interval    Seconds between two polls
+        :param max_poll_errors  Consecutive failed polls (no response, or no TaskState) tolerated
+                                before giving up on the task
         :returns:	        (Task_Completed, JSONData response)
         :rtype:             Tuple
         """
@@ -848,17 +853,38 @@ class FunctionalIfc:
         if self.dut().is_debug_mode():
             self.test_run().add_log(LogSeverity.DEBUG, f"Task URI: {TaskURI}")
 
-        response = self.dut().run_redfish_command(TaskURI)
-        JSONData = response.dict
-        while JSONData["TaskState"] == "Running":
+        poll_errors = 0
+        while True:
             response = self.dut().run_redfish_command(TaskURI)
-            JSONData = response.dict
+            try:
+                TaskData = response.dict
+            except Exception:  # No response, or not JSON
+                TaskData = {}
+            if not isinstance(TaskData, dict) or "TaskState" not in TaskData:
+                poll_errors += 1
+                self.test_run().add_log(LogSeverity.WARNING,
+                    "Task poll failed ({} in a row): status={}, response={}".format(
+                        poll_errors, getattr(response, "status", None), TaskData)
+                )
+                if poll_errors > max_poll_errors:
+                    self.test_run().add_log(LogSeverity.ERROR,
+                        f"Giving up on task {TaskID} after {poll_errors} failed polls"
+                    )
+                    return Task_Completed, JSONData
+                time.sleep(poll_interval)
+                continue
+            poll_errors = 0
+            JSONData = TaskData
+            if JSONData["TaskState"] != "Running":
+                break
             if self.dut().is_debug_mode():
                 self.test_run().add_log(LogSeverity.DEBUG,
-                    "Task Percentage_Completion = {}".format(JSONData["PercentComplete"])
+                    "Task Percentage_Completion = {}".format(JSONData.get("PercentComplete"))
                 )
-            time.sleep(30)
-        if JSONData["TaskState"] == "Completed" and JSONData["TaskStatus"] == "OK":
+            if on_poll:
+                on_poll(JSONData)
+            time.sleep(poll_interval)
+        if JSONData["TaskState"] == "Completed" and JSONData.get("TaskStatus") == "OK":
             Task_Completed = True
         else:
             Task_Completed = False
